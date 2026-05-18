@@ -6,10 +6,11 @@
 
 - 项目名称：校园搭子平台。
 - 当前阶段：正式代码开发。
-- 当前线程：P0 认证全链路已完成（Round 03-07）。
+- 当前线程：Qt 客户端对接后端 P0 认证 API（已完成最小闭环）。
 - Git 分支：main。
-- 工作区：有未提交的文档更新。
-- 非容器快速测试：56/56 通过。
+- 工作区：干净。
+- 后端测试：56/56 通过。
+- Qt 测试：3/3 通过（api_client_config_test、campus_api_client_test、auth_token_store_test）。
 
 ## Git 提交历史
 
@@ -21,43 +22,46 @@
 - `d5c78fa` docs(codearts): record round05 handoff and round06 prompt
 - `4955bee` feat(auth): add identity verification admin review
 - `8edd057` feat(auth): add identity material attachment upload
+- `b850d37` docs(codearts): record round06/07 validation and update handoff
+- `ca058c3` feat(desktop): add login/register UI and auth API integration
 
 ## 当前线程完成了什么
 
-- Round 07：认证材料附件上传闭环
-  - V5 Flyway 迁移：identity_material_attachment 表 + ALTER identity_verification_submission ADD material_attachment_id
-  - ObjectStorageService 接口 + InMemoryObjectStorageService 测试替身
-  - IdentityMaterialAttachmentService + IdentityVerificationMaterialController（multipart 上传）
-  - 修改 IdentityVerificationService 支持 materialAttachmentId（含归属校验）
-  - 修改 AdminService/AdminController 返回附件摘要 + 管理员受控读取
-  - Security 配置新增 /materials 需认证
-  - 9 个集成测试通过，56/56 非容器回归
+- CampusApiClient：新增 postJson、getJson/postJson 带 Bearer 认证头
+- AuthTokenStore：基于 QSettings 的 accessToken 持久化
+- AuthApiService：封装 login、register、sendVerificationCode、verifyCampusEmail、submitIdentityVerification、getIdentityVerificationStatus
+- LoginWidget：邮箱+密码登录表单
+- RegisterWidget：注册表单（含验证码发送）
+- HomePageWidget：简单主页（查询认证状态+退出登录）
+- main.cpp：QStackedWidget 导航（登录/注册/主页切换）
+- Qt 测试：AuthTokenStoreTest (5) + CampusApiClientTest (6) + ApiClientConfigTest (原有)
 
 ## 关键结论
 
-- P0 认证全链路已闭环：注册→登录→JWT→认证资料提交→管理员审核→附件上传
-- 对象存储采用后端中转上传，InMemoryObjectStorageService 为测试替身
-- 56/56 非容器快速测试全部通过
+- Qt 客户端从技术探路骨架升级为可交互的登录/注册/主页应用
+- 所有 P0 认证 API 均已通过 AuthApiService 对接
+- UI 层不直接使用 QNetworkAccessManager（测试验证）
 
 ## 本线程没有做什么
 
-- 没有适配真实 OBS SDK（InMemoryObjectStorageService 是测试替身）
+- 没有实现认证资料提交 UI（身份验证表单+附件上传）
+- 没有实现管理员审核 UI
+- 没有适配真实 OBS SDK
 - 没有替换 no-op 邮件发送
 - 没有运行 Testcontainers/Docker 测试
 - 没有实现完整 RBAC
-- 没有修改 Qt 客户端
 - 没有开始 P1 需求发布与审核模块
 
 ## 下一步候选事项
 
-1. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
-2. `真实 OBS SDK 适配器` — 新开线程，优先级中；需要华为云 OBS 凭据
-3. `替换 no-op 邮件发送` — 新开线程，优先级中
-4. `Testcontainers 集成测试` — 复用或新开线程，优先级低
-5. `完整 RBAC 权限矩阵` — 新开线程，优先级低
+1. `认证资料提交 UI` — 复用当前线程，优先级高；在 HomePageWidget 中添加身份验证提交表单
+2. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
+3. `真实 OBS SDK 适配器` — 新开线程，优先级中
+4. `替换 no-op 邮件发送` — 新开线程，优先级中
+5. `Qt 客户端附件上传 UI` — 复用线程，优先级中
 
 ## 建议归档与下一线程
 
-- 建议归档当前线程：是。
-- 下一线程名称：`P1 需求发布与审核模块详细设计`
-- 下一线程应先完成 P1 模块的详细设计文档，再进入编码。
+- 建议归档当前线程：否（可复用，继续补齐认证资料提交 UI）。
+- 下一线程名称：`Qt 客户端认证资料提交 UI`
+- 或：归档后新开 `P1 需求发布与审核模块详细设计`
