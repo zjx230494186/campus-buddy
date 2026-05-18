@@ -11,13 +11,25 @@ set(CAMPUS_BUDDY_REQUIRED_QT_VERSION "6.10.3" CACHE STRING "Required Qt 6 versio
 
 find_package(Qt6 ${CAMPUS_BUDDY_REQUIRED_QT_VERSION} REQUIRED COMPONENTS Widgets Test Network)
 
-qt_add_executable(campus_buddy_desktop
+set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthApiService.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/LoginWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/LoginWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/RegisterWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/RegisterWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.h
 )
+
+qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})
 
 target_link_libraries(campus_buddy_desktop PRIVATE Qt6::Widgets Qt6::Network)
 
@@ -61,3 +73,17 @@ target_compile_definitions(campus_api_client_test PRIVATE
 )
 
 add_test(NAME campus_api_client_test COMMAND campus_api_client_test)
+
+qt_add_executable(auth_token_store_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/AuthTokenStoreTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
+)
+
+target_link_libraries(auth_token_store_test PRIVATE Qt6::Test)
+
+target_include_directories(auth_token_store_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME auth_token_store_test COMMAND auth_token_store_test)

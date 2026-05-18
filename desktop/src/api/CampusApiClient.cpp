@@ -19,13 +19,53 @@ CampusApiClient::CampusApiClient(ApiClientConfig config, QObject *parent)
 {
 }
 
-void CampusApiClient::getJson(const QString &path, ResponseCallback callback)
+void CampusApiClient::setCommonHeaders(QNetworkRequest &request, const QString &accessToken)
 {
-    QNetworkRequest request(buildUrl(path));
     request.setHeader(QNetworkRequest::ContentTypeHeader, QStringLiteral("application/json"));
     request.setRawHeader("Accept", "application/json");
+    if (!accessToken.isEmpty()) {
+        request.setRawHeader("Authorization", QString("Bearer %1").arg(accessToken).toUtf8());
+    }
+}
+
+void CampusApiClient::getJson(const QString &path, ResponseCallback callback)
+{
+    getJson(path, QString(), std::move(callback));
+}
+
+void CampusApiClient::getJson(const QString &path, const QString &accessToken, ResponseCallback callback)
+{
+    QNetworkRequest request(buildUrl(path));
+    setCommonHeaders(request, accessToken);
 
     QNetworkReply *reply = network_.get(request);
+    QObject::connect(reply, &QNetworkReply::finished, this, [reply, callback = std::move(callback)]() {
+        const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QNetworkReply::NetworkError networkError = reply->error();
+        const QString networkErrorText = reply->errorString();
+        const QByteArray body = reply->readAll();
+
+        const ApiClientResponse response = parseReply(httpStatus, networkError, networkErrorText, body);
+        reply->deleteLater();
+
+        if (callback) {
+            callback(response);
+        }
+    });
+}
+
+void CampusApiClient::postJson(const QString &path, const QJsonObject &body, ResponseCallback callback)
+{
+    postJson(path, body, QString(), std::move(callback));
+}
+
+void CampusApiClient::postJson(const QString &path, const QJsonObject &body, const QString &accessToken, ResponseCallback callback)
+{
+    QNetworkRequest request(buildUrl(path));
+    setCommonHeaders(request, accessToken);
+
+    const QByteArray data = QJsonDocument(body).toJson(QJsonDocument::Compact);
+    QNetworkReply *reply = network_.post(request, data);
     QObject::connect(reply, &QNetworkReply::finished, this, [reply, callback = std::move(callback)]() {
         const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
         const QNetworkReply::NetworkError networkError = reply->error();

@@ -19,13 +19,25 @@ private slots:
     void getJsonParsesSuccessPayload();
     void errorResponseConvertsToClientError();
     void widgetLayerDoesNotDirectlyUseNetworkAccessManager();
+    void postJsonSendsBodyAndParsesResponse();
+    void getJsonWithAuthSendsAuthorizationHeader();
+    void postJsonWithAuthSendsAuthorizationHeader();
 
 private:
-    static QUrl serveSingleResponse(const QByteArray &statusLine, const QByteArray &body);
-    static ApiClientResponse requestOnce(const QUrl &baseUrl, const QString &path);
+    static QUrl serveSingleResponse(const QByteArray &statusLine, const QByteArray &body, const QByteArray &extraHeaders = QByteArray());
+    static ApiClientResponse requestGet(const QUrl &baseUrl, const QString &path);
+    static ApiClientResponse requestGetWithAuth(const QUrl &baseUrl, const QString &path, const QString &token);
+    static ApiClientResponse requestPost(const QUrl &baseUrl, const QString &path, const QJsonObject &body);
+    static ApiClientResponse requestPostWithAuth(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QString &token);
+
+    struct RawRequest {
+        QByteArray headers;
+        QByteArray body;
+    };
+    static QUrl serveAndCaptureRequest(RawRequest &captured, const QByteArray &responseStatus, const QByteArray &responseBody);
 };
 
-QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, const QByteArray &body)
+QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, const QByteArray &body, const QByteArray &extraHeaders)
 {
     auto *server = new QTcpServer(qApp);
     if (!server->listen(QHostAddress::LocalHost, 0)) {
@@ -33,9 +45,9 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
         return {};
     }
 
-    QObject::connect(server, &QTcpServer::newConnection, server, [server, statusLine, body]() {
+    QObject::connect(server, &QTcpServer::newConnection, server, [server, statusLine, body, extraHeaders]() {
         QTcpSocket *socket = server->nextPendingConnection();
-        QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, statusLine, body]() {
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, statusLine, body, extraHeaders]() {
             const QByteArray request = socket->readAll();
             if (!request.contains("\r\n\r\n")) {
                 return;
@@ -46,6 +58,10 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
             response.append("\r\nContent-Type: application/json");
             response.append("\r\nContent-Length: ");
             response.append(QByteArray::number(body.size()));
+            if (!extraHeaders.isEmpty()) {
+                response.append("\r\n");
+                response.append(extraHeaders);
+            }
             response.append("\r\nConnection: close\r\n\r\n");
             response.append(body);
 
@@ -59,7 +75,46 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
     return QUrl(QString("http://127.0.0.1:%1/api").arg(server->serverPort()));
 }
 
-ApiClientResponse CampusApiClientTest::requestOnce(const QUrl &baseUrl, const QString &path)
+QUrl CampusApiClientTest::serveAndCaptureRequest(CampusApiClientTest::RawRequest &captured, const QByteArray &responseStatus, const QByteArray &responseBody)
+{
+    auto *server = new QTcpServer(qApp);
+    if (!server->listen(QHostAddress::LocalHost, 0)) {
+        server->deleteLater();
+        return {};
+    }
+
+    QObject::connect(server, &QTcpServer::newConnection, server, [server, &captured, responseStatus, responseBody]() {
+        QTcpSocket *socket = server->nextPendingConnection();
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, &captured, responseStatus, responseBody]() {
+            const QByteArray requestData = socket->readAll();
+
+            const int headerEnd = requestData.indexOf("\r\n\r\n");
+            if (headerEnd < 0) {
+                return;
+            }
+
+            captured.headers = requestData.left(headerEnd);
+            captured.body = requestData.mid(headerEnd + 4);
+
+            QByteArray response;
+            response.append(responseStatus);
+            response.append("\r\nContent-Type: application/json");
+            response.append("\r\nContent-Length: ");
+            response.append(QByteArray::number(responseBody.size()));
+            response.append("\r\nConnection: close\r\n\r\n");
+            response.append(responseBody);
+
+            socket->write(response);
+            socket->disconnectFromHost();
+        });
+        QObject::connect(socket, &QTcpSocket::disconnected, socket, &QObject::deleteLater);
+        QObject::connect(socket, &QTcpSocket::disconnected, server, &QObject::deleteLater);
+    });
+
+    return QUrl(QString("http://127.0.0.1:%1/api").arg(server->serverPort()));
+}
+
+ApiClientResponse CampusApiClientTest::requestGet(const QUrl &baseUrl, const QString &path)
 {
     CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
     QEventLoop loop;
@@ -86,6 +141,87 @@ ApiClientResponse CampusApiClientTest::requestOnce(const QUrl &baseUrl, const QS
     return response;
 }
 
+ApiClientResponse CampusApiClientTest::requestGetWithAuth(const QUrl &baseUrl, const QString &path, const QString &token)
+{
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.getJson(path, token, [&](const ApiClientResponse &result) {
+        response = result;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    if (!completed) {
+        response.error.type = ApiClientError::NetworkError;
+        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+    }
+    return response;
+}
+
+ApiClientResponse CampusApiClientTest::requestPost(const QUrl &baseUrl, const QString &path, const QJsonObject &body)
+{
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.postJson(path, body, [&](const ApiClientResponse &result) {
+        response = result;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    if (!completed) {
+        response.error.type = ApiClientError::NetworkError;
+        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+    }
+    return response;
+}
+
+ApiClientResponse CampusApiClientTest::requestPostWithAuth(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QString &token)
+{
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.postJson(path, body, token, [&](const ApiClientResponse &result) {
+        response = result;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    if (!completed) {
+        response.error.type = ApiClientError::NetworkError;
+        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+    }
+    return response;
+}
+
 void CampusApiClientTest::getJsonParsesSuccessPayload()
 {
     const QUrl baseUrl = serveSingleResponse(
@@ -93,7 +229,7 @@ void CampusApiClientTest::getJsonParsesSuccessPayload()
         R"({"status":"UP","service":"campus-buddy-backend"})");
 
     QVERIFY(baseUrl.isValid());
-    const ApiClientResponse response = requestOnce(baseUrl, "/health");
+    const ApiClientResponse response = requestGet(baseUrl, "/health");
 
     QVERIFY(response.ok);
     QVERIFY(!response.error.hasError());
@@ -108,7 +244,7 @@ void CampusApiClientTest::errorResponseConvertsToClientError()
         R"({"code":"NOT_FOUND","message":"Resource not found","details":{"path":"/missing"},"traceId":"trace-api-client-test"})");
 
     QVERIFY(baseUrl.isValid());
-    const ApiClientResponse response = requestOnce(baseUrl, "/missing");
+    const ApiClientResponse response = requestGet(baseUrl, "/missing");
 
     QVERIFY(!response.ok);
     QVERIFY(response.error.hasError());
@@ -123,7 +259,10 @@ void CampusApiClientTest::errorResponseConvertsToClientError()
 void CampusApiClientTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
 {
     const QStringList widgetLayerFiles = {
-        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/main.cpp")
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/main.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/LoginWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/RegisterWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/HomePageWidget.cpp")
     };
 
     for (const QString &path : widgetLayerFiles) {
@@ -133,6 +272,67 @@ void CampusApiClientTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
         QVERIFY2(!content.contains("QNetworkAccessManager"),
                  qPrintable(path + " must not directly use QNetworkAccessManager"));
     }
+}
+
+void CampusApiClientTest::postJsonSendsBodyAndParsesResponse()
+{
+    const QUrl baseUrl = serveSingleResponse(
+        "HTTP/1.1 200 OK",
+        R"({"accessToken":"jwt-123","accountRole":"STUDENT"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["campusEmail"] = "test@edu.cn";
+    body["password"] = "secret";
+
+    const ApiClientResponse response = requestPost(baseUrl, "/auth/login", body);
+
+    QVERIFY(response.ok);
+    QCOMPARE(response.json.value("accessToken").toString(), QString("jwt-123"));
+    QCOMPARE(response.json.value("accountRole").toString(), QString("STUDENT"));
+}
+
+void CampusApiClientTest::getJsonWithAuthSendsAuthorizationHeader()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"authenticationStatus":"UNVERIFIED"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    const QString token = QStringLiteral("my-jwt-access-token");
+    const ApiClientResponse response = requestGetWithAuth(baseUrl, "/auth/identity-verifications/me", token);
+
+    QVERIFY(response.ok);
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("Authorization: Bearer my-jwt-access-token"),
+             "GET request with auth must include Authorization Bearer header");
+}
+
+void CampusApiClientTest::postJsonWithAuthSendsAuthorizationHeader()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"authenticationStatus":"PENDING_REVIEW"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["realName"] = "Test";
+    body["studentNumber"] = "2024001";
+
+    const QString token = QStringLiteral("my-jwt-access-token");
+    const ApiClientResponse response = requestPostWithAuth(baseUrl, "/auth/identity-verifications", body, token);
+
+    QVERIFY(response.ok);
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("Authorization: Bearer my-jwt-access-token"),
+             "POST request with auth must include Authorization Bearer header");
 }
 
 QTEST_MAIN(CampusApiClientTest)
