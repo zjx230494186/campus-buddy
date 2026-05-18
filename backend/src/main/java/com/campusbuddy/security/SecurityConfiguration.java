@@ -32,6 +32,7 @@ public class SecurityConfiguration {
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/probe/secure").authenticated()
+                        .requestMatchers("/api/auth/identity-verifications", "/api/auth/identity-verifications/me").authenticated()
                         .requestMatchers("/api/health", "/api/system/info").permitAll()
                         .anyRequest().permitAll()
                 )

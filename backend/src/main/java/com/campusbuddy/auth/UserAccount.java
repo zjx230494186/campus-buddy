@@ -63,4 +63,9 @@ public class UserAccount {
         this.campusEmailVerificationStatus = status;
         this.updatedAt = Instant.now();
     }
+
+    public void setAuthenticationStatus(String authenticationStatus) {
+        this.authenticationStatus = authenticationStatus;
+        this.updatedAt = Instant.now();
+    }
 }
