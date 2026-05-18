@@ -1,3 +1,0 @@
-api_client_config_test 3 0.0091407
-campus_api_client_test 2 0.0282336
----

@@ -45,6 +45,11 @@ Makefile
 *.o
 *.dll
 *.exe
+desktop/build-*/
+.ninja_deps
+.ninja_log
+build.ninja
+*_autogen/
 
 # Node / frontend tooling
 node_modules/
@@ -70,6 +75,16 @@ venv/
 *.run.xml
 *.synctex.gz
 *.toc
+latex_work/build_*/
+
+# IDE / tooling metadata
+.arts/
+
+# Test / debug output files
+test_output*.txt
+test_error*.txt
+test_flyway_out*.txt
+ppt_extracted.txt
 
 # Local database and container data
 *.db

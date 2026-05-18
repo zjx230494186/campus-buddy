@@ -124,6 +124,28 @@ cd D:\big_homework\backend
 - 下一轮建议：让 CodeArts 进入 P0 账号认证模块的正式业务实现，但要求其内部继续按测试先行的小闭环推进。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_02_p0_auth_module_formal_implementation.md`
 
+## 10. Round 02 后评估：P0 认证持久化与 JWT 大批次
+
+- 日期：2026-05-18
+- 评估来源：用户提供的 CodeArts 完整日志与 GPT-5.5 网页版总结；本线程补充核对本地 Git 状态。
+- 当前提交：`447b0af chore:-establish-project-baseline-and-backend-configuration`。
+- 主要进展：P0 账号认证持久化、JPA/Flyway/Testcontainers、真实 JWT、认证测试改造均有大幅推进。
+- 主要风险：基线提交边界过大，包含构建产物、生成物、备份目录；P0 认证开发改动尚未形成稳定绿灯闭环和正式开发提交。
+- 当前工作区状态：存在多项未提交后端认证/JWT 改动，以及 `backend/test_output*.txt`、`backend/test_error*.txt` 等临时测试输出。
+- 提示词工程结论：后续可让 CodeArts 做长时间无人监督开发，但必须采用短批次、强 Git 护栏、明确停止条件和每轮审计。
+- 优化文档：`D:\big_homework\docs\22_codearts_unattended_prompt_engineering_v1.md`
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_03_repo_audit_and_p0_auth_containment.md`
+
+## 11. Round 03 复核：仓库审计与 P0 认证收束
+
+- 日期：2026-05-18
+- CodeArts 本轮声称完成：Git 污染清理、`.gitignore` 补充、P0 认证/JWT 测试修复、敏感信息审计、非容器快速测试 32/32 通过、验证记录与交接文档更新。
+- Git 提交：尚未创建新提交；当前仍只有基线提交 `447b0af chore:-establish-project-baseline-and-backend-configuration`。
+- 本线程复核结论：工作区确实存在仓库清理、P0 认证/JWT 和文档留档改动；下一步不宜继续开发新业务，应先做提交门禁和剩余污染复核。
+- 额外风险：`git ls-files` 仍能检出部分历史跟踪的 `desktop/build-f-red/` 与 `latex_work/build_*` 文件。提交前需要分类判断：明确构建产物应清理；可能属于课程历史交付物的 PDF/DOCX 不应擅自删除。
+- 下一轮建议：执行 Git 提交门禁与剩余污染复核，在满足测试、敏感信息、提交边界条件后再创建提交。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_04_git_commit_gate_and_remaining_pollution_audit.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`
