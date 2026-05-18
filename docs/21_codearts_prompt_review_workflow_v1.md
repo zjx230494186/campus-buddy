@@ -146,6 +146,18 @@ cd D:\big_homework\backend
 - 下一轮建议：执行 Git 提交门禁与剩余污染复核，在满足测试、敏感信息、提交边界条件后再创建提交。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_04_git_commit_gate_and_remaining_pollution_audit.md`
 
+## 12. Round 04 复核：Git 提交门禁与剩余污染复核
+
+- 日期：2026-05-18
+- CodeArts 本轮声称完成：清理 14 个上一轮遗漏的跟踪构建产物，复跑非容器快速测试 32/32 通过，敏感信息复查通过，创建 2 个正式 Git 提交。
+- Git 提交：
+  - `18e2a01 chore(repo): clean generated artifacts and record git hygiene`
+  - `157abc0 feat(auth): persist authentication flow and introduce jwt`
+- 本线程复核结论：提交历史存在且顺序正确；`git ls-files` 对构建产物、缓存、临时输出等污染模式匹配为空。
+- 注意事项：本地当前仍有 Round 04 后续交接文档和验证记录未提交，包括 `docs/03_current_plan.md`、`handoff/latest.md`、`docs/validation/20260518_round04_git_commit_gate_and_pollution_audit_record.md`。下一轮 CodeArts 开始前应先复核并提交这些纯文档改动，或确认由本线程另行提交。
+- 下一轮建议：进入 P0 认证资料提交接口，但继续采用测试先行、短批次、显式 Git 暂存和提交门禁。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_05_p0_identity_profile_submission.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`
