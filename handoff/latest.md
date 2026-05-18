@@ -6,10 +6,10 @@
 
 - 项目名称：校园搭子平台。
 - 当前阶段：正式代码开发。
-- 当前线程：P0 认证资料提交接口（已完成）。
+- 当前线程：P0 认证全链路已完成（Round 03-07）。
 - Git 分支：main。
-- 工作区：干净。
-- 非容器快速测试：39/39 通过。
+- 工作区：有未提交的文档更新。
+- 非容器快速测试：56/56 通过。
 
 ## Git 提交历史
 
@@ -18,57 +18,46 @@
 - `157abc0` feat(auth): persist authentication flow and introduce jwt
 - `3be73bf` docs(codearts): record round04 handoff and round05 prompt
 - `2ee5b68` feat(auth): add identity verification submission
+- `d5c78fa` docs(codearts): record round05 handoff and round06 prompt
+- `4955bee` feat(auth): add identity verification admin review
+- `8edd057` feat(auth): add identity material attachment upload
 
 ## 当前线程完成了什么
 
-- V3 Flyway 迁移：`identity_verification_submission` 表
-- JPA 实体 + Repository：`IdentityVerificationSubmission`、`IdentityVerificationSubmissionRepository`
-- Service：`IdentityVerificationService`（submit + getStatus）
-- Controller：`IdentityVerificationController`（POST /api/auth/identity-verifications + GET /me）
-- Security 配置：认证资料接口需要 JWT
-- UserAccount 新增 `setAuthenticationStatus` 方法
-- 7 个集成测试全部通过
-- 非容器快速回归 39/39 通过
+- Round 07：认证材料附件上传闭环
+  - V5 Flyway 迁移：identity_material_attachment 表 + ALTER identity_verification_submission ADD material_attachment_id
+  - ObjectStorageService 接口 + InMemoryObjectStorageService 测试替身
+  - IdentityMaterialAttachmentService + IdentityVerificationMaterialController（multipart 上传）
+  - 修改 IdentityVerificationService 支持 materialAttachmentId（含归属校验）
+  - 修改 AdminService/AdminController 返回附件摘要 + 管理员受控读取
+  - Security 配置新增 /materials 需认证
+  - 9 个集成测试通过，56/56 非容器回归
 
 ## 关键结论
 
-- 校内身份认证资料提交与状态查询后端最小闭环已完成。
-- 测试先行：红灯（7/7 因 404 失败）→ 实现 → 绿灯（7/7 通过）。
-- 本轮不处理附件上传、管理员审核。
+- P0 认证全链路已闭环：注册→登录→JWT→认证资料提交→管理员审核→附件上传
+- 对象存储采用后端中转上传，InMemoryObjectStorageService 为测试替身
+- 56/56 非容器快速测试全部通过
 
 ## 本线程没有做什么
 
-- 没有实现附件二进制上传到 OBS。
-- 没有实现管理员审核接口。
-- 没有实现 refresh token 轮换、logout、RBAC。
-- 没有替换 no-op 邮件发送。
-- 没有运行 Testcontainers/Docker 测试。
-- 没有修改 Qt 客户端。
-- 没有写入任何敏感凭据。
+- 没有适配真实 OBS SDK（InMemoryObjectStorageService 是测试替身）
+- 没有替换 no-op 邮件发送
+- 没有运行 Testcontainers/Docker 测试
+- 没有实现完整 RBAC
+- 没有修改 Qt 客户端
+- 没有开始 P1 需求发布与审核模块
 
 ## 下一步候选事项
 
-1. `提交 Round 05/06 纯文档留档`
-   - 建议：复用当前线程或交给 CodeArts 在下一轮开头处理。
-   - 优先级：最高。
-   - 目标：提交当前未提交的交接文档、Round 05 验证记录和 Round 06 prompt。
-
-2. `管理员审核接口`
-   - 建议：新开线程。
-   - 优先级：高。
-   - 目标：管理员审核认证资料，APPROVED/REJECTED + rejectReason。
-   - CodeArts 提示词：`D:\big_homework\docs\prompts\codearts\20260519_round_06_identity_verification_admin_review.md`。
-
-3. `附件上传闭环（OBS 预签名 + 附件元数据表）`
-   - 建议：新开线程。
-   - 优先级：高。
-   - 目标：实现学生证/校园卡材料上传到 OBS，附件元数据关联到认证资料。
-
-4. `替换 no-op 邮件发送`
-   - 建议：新开线程。
-   - 优先级：中。
+1. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
+2. `真实 OBS SDK 适配器` — 新开线程，优先级中；需要华为云 OBS 凭据
+3. `替换 no-op 邮件发送` — 新开线程，优先级中
+4. `Testcontainers 集成测试` — 复用或新开线程，优先级低
+5. `完整 RBAC 权限矩阵` — 新开线程，优先级低
 
 ## 建议归档与下一线程
 
 - 建议归档当前线程：是。
-- 下一线程名称：`管理员审核接口`
+- 下一线程名称：`P1 需求发布与审核模块详细设计`
+- 下一线程应先完成 P1 模块的详细设计文档，再进入编码。

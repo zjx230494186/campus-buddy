@@ -169,6 +169,17 @@ cd D:\big_homework\backend
 - 下一轮建议：优先做管理员审核接口，先闭合 `PENDING_REVIEW -> VERIFIED / REJECTED` 状态流转；暂缓 OBS 附件上传，避免过早引入云凭证和对象存储适配复杂度。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_06_identity_verification_admin_review.md`
 
+## 14. Round 06 复核：认证资料管理员审核接口
+
+- 日期：2026-05-19
+- CodeArts 本轮声称完成：管理员审核闭环、最小 ADMIN 授权、`accountRole` + JWT claim + `ROLE_ADMIN`、403 handler。
+- Git 提交：`4955bee feat(auth): add identity verification admin review`。
+- 测试结果：本轮 7 个管理员审核测试通过；非容器快速回归 46/46 通过。
+- 本线程复核结论：提交存在，`git show --stat` 显示 11 个文件、`+452/-8`，与报告一致；验证记录存在。
+- 注意事项：CodeArts 提交后仍留下 `handoff/latest.md` 和 `docs/validation/20260519_round06_identity_verification_admin_review_record.md` 未提交；本线程又新增 Round 07 prompt，下一轮开头应先处理纯文档提交。
+- 口径纠偏：下一轮附件上传不应采用“OBS 预签名/客户端直传”，应遵循既有详细设计和对象存储底座，采用后端中转上传、后端权限校验、ObjectStorageService 抽象和测试替身。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_07_identity_material_attachment_upload.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`
