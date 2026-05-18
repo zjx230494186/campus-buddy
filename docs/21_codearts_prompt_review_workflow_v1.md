@@ -158,6 +158,17 @@ cd D:\big_homework\backend
 - 下一轮建议：进入 P0 认证资料提交接口，但继续采用测试先行、短批次、显式 Git 暂存和提交门禁。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260518_round_05_p0_identity_profile_submission.md`
 
+## 13. Round 05 复核：P0 认证资料提交接口
+
+- 日期：2026-05-19
+- CodeArts 本轮声称完成：校内身份认证资料提交与状态查询后端最小闭环，新增 6 个源码文件、1 个迁移、1 个测试文件，修改 `UserAccount` 和 `SecurityConfiguration`。
+- Git 提交：`2ee5b68 feat(auth): add identity verification submission`。
+- 测试结果：测试先行红灯 7/7 因 Controller 不存在返回 404 失败；实现后 7/7 通过；非容器快速回归 39/39 通过。
+- 本线程复核结论：提交存在且范围符合 Round 05 边界；`git show --stat` 显示 8 个文件、655 行新增，与报告一致。
+- 注意事项：CodeArts 提交后仍留下 `docs/03_current_plan.md`、`handoff/latest.md` 和 `docs/validation/20260519_round05_identity_verification_submission_record.md` 未提交；本线程又新增 Round 06 prompt，下一轮开头应先处理纯文档提交。
+- 下一轮建议：优先做管理员审核接口，先闭合 `PENDING_REVIEW -> VERIFIED / REJECTED` 状态流转；暂缓 OBS 附件上传，避免过早引入云凭证和对象存储适配复杂度。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_06_identity_verification_admin_review.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`
