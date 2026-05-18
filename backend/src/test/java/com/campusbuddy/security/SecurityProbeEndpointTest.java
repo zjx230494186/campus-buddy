@@ -47,7 +47,7 @@ class SecurityProbeEndpointTest {
     @Test
     void secureProbeEndpointAllowsRequestWithValidJwt() throws Exception {
         String accessToken = jwtService.issueAccessToken(
-                UUID.randomUUID(), "test@campus.edu.cn", "TestUser", "UNVERIFIED"
+                UUID.randomUUID(), "test@campus.edu.cn", "TestUser", "UNVERIFIED", "STUDENT"
         );
 
         mockMvc.perform(get("/api/probe/secure")

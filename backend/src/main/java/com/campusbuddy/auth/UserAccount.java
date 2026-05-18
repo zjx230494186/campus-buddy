@@ -33,6 +33,9 @@ public class UserAccount {
     @Column(nullable = false, length = 30)
     private String campusEmailVerificationStatus = "UNVERIFIED";
 
+    @Column(nullable = false, length = 30)
+    private String accountRole = "STUDENT";
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -58,6 +61,7 @@ public class UserAccount {
     public String getCampusEmailVerificationStatus() { return campusEmailVerificationStatus; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public String getAccountRole() { return accountRole; }
 
     public void setCampusEmailVerificationStatus(String status) {
         this.campusEmailVerificationStatus = status;
@@ -66,6 +70,11 @@ public class UserAccount {
 
     public void setAuthenticationStatus(String authenticationStatus) {
         this.authenticationStatus = authenticationStatus;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setAccountRole(String accountRole) {
+        this.accountRole = accountRole;
         this.updatedAt = Instant.now();
     }
 }

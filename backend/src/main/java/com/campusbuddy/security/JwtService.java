@@ -26,13 +26,14 @@ public class JwtService {
         this.signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
     }
 
-    public String issueAccessToken(UUID userId, String campusEmail, String displayName, String authenticationStatus) {
+    public String issueAccessToken(UUID userId, String campusEmail, String displayName, String authenticationStatus, String accountRole) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("campusEmail", campusEmail)
                 .claim("displayName", displayName)
                 .claim("authenticationStatus", authenticationStatus)
+                .claim("accountRole", accountRole)
                 .claim("tokenType", "access")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(jwtProperties.getAccessTokenExpiresInSeconds())))

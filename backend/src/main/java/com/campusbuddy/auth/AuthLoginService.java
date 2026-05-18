@@ -52,7 +52,8 @@ class AuthLoginService {
                 account.getUserId(),
                 account.getCampusEmail(),
                 account.getDisplayName(),
-                account.getAuthenticationStatus()
+                account.getAuthenticationStatus(),
+                account.getAccountRole()
         );
         String refreshToken = jwtService.issueRefreshToken(account.getUserId());
 

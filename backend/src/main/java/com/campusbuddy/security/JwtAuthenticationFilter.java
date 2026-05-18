@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -35,9 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 Claims claims = jws.getPayload();
                 String userId = claims.getSubject();
                 String authenticationStatus = claims.get("authenticationStatus", String.class);
-                List<SimpleGrantedAuthority> authorities = List.of(
-                        new SimpleGrantedAuthority("ROLE_" + (authenticationStatus != null ? authenticationStatus : "UNVERIFIED"))
-                );
+                String accountRole = claims.get("accountRole", String.class);
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + (authenticationStatus != null ? authenticationStatus : "UNVERIFIED")));
+                if ("ADMIN".equals(accountRole)) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+                }
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userId, null, authorities
                 );

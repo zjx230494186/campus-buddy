@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -24,13 +25,17 @@ public class SecurityConfiguration {
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthenticationEntryPoint authenticationEntryPoint
+            AuthenticationEntryPoint authenticationEntryPoint,
+            AccessDeniedHandler accessDeniedHandler
     ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/probe/secure").authenticated()
                         .requestMatchers("/api/auth/identity-verifications", "/api/auth/identity-verifications/me").authenticated()
                         .requestMatchers("/api/health", "/api/system/info").permitAll()
@@ -50,6 +55,22 @@ public class SecurityConfiguration {
                     "UNAUTHORIZED",
                     "Authentication required",
                     "Missing or invalid bearer token",
+                    traceId(request)
+            );
+            objectMapper.writeValue(response.getOutputStream(), errorResponse);
+        };
+    }
+
+    @Bean
+    AccessDeniedHandler accessDeniedHandler() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        return (request, response, accessDeniedException) -> {
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            ApiErrorResponse errorResponse = new ApiErrorResponse(
+                    "FORBIDDEN",
+                    "Access denied",
+                    "Insufficient permissions",
                     traceId(request)
             );
             objectMapper.writeValue(response.getOutputStream(), errorResponse);
