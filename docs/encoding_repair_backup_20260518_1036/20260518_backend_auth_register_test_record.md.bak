@@ -1,0 +1,74 @@
+﻿# 娴嬭瘯璁板綍锛氬悗绔?P0-1 / 娉ㄥ唽鎴栬处鍙峰垱寤烘帴鍙?
+## 鍩烘湰淇℃伅
+
+- 鏃ユ湡锛?026-05-18
+- 绾跨▼锛歅0-1 娉ㄥ唽鎴栬处鍙峰垱寤烘帴鍙ｆ祴璇曞厛琛屽疄鐜?- 妯″潡锛氳处鍙峰噯鍏ヤ笌韬唤璁よ瘉
+- 鍔熻兘锛歚POST /api/auth/register`
+- 瀵瑰簲闇€姹傜紪鍙凤細`SF1`銆乣IR1`銆乣IR2`
+- 瀵瑰簲濂戠害锛歚D:\big_homework\docs\15_p0_auth_api_contract_v1.md` 绗?4.3 鑺?- 娴嬭瘯鏂囦欢锛歚D:\big_homework\backend\src\test\java\com\campusbuddy\auth\AuthRegistrationEndpointTest.java`
+- 瀹炵幇鏂囦欢锛?  - `D:\big_homework\backend\src\main\java\com\campusbuddy\auth\AuthRegistrationController.java`
+  - `D:\big_homework\backend\src\main\java\com\campusbuddy\auth\AuthRegistrationService.java`
+  - `D:\big_homework\backend\src\main\java\com\campusbuddy\auth\CampusEmailVerificationService.java`
+
+## 娴嬭瘯璁捐
+
+- 娴嬭瘯绫诲瀷锛歋pring Boot Test + MockMvc 鎺ュ彛娴嬭瘯
+- 鎴愬姛璺緞锛?  - 鍏堥€氳繃 `POST /api/auth/campus-email/verification-codes` 鍙戦€侀獙璇佺爜銆?  - 鍐嶉€氳繃 `POST /api/auth/campus-email/verifications` 鏍￠獙楠岃瘉鐮佸苟鍙栧緱 `verificationTicket`銆?  - 鏈€鍚庤皟鐢?`POST /api/auth/register` 鍒涘缓璐﹀彿銆?  - 鏂█杩斿洖 `userId`銆佽劚鏁?`campusEmail`銆乣displayName`銆乣authenticationStatus=UNVERIFIED`銆乣campusEmailVerificationStatus=VERIFIED`銆乣createdAt`銆?- 寮傚父璺緞锛?  - 鏈獙璇佹垨鏃犳晥 `verificationTicket` 杩斿洖 `CAMPUS_EMAIL_NOT_VERIFIED`銆?  - 閲嶅閭杩斿洖 `EMAIL_ALREADY_REGISTERED`銆?  - 闈炵櫧鍚嶅崟閭杩斿洖 `INVALID_CAMPUS_EMAIL_DOMAIN`銆?  - 缂哄け鎴栨牸寮忛敊璇瓧娈佃繑鍥?`VALIDATION_FAILED`銆?
+## 绾㈢伅璁板綍
+
+- 杩愯鍛戒护锛歚.\mvnw.cmd test -Dtest=AuthRegistrationEndpointTest`
+- 澶辫触娴嬭瘯锛?  - `registerCreatesUnverifiedAccountForVerifiedCampusEmail`
+  - `registerRejectsInvalidVerificationTicket`
+  - `registerRejectsDuplicateCampusEmail`
+  - `registerRejectsInvalidCampusEmailDomain`
+  - `registerRejectsMissingOrMalformedFields`
+- 澶辫触鍘熷洜锛?  - `POST /api/auth/register` 灏氭湭瀹炵幇锛屾墍鏈夋敞鍐岀敤渚嬪懡涓?`404 RESOURCE_NOT_FOUND`銆?  - 鎴愬姛璺緞鏈熸湜 `200`锛屽疄闄?`404`銆?  - 寮傚父璺緞鏈熸湜 `409/400` 鍜屽搴斾笟鍔￠敊璇爜锛屽疄闄?`404`銆?- 鏄惁绗﹀悎棰勬湡锛氱鍚堛€傝缁撴灉璇佹槑娉ㄥ唽鎴栬处鍙峰垱寤烘帴鍙ｅ湪瀹炵幇鍓嶇‘瀹炰笉瀛樺湪銆?
+## 瀹炵幇鎽樿
+
+- 鏂板 `AuthRegistrationController`锛屽彧鏆撮湶 `POST /api/auth/register`銆?- 鏂板 `AuthRegistrationService`锛?  - 鏍￠獙 `campusEmail`銆乣verificationTicket`銆乣password`銆乣displayName`銆?  - 褰撳墠鐧藉悕鍗曞煙鍚嶄粛涓烘渶灏忛棴鐜祴璇曞煙鍚?`campus.edu.cn`銆?  - 娑堣垂楠岃瘉鐮佹牎楠屾垚鍔熷悗绛惧彂鐨勭煭鏈?`verificationTicket`銆?  - 浣跨敤 `BCryptPasswordEncoder` 淇濆瓨瀵嗙爜鍝堝笇锛屼笉淇濆瓨鏄庢枃瀵嗙爜銆?  - 浣跨敤杩涚▼鍐呭唴瀛樿〃淇濆瓨璐﹀彿鎽樿锛屾敮鎸侀噸澶嶉偖绠辨娴嬨€?  - 鎴愬姛杩斿洖鑴辨晱閭銆佸睍绀哄悕銆佸垵濮?`UNVERIFIED` 璁よ瘉鐘舵€佸拰 `VERIFIED` 閭鐘舵€併€?- 鎵╁睍 `CampusEmailVerificationService`锛?  - 鏍￠獙楠岃瘉鐮佹垚鍔熷悗淇濆瓨鐭湡 ticket 鐨勫搱甯岋紝涓嶄繚瀛?ticket 鍘熸枃銆?  - 娉ㄥ唽鎺ュ彛娑堣垂 ticket 鍚庣珛鍗崇Щ闄わ紝閬垮厤閲嶅浣跨敤銆?- 鏈壒娌℃湁瀹炵幇鐧诲綍銆佺湡瀹?JWT銆乺efresh token銆丷BAC銆佽璇佽祫鏂欐彁浜ゃ€佹暟鎹簱涓氬姟琛ㄣ€丣PA Entity/Repository 鎴?Qt 椤甸潰銆?- 鏈壒娌℃湁鎶婇獙璇佺爜銆乣verificationTicket`銆佸瘑鐮佹垨 token 鍘熸枃鍐欏叆鏃ュ織銆?
+## 缁跨伅璁板綍
+
+- 鏈壒娴嬭瘯鍛戒护锛歚.\mvnw.cmd test -Dtest=AuthRegistrationEndpointTest`
+- 鏈壒娴嬭瘯缁撴灉锛氶€氳繃锛宍Tests run: 5, Failures: 0, Errors: 0, Skipped: 0`
+- 璁よ瘉鐩稿叧鍥炲綊鍛戒护锛歚.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest"`
+- 璁よ瘉鐩稿叧鍥炲綊缁撴灉锛氶€氳繃锛宍Tests run: 14, Failures: 0, Errors: 0, Skipped: 0`
+- 闈炲鍣ㄥ悗绔洖褰掑懡浠わ細`.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest,HealthEndpointTest,SecurityProbeEndpointTest,SystemInfoEndpointTest"`
+- 闈炲鍣ㄥ悗绔洖褰掔粨鏋滐細閫氳繃锛宍Tests run: 20, Failures: 0, Errors: 0, Skipped: 0`
+- 瀹屾暣鍚庣鍥炲綊鍛戒护锛歚.\mvnw.cmd test`
+- 瀹屾暣鍚庣鍥炲綊缁撴灉锛氭湭瀹屽叏閫氳繃銆俙DatabaseMigrationTest` 鍦ㄥ惎鍔?Testcontainers 鍓嶅け璐ワ紝鍘熷洜涓哄綋鍓嶆湰鏈?Docker 鐜涓嶅彲鐢紝閿欒涓?`Could not find a valid Docker environment`锛涘悓涓€杞繍琛屼腑闈炲鍣ㄦ祴璇曞潎宸查€氳繃銆?
+## 2026-05-18 09:46 澶嶆牳琛ュ厖
+
+- 鏈壒娴嬭瘯澶嶈窇鍛戒护锛歚.\mvnw.cmd test -Dtest=AuthRegistrationEndpointTest`
+- 鏈壒娴嬭瘯澶嶈窇缁撴灉锛氶€氳繃锛宍Tests run: 5, Failures: 0, Errors: 0, Skipped: 0`
+- 璁よ瘉鐩稿叧鍥炲綊澶嶈窇鍛戒护锛歚.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest"`
+- 璁よ瘉鐩稿叧鍥炲綊澶嶈窇缁撴灉锛氶€氳繃锛宍Tests run: 14, Failures: 0, Errors: 0, Skipped: 0`
+- 闈炲鍣ㄥ悗绔洖褰掑璺戝懡浠わ細`.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest,HealthEndpointTest,SecurityProbeEndpointTest,SystemInfoEndpointTest"`
+- 闈炲鍣ㄥ悗绔洖褰掑璺戠粨鏋滐細閫氳繃锛宍Tests run: 20, Failures: 0, Errors: 0, Skipped: 0`
+- 瀹屾暣鍚庣鍥炲綊澶嶈窇鍛戒护锛歚.\mvnw.cmd test`
+- 瀹屾暣鍚庣鍥炲綊澶嶈窇缁撴灉锛氭湭瀹屽叏閫氳繃锛宍Tests run: 21, Failures: 0, Errors: 1, Skipped: 0`锛涘け璐ョ偣浠嶄负 `DatabaseMigrationTest` 鍚姩 Testcontainers 鍓嶆壘涓嶅埌鍙敤 Docker 鐜锛岄敊璇负 `Could not find a valid Docker environment`銆?
+## 鍚庣画椋庨櫓
+
+- 褰撳墠璐﹀彿銆侀獙璇佺爜鍜?ticket 浠嶄负杩涚▼鍐呭唴瀛樺疄鐜帮紝鏈嶅姟閲嶅惎鍚庝涪澶憋紱鍚庣画鐪熷疄娉ㄥ唽/鐧诲綍閾捐矾闇€瑕佽縼绉诲埌鏁版嵁搴撴垨缂撳瓨銆?- 褰撳墠鐧藉悕鍗曞煙鍚嶄粛涓烘渶灏忛棴鐜祴璇曞€?`campus.edu.cn`锛屽悗缁渶瑕侀厤缃寲銆?- 褰撳墠娉ㄥ唽鎺ュ彛涓嶇鍙?access token 鎴?refresh token锛屾敞鍐屽悗搴旂户缁€氳繃鍚庣画鐧诲綍鎺ュ彛鑾峰彇浠ょ墝銆?- 褰撳墠娌℃湁鏁版嵁搴撳敮涓€绾︽潫锛岄噸澶嶉偖绠辨娴嬩粎鍦ㄨ繘绋嬪唴璐﹀彿琛ㄥ唴鐢熸晥銆?- 瀹屾暣鏁版嵁搴撹縼绉诲洖褰掗渶瑕佸湪 Docker daemon 鍙敤鍚庤ˉ璺?`.\mvnw.cmd test`銆?
+## 涓嬩竴姝ュ缓璁?
+- 涓嬩竴椤圭湡瀹炰笟鍔℃帴鍙ｅ缓璁柊寮€绾跨▼瀹炵幇 `POST /api/auth/login`銆?- 璇ョ嚎绋嬩粛搴旀祴璇曞厛琛岋紝閲嶇偣瑕嗙洊 BCrypt 瀵嗙爜鏍￠獙銆侀敊璇嚟璇佺粺涓€鍝嶅簲銆佷笉绛惧嚭鏄庢枃瀵嗙爜鎴?token 鍒版棩蹇楋紝浠ュ強鏆備笉鎵╁睍瀹屾暣 RBAC銆?
+## 2026-05-18 10:32 澶嶆牳琛ュ厖
+
+- 鏈琛ュ厖娴嬭瘯锛氭柊澧?`registerStoresBCryptPasswordHashOnly`锛岀害鏉熸敞鍐屽悗杩涚▼鍐呰处鍙疯褰曞彧淇濆瓨 BCrypt 鍝堝笇锛屼笉淇濆瓨鏄庢枃瀵嗙爜銆?- 鏈壒娴嬭瘯澶嶈窇鍛戒护锛歚.\mvnw.cmd test -Dtest=AuthRegistrationEndpointTest`
+- 鏈壒娴嬭瘯澶嶈窇缁撴灉锛氶€氳繃锛宍Tests run: 6, Failures: 0, Errors: 0, Skipped: 0`
+- 璁よ瘉鐩稿叧鍥炲綊鍛戒护锛歚.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest"`
+- 璁よ瘉鐩稿叧鍥炲綊缁撴灉锛氶€氳繃锛宍Tests run: 15, Failures: 0, Errors: 0, Skipped: 0`
+- 闈炲鍣ㄥ悗绔洖褰掑懡浠わ細`.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest,HealthEndpointTest,SecurityProbeEndpointTest,SystemInfoEndpointTest"`
+- 闈炲鍣ㄥ悗绔洖褰掔粨鏋滐細閫氳繃锛宍Tests run: 21, Failures: 0, Errors: 0, Skipped: 0`
+- 瀹屾暣鍚庣鍥炲綊鍛戒护锛歚.\mvnw.cmd test`
+- 瀹屾暣鍚庣鍥炲綊缁撴灉锛氭湭瀹屽叏閫氳繃锛宍Tests run: 22, Failures: 0, Errors: 1, Skipped: 0`锛涘け璐ョ偣浠嶄负 `DatabaseMigrationTest` 鍚姩 Testcontainers 鍓嶆壘涓嶅埌鍙敤 Docker 鐜锛岄敊璇负 `Could not find a valid Docker environment`銆?- 缁撹锛歚POST /api/auth/register` 鏈壒鎺ュ彛娴嬭瘯涓庡繀瑕侀潪瀹瑰櫒鍥炲綊淇濇寔缁跨伅锛涘畬鏁存暟鎹簱杩佺Щ鍥炲綊浠嶉渶鍦?Docker daemon 鍙敤鍚庤ˉ璺戙€?
+## 2026-05-18 10:36 澶嶈窇琛ュ厖
+
+- 鏈壒娴嬭瘯澶嶈窇鍛戒护锛歚.\mvnw.cmd test -Dtest=AuthRegistrationEndpointTest`
+- 鏈壒娴嬭瘯澶嶈窇缁撴灉锛氶€氳繃锛宍Tests run: 6, Failures: 0, Errors: 0, Skipped: 0`
+- 璁よ瘉鐩稿叧鍥炲綊鍛戒护锛歚.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest"`
+- 璁よ瘉鐩稿叧鍥炲綊缁撴灉锛氶€氳繃锛宍Tests run: 15, Failures: 0, Errors: 0, Skipped: 0`
+- 闈炲鍣ㄥ悗绔洖褰掑懡浠わ細`.\mvnw.cmd test "-Dtest=AuthRegistrationEndpointTest,CampusEmailVerificationEndpointTest,HealthEndpointTest,SecurityProbeEndpointTest,SystemInfoEndpointTest"`
+- 闈炲鍣ㄥ悗绔洖褰掔粨鏋滐細閫氳繃锛宍Tests run: 21, Failures: 0, Errors: 0, Skipped: 0`
+- 瀹屾暣鍚庣鍥炲綊鍛戒护锛歚.\mvnw.cmd test`
+- 瀹屾暣鍚庣鍥炲綊缁撴灉锛氭湭瀹屽叏閫氳繃锛宍Tests run: 22, Failures: 0, Errors: 1, Skipped: 0`锛涘け璐ョ偣浠嶄负 `DatabaseMigrationTest` 鍚姩 Testcontainers 鍓嶆壘涓嶅埌鍙敤 Docker 鐜锛岄敊璇负 `Could not find a valid Docker environment`銆?- 缁撹锛歚POST /api/auth/register` 鏈壒鎺ュ彛娴嬭瘯鍜屽繀瑕侀潪瀹瑰櫒鍥炲綊淇濇寔缁跨伅锛涘畬鏁存暟鎹簱杩佺Щ鍥炲綊闇€瑕佸湪 Docker daemon 鍙敤鍚庤ˉ璺戙€?
+

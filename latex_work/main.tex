@@ -1,0 +1,186 @@
+\documentclass[UTF8,zihao=-4,scheme=chinese]{ctexrep}
+
+\usepackage[a4paper,top=2.35cm,bottom=2.25cm,left=2.35cm,right=2.25cm]{geometry}
+\usepackage{fontspec}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xltabular}
+\usepackage{longtable}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{titletoc}
+\usepackage{hyperref}
+\usepackage[most]{tcolorbox}
+\usepackage{lastpage}
+\usepackage{etoolbox}
+\usepackage{float}
+\usepackage{seqsplit}
+
+\setmainfont{SimSun}
+\setsansfont{SimSun}
+\setmonofont{SimSun}
+\setCJKmainfont[AutoFakeBold=2.2]{SimSun}
+\setCJKsansfont[AutoFakeBold=2.2]{SimSun}
+\setCJKmonofont[AutoFakeBold=2.2]{SimSun}
+
+\definecolor{CampusBlue}{HTML}{1F4E79}
+\definecolor{CampusGray}{HTML}{F4F6F8}
+\definecolor{CampusLine}{HTML}{D7DEE8}
+\definecolor{CampusText}{HTML}{1F2933}
+\definecolor{CampusMuted}{HTML}{5B677A}
+
+\newcommand{\InviteURL}{https://devcloud.cn-north-4.huaweicloud.com/DevUCUsermgmtPortal/applyjoinmember/b18763f6492b415aacbfb5f0ea21b6de/join?code=QUFBQUFnQUFBQUFBQUFBQUFBQUFBUUFBQUFyZGRuR0N0TDV6bkp4TEFtUWx2NjNuMi91N2FnN1VweTZ1RVhYVGRya3BpZ1FBQUFFQUFBQUFBQUFBWU82S0V2Q0RPeUJsZTExRDhOSlphMmEyWDJNRWptcW1GNW5OSEhnTXlzQXQ2MSthRldzRnkwRVl1UndMQzJUQ1lJYldMcjNCSWZjRHdSc1hScGhsV0hRTFZpVGxwQVM2WFdubTdNR1ZjaGFRNG5zVGVVN3RjTmlMQjd4b0xDZ2QzQT09}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  urlcolor=black,
+  citecolor=black,
+  pdftitle={校园搭子平台需求分析报告},
+  pdfauthor={项目组}
+}
+
+\ctexset{
+  chapter={
+    format=\zihao{3}\songti\bfseries\color{black},
+    name={第,章},
+    number=\arabic{chapter},
+    aftername=\quad,
+    beforeskip=10pt,
+    afterskip=8pt
+  },
+  section={
+    format=\zihao{4}\songti\bfseries\color{black},
+    beforeskip=8pt,
+    afterskip=4pt
+  },
+  subsection={
+    format=\zihao{-4}\songti\bfseries\color{black},
+    beforeskip=6pt,
+    afterskip=3pt
+  }
+}
+
+\makeatletter
+\renewcommand\chapter{\par\addvspace{10pt}\@afterindentfalse\secdef\@chapter\@schapter}
+\patchcmd{\@chapter}{\thispagestyle{plain}}{\thispagestyle{fancy}}{}{}
+\patchcmd{\@schapter}{\thispagestyle{plain}}{\thispagestyle{fancy}}{}{}
+\makeatother
+
+\titlecontents{chapter}[0pt]{\addvspace{6pt}\bfseries}
+  {\contentspush{第\thecontentslabel 章\quad}}{}{\titlerule*[0.5pc]{.}\contentspage}
+\titlecontents{section}[2em]{}{\contentslabel{2em}}{}{\titlerule*[0.5pc]{.}\contentspage}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small 校园搭子平台需求分析报告}
+\rhead{\small 软件系统分析与设计课程作业}
+\cfoot{\small 第 \thepage\ 页 / 共 \pageref{LastPage} 页}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+\setlength{\headheight}{15pt}
+\setlength{\tabcolsep}{3pt}
+\setcounter{secnumdepth}{-1}
+\renewcommand{\arraystretch}{1.12}
+\AtBeginEnvironment{xltabular}{\small}
+\setlist[itemize]{leftmargin=2em,itemsep=0pt,topsep=0.1em,parsep=0pt}
+\setlist[enumerate]{leftmargin=2em,itemsep=0pt,topsep=0.1em,parsep=0pt}
+
+\newtcolorbox{InfoBox}{
+  enhanced,
+  colback=CampusGray,
+  colframe=CampusLine,
+  boxrule=0.6pt,
+  arc=1.5mm,
+  left=8pt,
+  right=8pt,
+  top=7pt,
+  bottom=7pt
+}
+
+\newcommand{\FigurePlaceholder}[2]{%
+  \begin{figure}[H]
+    \centering
+    \begin{tcolorbox}[
+      enhanced,
+      width=0.92\textwidth,
+      height=0.28\textwidth,
+      colback=CampusGray,
+      colframe=CampusLine,
+      boxrule=0.7pt,
+      arc=1.5mm,
+      valign=center,
+      halign=center
+    ]
+      {\songti\bfseries\color{black}#1}\par
+      \vspace{0.45em}
+      {\small\color{black}#2}
+    \end{tcolorbox}
+    \caption{#1}
+  \end{figure}
+}
+
+\newcommand{\ReportMetaTable}{%
+  \begin{center}
+  \renewcommand{\arraystretch}{1.18}
+  \begin{tabular}{>{\songti\bfseries}p{0.22\textwidth}p{0.52\textwidth}}
+    \toprule
+    项目名称 & 校园搭子 \\
+    文档阶段 & 需求分析 \\
+    产品形态 & 单学校、软件端轻量匹配平台 \\
+    编写人 & 项目组 \\
+    小组成员 & 马宛玉、刘子怡、石雯玥、胡悦佳、刘益彤、黄程俊、张敬轩 \\
+    日期 & 2026 年 5 月 \\
+    文档状态 & 待评审 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+}
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{2.2cm}
+  {\zihao{1}\songti\bfseries\color{black} 校园搭子平台\par}
+  \vspace{0.65cm}
+  {\zihao{2}\songti\bfseries 需求分析报告\par}
+  \vspace{0.35cm}
+  {\Large Software Requirements Analysis Report\par}
+  \vspace{1.4cm}
+  {\zihao{4}\songti 软件系统分析与设计课程作业\par}
+  \vspace{0.35cm}
+  \begin{minipage}{0.78\textwidth}
+    \raggedright
+    {\scriptsize\songti 邀请链接：\par
+    \texttt{https://devcloud.cn-north-4.huaweicloud.com/DevUCUsermgmtP}\par
+    \texttt{ortal/applyjoinmember/b18763f6492b415aacbfb5f0ea21b6de/joi}\par
+    \texttt{n?code=QUFBQUFnQUFBQUFBQUFBQUFBQUFBUUFBQUFyZGRuR0N0TDV6bkp4TEFtUWx2NjNu}\par
+    \texttt{Mi91N2FnN1VweTZ1RVhYVGRya3BpZ1FBQUFFQUFBQUFBQUFBWU82S0V2Q0RPeUJs}\par
+    \texttt{ZTExRDhOSlphMmEyWDJNRWptcW1GNW5OSEhnTXlzQXQ2MSthRldzRnkwRVl1UndM}\par
+    \texttt{QzJUQ1lJYldMcjNCSWZjRHdSc1hScGhsV0hRTFZpVGxwQVM2WFdubTdNR1ZjaGFR}\par
+    \texttt{NG5zVGVVN3RjTmlMQjd4b0xDZ2QzQT09}\par}
+  \end{minipage}
+  \vfill
+  \begin{InfoBox}
+    \ReportMetaTable
+  \end{InfoBox}
+  \vfill
+  {\zihao{-4} 项目组 \quad 2026 年 5 月\par}
+\end{titlepage}
+
+\pagenumbering{Roman}
+\tableofcontents
+\clearpage
+
+\pagenumbering{arabic}
+\input{body.tex}
+
+\end{document}

@@ -1,0 +1,34 @@
+services:
+  postgres:
+    image: postgres:17.9
+    environment:
+      POSTGRES_DB: campus_buddy
+      POSTGRES_USER: campus_buddy
+      POSTGRES_PASSWORD: campus_buddy_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - campus_buddy_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U campus_buddy -d campus_buddy"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/campus_buddy
+      SPRING_DATASOURCE_USERNAME: campus_buddy
+      SPRING_DATASOURCE_PASSWORD: campus_buddy_dev_password
+      SPRING_FLYWAY_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  campus_buddy_postgres_data:
