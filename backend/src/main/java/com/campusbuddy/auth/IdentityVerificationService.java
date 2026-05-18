@@ -15,11 +15,14 @@ class IdentityVerificationService {
 
     private final IdentityVerificationSubmissionRepository submissionRepository;
     private final UserAccountRepository userAccountRepository;
+    private final IdentityMaterialAttachmentRepository attachmentRepository;
 
     IdentityVerificationService(IdentityVerificationSubmissionRepository submissionRepository,
-                                UserAccountRepository userAccountRepository) {
+                                UserAccountRepository userAccountRepository,
+                                IdentityMaterialAttachmentRepository attachmentRepository) {
         this.submissionRepository = submissionRepository;
         this.userAccountRepository = userAccountRepository;
+        this.attachmentRepository = attachmentRepository;
     }
 
     @Transactional
@@ -41,11 +44,17 @@ class IdentityVerificationService {
 
         validate(request);
 
+        UUID materialAttachmentId = null;
+        if (request.materialAttachmentId() != null && !request.materialAttachmentId().isBlank()) {
+            materialAttachmentId = validateAndResolveAttachment(userId, request.materialAttachmentId());
+        }
+
         if (submissionRepository.existsByUserId(userId)) {
             IdentityVerificationSubmission existing = submissionRepository.findByUserId(userId).orElseThrow();
             existing.setReviewStatus("PENDING_REVIEW");
             existing.setRejectReason(null);
             existing.setReviewedAt(null);
+            existing.setMaterialAttachmentId(materialAttachmentId);
             updateSubmissionFields(existing, request);
             submissionRepository.save(existing);
         } else {
@@ -53,6 +62,7 @@ class IdentityVerificationService {
                     userId, request.realName(), request.studentNumber(),
                     request.college(), request.major(), request.grade(), Instant.now()
             );
+            submission.setMaterialAttachmentId(materialAttachmentId);
             submissionRepository.save(submission);
         }
 
@@ -132,8 +142,27 @@ class IdentityVerificationService {
         sub.setSubmittedAt(Instant.now());
     }
 
+    private UUID validateAndResolveAttachment(UUID userId, String materialAttachmentIdStr) {
+        UUID attachmentId;
+        try {
+            attachmentId = UUID.fromString(materialAttachmentIdStr);
+        } catch (IllegalArgumentException e) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED",
+                    "Validation failed", "materialAttachmentId is not a valid UUID");
+        }
+        IdentityMaterialAttachment attachment = attachmentRepository.findByAttachmentIdAndOwnerUserId(attachmentId, userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.FORBIDDEN, "ATTACHMENT_NOT_OWNED",
+                        "Attachment not owned by current user", "materialAttachmentId does not belong to you"));
+        if (!"ACTIVE".equals(attachment.getStatus()) || !"IDENTITY_MATERIAL".equals(attachment.getBusinessType())) {
+            throw new ApiException(HttpStatus.CONFLICT, "ATTACHMENT_NOT_USABLE",
+                    "Attachment not usable", "attachment is not active or not identity material type");
+        }
+        return attachmentId;
+    }
+
     record IdentityVerificationSubmitRequest(
-            String realName, String studentNumber, String college, String major, String grade
+            String realName, String studentNumber, String college, String major, String grade,
+            String materialAttachmentId
     ) {}
 
     record IdentityVerificationSubmitResponse(

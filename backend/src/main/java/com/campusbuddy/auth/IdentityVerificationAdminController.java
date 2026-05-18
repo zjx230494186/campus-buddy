@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.core.io.InputStreamResource;
 
 @RestController
 @RequestMapping("/api/admin/identity-verifications")
@@ -41,5 +44,15 @@ public class IdentityVerificationAdminController {
     ) {
         IdentityVerificationAdminService.ReviewResponse response = adminService.review(submissionId, request);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/{submissionId}/material", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    ResponseEntity<InputStreamResource> getMaterial(@PathVariable UUID submissionId) {
+        IdentityMaterialAttachment metadata = adminService.getMaterialMetadata(submissionId);
+        InputStream stream = adminService.getMaterialContent(submissionId);
+        return ResponseEntity.ok()
+                .header("Content-Type", metadata.getContentType())
+                .header("X-Original-Filename", metadata.getOriginalFilename())
+                .body(new InputStreamResource(stream));
     }
 }

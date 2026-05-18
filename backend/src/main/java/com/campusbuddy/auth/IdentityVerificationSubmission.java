@@ -48,6 +48,9 @@ public class IdentityVerificationSubmission {
     @Column
     private Instant reviewedAt;
 
+    @Column
+    private UUID materialAttachmentId;
+
     protected IdentityVerificationSubmission() {
     }
 
@@ -73,6 +76,7 @@ public class IdentityVerificationSubmission {
     public String getRejectReason() { return rejectReason; }
     public Instant getSubmittedAt() { return submittedAt; }
     public Instant getReviewedAt() { return reviewedAt; }
+    public UUID getMaterialAttachmentId() { return materialAttachmentId; }
 
     public void setReviewStatus(String reviewStatus) { this.reviewStatus = reviewStatus; }
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
@@ -83,4 +87,5 @@ public class IdentityVerificationSubmission {
     public void setMajor(String major) { this.major = major; }
     public void setGrade(String grade) { this.grade = grade; }
     public void setSubmittedAt(Instant submittedAt) { this.submittedAt = submittedAt; }
+    public void setMaterialAttachmentId(UUID materialAttachmentId) { this.materialAttachmentId = materialAttachmentId; }
 }
