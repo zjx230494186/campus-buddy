@@ -11,8 +11,8 @@
 ## 当前阶段主题
 
 - 阶段：正式代码开发。
-- 当前线程：P0 认证全链路已完成（Round 03-07）。
-- 当前目标：P0 认证闭环已全部完成（注册→登录→JWT→认证资料提交→管理员审核→附件上传）；下一步进入 P1 模块或补齐未完成项。
+- 当前线程：Qt 客户端认证集成复核。
+- 当前目标：后端认证主线和认证材料附件上传已完成；Qt 客户端已有登录/注册 UI，但下一步需先修正 Qt 与后端认证 API 的契约偏差和 token 存储边界。
 
 ## Git 提交历史
 
@@ -24,8 +24,23 @@
 - `d5c78fa` docs(codearts): record round05 handoff and round06 prompt
 - `4955bee` feat(auth): add identity verification admin review
 - `8edd057` feat(auth): add identity material attachment upload
+- `b850d37` docs(codearts): record round06/07 validation and update handoff
+- `ca058c3` feat(desktop): add login/register UI and auth API integration
+- `957c283` docs(handoff): update latest.md after Qt client auth integration
 
 ## 已完成事项
+
+### Qt 登录/注册最小 UI（提交 `ca058c3`）
+- 新增 LoginWidget、RegisterWidget、HomePageWidget。
+- 新增 AuthApiService、AuthTokenStore。
+- CampusApiClient 支持 Bearer 认证头。
+- Qt 测试 3/3 通过。
+
+### 当前发现的 Qt 集成风险
+- 注册流程需要按后端契约使用 `verificationTicket`，不能直接把验证码当注册字段。
+- 验证码接口需要传 `purpose=REGISTER_OR_LOGIN`。
+- `authenticationStatus` 不应复用 `accessToken` 字段承载。
+- token 不得写入 QSettings；当前实现与详细设计安全约束冲突。
 
 ### 认证材料附件上传闭环（提交 `8edd057`）
 - Flyway V5 迁移：`identity_material_attachment` 表 + ALTER `identity_verification_submission` ADD `material_attachment_id`
@@ -84,24 +99,37 @@
 
 ## 推荐下一步
 
-1. `P1 需求发布与审核模块`
+1. `提交 Round 08 纯文档留档`
+   - 优先级：最高。
+   - 目标：当前存在 Round 08 prompt 和工作流/计划文档更新，应先形成纯文档提交，避免下一轮修复混入文档尾巴。
+
+2. `Qt 认证集成契约审计与修正`
+   - 优先级：高。
+   - 目标：修正 Qt 验证码、注册、认证状态查询和 token 存储与后端契约/安全设计的偏差。
+   - 提示词：`docs/prompts/codearts/20260519_round_08_qt_auth_integration_contract_fix.md`。
+
+3. `Qt 认证资料提交 UI`
+   - 优先级：高。
+   - 前置：Qt 认证集成契约修正完成。
+
+4. `P1 需求发布与审核模块`
    - 优先级：高。
    - 目标：实现需求（搭子帖）的 CRUD、分类、搜索、状态管理。
    - 需要先完成详细设计。
 
-2. `真实 OBS SDK 适配器`
+5. `真实 OBS SDK 适配器`
    - 优先级：中。
    - 目标：实现 HuaweiOBSObjectStorageService 替换 InMemoryObjectStorageService。
    - 需要华为云 OBS 凭据。
 
-3. `替换 no-op 邮件发送`
+6. `替换 no-op 邮件发送`
    - 优先级：中。
    - 目标：接入 SMTP 或华为云邮件服务发送校园邮箱验证码。
 
-4. `Testcontainers 集成测试`
+7. `Testcontainers 集成测试`
    - 优先级：低。
    - 目标：在 Docker 可用环境运行完整集成测试。
 
-5. `完整 RBAC 权限矩阵`
+8. `完整 RBAC 权限矩阵`
    - 优先级：低。
    - 目标：STUDENT / ADMIN / SUPER_ADMIN 角色权限细化。

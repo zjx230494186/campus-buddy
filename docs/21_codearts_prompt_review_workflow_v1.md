@@ -180,6 +180,21 @@ cd D:\big_homework\backend
 - 口径纠偏：下一轮附件上传不应采用“OBS 预签名/客户端直传”，应遵循既有详细设计和对象存储底座，采用后端中转上传、后端权限校验、ObjectStorageService 抽象和测试替身。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_07_identity_material_attachment_upload.md`
 
+## 15. Round 07 与 Qt 方向复核：认证材料附件上传 + Qt 认证集成
+
+- 日期：2026-05-19
+- CodeArts 本轮实际提交：
+  - `8edd057 feat(auth): add identity material attachment upload`
+  - `b850d37 docs(codearts): record round06/07 validation and update handoff`
+  - `ca058c3 feat(desktop): add login/register UI and auth API integration`
+  - `957c283 docs(handoff): update latest.md after Qt client auth integration`
+- 本线程复核结论：
+  - Round 07 后端附件上传符合后端中转口径：不做预签名 URL、不连接真实 OBS、不写 AK/SK。
+  - CodeArts 在用户选择后继续做了 Qt 登录/注册 UI 与 AuthApiService 集成，提交边界清晰，工作区干净。
+  - Qt 认证集成存在契约风险：注册流程未按后端 `verificationTicket` 契约，验证码接口缺少 `purpose`，`authenticationStatus` 被塞进 `accessToken` 字段，且 access token 当前用 QSettings 持久化，违反 `docs/13_detailed_design_v1.md` 中 token 不得写入 QSettings 的安全约束。
+- 下一轮建议：不要继续扩 UI，先做 Qt 认证集成契约审计与修正。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_08_qt_auth_integration_contract_fix.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`
