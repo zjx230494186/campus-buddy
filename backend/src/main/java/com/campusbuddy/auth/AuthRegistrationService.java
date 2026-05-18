@@ -7,15 +7,14 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 @Service
@@ -24,32 +23,44 @@ class AuthRegistrationService {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private final CampusEmailVerificationService verificationService;
+    private final UserAccountRepository userAccountRepository;
     private final Clock clock;
     private final Set<String> allowedDomains;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final Map<String, RegisteredAccount> accounts = new ConcurrentHashMap<>();
 
     @Autowired
     AuthRegistrationService(
             CampusEmailVerificationService verificationService,
+            UserAccountRepository userAccountRepository,
             ObjectProvider<Clock> clockProvider,
             CampusBuddyProperties campusBuddyProperties
     ) {
-        this(verificationService, clockProvider.getIfAvailable(Clock::systemUTC), campusBuddyProperties);
+        this(verificationService, userAccountRepository, clockProvider.getIfAvailable(Clock::systemUTC), campusBuddyProperties);
     }
 
-    AuthRegistrationService(CampusEmailVerificationService verificationService, Clock clock, CampusBuddyProperties campusBuddyProperties) {
+    AuthRegistrationService(CampusEmailVerificationService verificationService, UserAccountRepository userAccountRepository, Clock clock, CampusBuddyProperties campusBuddyProperties) {
         this.verificationService = verificationService;
+        this.userAccountRepository = userAccountRepository;
         this.clock = clock;
         this.allowedDomains = campusBuddyProperties.getCampusEmail().getAllowedDomains();
     }
 
+    @Transactional
     AuthRegistrationResponse register(AuthRegistrationRequest request) {
         String email = normalizeEmail(request == null ? null : request.campusEmail());
         String ticket = normalizeText(request == null ? null : request.verificationTicket());
         String password = request == null ? null : request.password();
         String displayName = normalizeText(request == null ? null : request.displayName());
         validate(email, ticket, password, displayName);
+
+        if (userAccountRepository.existsByCampusEmail(email)) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    "EMAIL_ALREADY_REGISTERED",
+                    "Email already registered",
+                    "campusEmail already exists"
+            );
+        }
 
         if (!verificationService.consumeRegistrationTicket(email, ticket)) {
             throw new ApiException(
@@ -61,30 +72,17 @@ class AuthRegistrationService {
         }
 
         Instant createdAt = Instant.now(clock);
-        RegisteredAccount account = new RegisteredAccount(
-                UUID.randomUUID().toString(),
-                email,
-                passwordEncoder.encode(password),
-                displayName,
-                createdAt
-        );
-        RegisteredAccount existing = accounts.putIfAbsent(email, account);
-        if (existing != null) {
-            throw new ApiException(
-                    HttpStatus.CONFLICT,
-                    "EMAIL_ALREADY_REGISTERED",
-                    "Email already registered",
-                    "campusEmail already exists"
-            );
-        }
+        UserAccount account = new UserAccount(email, passwordEncoder.encode(password), displayName, createdAt);
+        account.setCampusEmailVerificationStatus("VERIFIED");
+        userAccountRepository.save(account);
 
         return new AuthRegistrationResponse(
-                account.userId(),
-                maskEmail(account.campusEmail()),
-                account.displayName(),
-                "UNVERIFIED",
-                "VERIFIED",
-                account.createdAt().toString()
+                account.getUserId().toString(),
+                maskEmail(account.getCampusEmail()),
+                account.getDisplayName(),
+                account.getAuthenticationStatus(),
+                account.getCampusEmailVerificationStatus(),
+                account.getCreatedAt().toString()
         );
     }
 
@@ -94,17 +92,18 @@ class AuthRegistrationService {
             return Optional.empty();
         }
 
-        RegisteredAccount account = accounts.get(email);
-        if (account == null || !passwordEncoder.matches(password, account.passwordHash())) {
+        Optional<UserAccount> accountOpt = userAccountRepository.findByCampusEmail(email);
+        if (accountOpt.isEmpty() || !passwordEncoder.matches(password, accountOpt.get().getPasswordHash())) {
             return Optional.empty();
         }
 
+        UserAccount account = accountOpt.get();
         return Optional.of(new AuthenticatedAccount(
-                account.userId(),
-                account.campusEmail(),
-                account.displayName(),
-                "UNVERIFIED",
-                "VERIFIED"
+                account.getUserId().toString(),
+                account.getCampusEmail(),
+                account.getDisplayName(),
+                account.getAuthenticationStatus(),
+                account.getCampusEmailVerificationStatus()
         ));
     }
 
@@ -133,16 +132,12 @@ class AuthRegistrationService {
     }
 
     private String normalizeEmail(String email) {
-        if (email == null) {
-            return null;
-        }
+        if (email == null) return null;
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
     private String normalizeText(String value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         return value.trim();
     }
 
@@ -171,15 +166,6 @@ class AuthRegistrationService {
             String authenticationStatus,
             String campusEmailVerificationStatus,
             String createdAt
-    ) {
-    }
-
-    private record RegisteredAccount(
-            String userId,
-            String campusEmail,
-            String passwordHash,
-            String displayName,
-            Instant createdAt
     ) {
     }
 

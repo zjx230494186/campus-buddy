@@ -1,15 +1,17 @@
 package com.campusbuddy.config;
 
+import com.campusbuddy.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+@SpringBootTest
+@Import(TestcontainersConfiguration.class)
 class ConfigurationPropertiesTest {
 
     @Autowired

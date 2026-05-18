@@ -17,13 +17,13 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-@EnableConfigurationProperties(JwtPlaceholderProperties.class)
+@EnableConfigurationProperties({JwtPlaceholderProperties.class, JwtProperties.class})
 public class SecurityConfiguration {
 
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtPlaceholderAuthenticationFilter jwtPlaceholderAuthenticationFilter,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
             AuthenticationEntryPoint authenticationEntryPoint
     ) throws Exception {
         return http
@@ -35,7 +35,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/health", "/api/system/info").permitAll()
                         .anyRequest().permitAll()
                 )
-                .addFilterBefore(jwtPlaceholderAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
@@ -45,14 +45,12 @@ public class SecurityConfiguration {
         return (request, response, authException) -> {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-
             ApiErrorResponse errorResponse = new ApiErrorResponse(
                     "UNAUTHORIZED",
                     "Authentication required",
                     "Missing or invalid bearer token",
                     traceId(request)
             );
-
             objectMapper.writeValue(response.getOutputStream(), errorResponse);
         };
     }

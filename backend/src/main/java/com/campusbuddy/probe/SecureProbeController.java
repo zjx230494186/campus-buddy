@@ -14,7 +14,7 @@ public class SecureProbeController {
         return new SecureProbeResponse(
                 authentication != null && authentication.isAuthenticated(),
                 authentication == null ? null : authentication.getName(),
-                "jwt-placeholder"
+                "jwt"
         );
     }
 

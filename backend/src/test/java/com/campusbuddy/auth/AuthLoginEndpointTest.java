@@ -1,5 +1,6 @@
 package com.campusbuddy.auth;
 
+import com.campusbuddy.TestcontainersConfiguration;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -19,13 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+@SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class AuthLoginEndpointTest {
 
     @Autowired
@@ -51,9 +53,9 @@ class AuthLoginEndpointTest {
                                 }
                                 """.formatted(email, password)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken", startsWith("cat_")))
+                .andExpect(jsonPath("$.accessToken", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.accessTokenExpiresInSeconds").value(900))
-                .andExpect(jsonPath("$.refreshToken", startsWith("crt_")))
+                .andExpect(jsonPath("$.refreshToken", not(emptyOrNullString())))
                 .andExpect(jsonPath("$.refreshTokenExpiresInSeconds").value(2592000))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.user.userId", not(emptyOrNullString())))

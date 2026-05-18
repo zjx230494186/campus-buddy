@@ -1,5 +1,6 @@
 package com.campusbuddy.auth;
 
+import com.campusbuddy.TestcontainersConfiguration;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -15,7 +17,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,8 +27,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+@SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class AuthRegistrationEndpointTest {
 
     @Autowired
@@ -38,6 +40,9 @@ class AuthRegistrationEndpointTest {
 
     @Autowired
     private AuthRegistrationService registrationService;
+
+    @Autowired
+    private UserAccountRepository userAccountRepository;
 
     @Test
     void registerCreatesUnverifiedAccountForVerifiedCampusEmail() throws Exception {
@@ -81,8 +86,8 @@ class AuthRegistrationEndpointTest {
                                 """.formatted(email, ticket, rawPassword)))
                 .andExpect(status().isOk());
 
-        String storedPasswordHash = storedPasswordHash(email);
-        org.assertj.core.api.Assertions.assertThat(storedPasswordHash)
+        UserAccount account = userAccountRepository.findByCampusEmail(email).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(account.getPasswordHash())
                 .isNotEqualTo(rawPassword)
                 .startsWith("$2");
     }
@@ -211,17 +216,6 @@ class AuthRegistrationEndpointTest {
                                 """.formatted(email)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verificationStatus").value("CODE_SENT"));
-    }
-
-    @SuppressWarnings("unchecked")
-    private String storedPasswordHash(String email) throws Exception {
-        Field accountsField = AuthRegistrationService.class.getDeclaredField("accounts");
-        accountsField.setAccessible(true);
-        Map<String, ?> accounts = (Map<String, ?>) accountsField.get(registrationService);
-        Object account = accounts.get(email);
-        Field passwordHashField = account.getClass().getDeclaredField("passwordHash");
-        passwordHashField.setAccessible(true);
-        return (String) passwordHashField.get(account);
     }
 
     @TestConfiguration

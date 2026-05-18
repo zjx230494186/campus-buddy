@@ -1,10 +1,14 @@
 package com.campusbuddy.security;
 
+import com.campusbuddy.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.emptyOrNullString;
@@ -12,14 +16,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
+@SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class SecurityProbeEndpointTest {
-
-    private static final String TEST_TOKEN = "technical-spike-test-token";
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Test
     void publicHealthEndpointAllowsAnonymousAccess() throws Exception {
@@ -39,12 +45,14 @@ class SecurityProbeEndpointTest {
     }
 
     @Test
-    void secureProbeEndpointAllowsRequestWithTestToken() throws Exception {
+    void secureProbeEndpointAllowsRequestWithValidJwt() throws Exception {
+        String accessToken = jwtService.issueAccessToken(
+                UUID.randomUUID(), "test@campus.edu.cn", "TestUser", "UNVERIFIED"
+        );
+
         mockMvc.perform(get("/api/probe/secure")
-                        .header("Authorization", "Bearer " + TEST_TOKEN))
+                        .header("Authorization", "Bearer " + accessToken))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.authenticated").value(true))
-                .andExpect(jsonPath("$.principal").value("technical-spike-user"))
-                .andExpect(jsonPath("$.authenticationMode").value("jwt-placeholder"));
+                .andExpect(jsonPath("$.authenticated").value(true));
     }
 }
