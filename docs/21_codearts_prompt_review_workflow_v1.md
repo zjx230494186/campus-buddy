@@ -195,6 +195,19 @@ cd D:\big_homework\backend
 - 下一轮建议：不要继续扩 UI，先做 Qt 认证集成契约审计与修正。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_08_qt_auth_integration_contract_fix.md`
 
+## 16. Round 08 复核：Qt 认证集成契约审计与修正
+
+- 日期：2026-05-19
+- CodeArts 本轮声称完成：修正 Qt token 存储、验证码 purpose、verificationTicket、注册请求体、认证状态字段语义。
+- Git 提交：
+  - `e53f11a fix(desktop): align auth flow with backend contract`
+  - `b44f519 docs(codearts): record round08 validation and update handoff`
+- 测试结果：Qt 3/3 通过；`campus_api_client_test` 9 个测试通过；`auth_token_store_test` 6 个测试通过。后端未修改，56/56 状态不变。
+- 本线程复核结论：提交存在且范围符合 Round 08 目标；token 已不再写入 QSettings，Qt 注册流程与后端 `verificationTicket` 契约对齐。
+- 剩余风险：Windows Credential Manager 适配器未实现，当前 token 为内存会话存储，进程退出会丢失。
+- 下一轮建议：为优先形成可演示学生端闭环，先做 Qt 认证资料提交 UI；Windows Credential Manager 可作为随后安全增强单独实现。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_09_qt_identity_submission_ui.md`
+
 ## 7. 当前初始状态
 
 - 本地 Git 仓库：`D:\big_homework`

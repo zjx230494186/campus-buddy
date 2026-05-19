@@ -11,8 +11,8 @@
 ## 当前阶段主题
 
 - 阶段：正式代码开发。
-- 当前线程：Qt 客户端认证集成复核。
-- 当前目标：后端认证主线和认证材料附件上传已完成；Qt 客户端已有登录/注册 UI，但下一步需先修正 Qt 与后端认证 API 的契约偏差和 token 存储边界。
+- 当前线程：Round 08 Qt 认证集成契约审计与修正（已完成）。
+- 当前目标：Qt 登录/注册契约已对齐后端，token 不再写入 QSettings；下一步优先补齐 Qt 认证资料提交 UI。
 
 ## Git 提交历史
 
@@ -27,6 +27,9 @@
 - `b850d37` docs(codearts): record round06/07 validation and update handoff
 - `ca058c3` feat(desktop): add login/register UI and auth API integration
 - `957c283` docs(handoff): update latest.md after Qt client auth integration
+- `8bb54bd` docs(codearts): record round07 handoff and round08 prompt
+- `e53f11a` fix(desktop): align auth flow with backend contract
+- `b44f519` docs(codearts): record round08 validation and update handoff
 
 ## 已完成事项
 
@@ -36,11 +39,15 @@
 - CampusApiClient 支持 Bearer 认证头。
 - Qt 测试 3/3 通过。
 
-### 当前发现的 Qt 集成风险
-- 注册流程需要按后端契约使用 `verificationTicket`，不能直接把验证码当注册字段。
-- 验证码接口需要传 `purpose=REGISTER_OR_LOGIN`。
-- `authenticationStatus` 不应复用 `accessToken` 字段承载。
-- token 不得写入 QSettings；当前实现与详细设计安全约束冲突。
+### Qt 认证契约修正（提交 `e53f11a`）
+- 新增 `SecureTokenStore` 抽象和 `InMemorySessionTokenStore` 内存实现。
+- token 不再写入 QSettings。
+- `AuthResult` 拆分 `accessToken`、`authenticationStatus`、`verificationTicket`。
+- 验证码接口统一传 `purpose=REGISTER_OR_LOGIN`。
+- 校验验证码后读取 `verificationTicket`。
+- 注册请求体改为 `campusEmail/verificationTicket/password/displayName`。
+- 注册 UI 改为 email → 发送验证码 → 校验验证码 → displayName + 密码 → 注册。
+- Qt 测试 3/3 通过。
 
 ### 认证材料附件上传闭环（提交 `8edd057`）
 - Flyway V5 迁移：`identity_material_attachment` 表 + ALTER `identity_verification_submission` ADD `material_attachment_id`
@@ -99,18 +106,18 @@
 
 ## 推荐下一步
 
-1. `提交 Round 08 纯文档留档`
+1. `提交 Round 09 纯文档留档`
    - 优先级：最高。
-   - 目标：当前存在 Round 08 prompt 和工作流/计划文档更新，应先形成纯文档提交，避免下一轮修复混入文档尾巴。
+   - 目标：当前存在 Round 09 prompt 和工作流/计划文档更新，应先形成纯文档提交，避免下一轮 UI 开发混入文档尾巴。
 
-2. `Qt 认证集成契约审计与修正`
+2. `Qt 认证资料提交 UI`
    - 优先级：高。
-   - 目标：修正 Qt 验证码、注册、认证状态查询和 token 存储与后端契约/安全设计的偏差。
-   - 提示词：`docs/prompts/codearts/20260519_round_08_qt_auth_integration_contract_fix.md`。
+   - 目标：实现登录后填写认证资料、上传认证材料、提交认证申请和状态显示的最小 UI 闭环。
+   - 提示词：`docs/prompts/codearts/20260519_round_09_qt_identity_submission_ui.md`。
 
-3. `Qt 认证资料提交 UI`
+3. `Windows Credential Manager 适配器`
    - 优先级：高。
-   - 前置：Qt 认证集成契约修正完成。
+   - 目标：替换当前内存 token store，使 token 可跨进程安全保存。
 
 4. `P1 需求发布与审核模块`
    - 优先级：高。

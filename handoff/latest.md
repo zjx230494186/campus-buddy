@@ -58,13 +58,15 @@
 
 ## 下一步候选事项
 
-1. `Windows Credential Manager 适配器` — 新开线程，优先级高；替换 InMemorySessionTokenStore
-2. `认证资料提交 UI` — 复用或新开线程，优先级高；在 HomePageWidget 中添加身份验证提交表单
-3. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
-4. `真实 OBS SDK 适配器` — 新开线程，优先级中
-5. `替换 no-op 邮件发送` — 新开线程，优先级中
+1. `提交 Round 09 纯文档留档` — 复用当前线程或交给 CodeArts 在下一轮开头处理，优先级最高
+2. `Qt 认证资料提交 UI` — 复用或新开线程，优先级高；在 HomePageWidget 或独立 Widget 中添加认证资料表单和附件上传
+3. `Windows Credential Manager 适配器` — 新开线程，优先级高；替换 InMemorySessionTokenStore
+4. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
+5. `真实 OBS SDK 适配器` — 新开线程，优先级中
+6. `替换 no-op 邮件发送` — 新开线程，优先级中
 
 ## 建议归档与下一线程
 
 - 建议归档当前线程：是。
-- 下一线程名称：`Qt 认证资料提交 UI` 或 `P1 需求发布与审核模块详细设计`
+- 下一线程名称：`Qt 认证资料提交 UI`
+- CodeArts 提示词：`D:\big_homework\docs\prompts\codearts\20260519_round_09_qt_identity_submission_ui.md`
