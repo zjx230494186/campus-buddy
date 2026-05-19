@@ -10,9 +10,9 @@
 
 ## 当前阶段主题
 
-- 阶段：正式代码开发。
-- 当前线程：Round 08 Qt 认证集成契约审计与修正（已完成）。
-- 当前目标：Qt 登录/注册契约已对齐后端，token 不再写入 QSettings；下一步优先补齐 Qt 认证资料提交 UI。
+- 阶段：详细设计深化 + 后续实现准备。
+- 当前线程：详细设计深化：P1 支撑能力模块。
+- 当前目标：P0 主链路详细设计已具备阶段性基线，P0-2 需求发布与审核已完成字段、状态、接口、DTO、异常、测试入口和追踪矩阵细化；下一步按软件工程过程模型进入 P1 文档工作，优先从“评价与信用摘要”开始，不写代码、不调用 CodeArts、不生成实现 prompt。
 
 ## Git 提交历史
 
@@ -30,8 +30,18 @@
 - `8bb54bd` docs(codearts): record round07 handoff and round08 prompt
 - `e53f11a` fix(desktop): align auth flow with backend contract
 - `b44f519` docs(codearts): record round08 validation and update handoff
+- `bc0ae9e` docs(codearts): record round08 handoff and round09 prompt
+- `c59a138` feat(desktop): add identity verification submission UI
+- `bb8b4a7` docs(codearts): record round09 validation and update handoff
 
 ## 已完成事项
+
+### Qt 认证资料提交 UI（提交 `c59a138`）
+- `CampusApiClient` 新增 multipart 上传能力。
+- `AuthApiService` 新增认证材料上传、完整认证资料提交、扩展认证状态读取。
+- `IdentityVerificationWidget` 支持真实姓名、学号、学院、专业、年级、材料选择、上传和提交。
+- `HomePageWidget` 嵌入认证资料组件并传递认证状态。
+- Qt 测试 3/3 通过。
 
 ### Qt 登录/注册最小 UI（提交 `ca058c3`）
 - 新增 LoginWidget、RegisterWidget、HomePageWidget。
@@ -106,37 +116,52 @@
 
 ## 推荐下一步
 
-1. `提交 Round 09 纯文档留档`
+1. `提交当前纯文档留档`
    - 优先级：最高。
-   - 目标：当前存在 Round 09 prompt 和工作流/计划文档更新，应先形成纯文档提交，避免下一轮 UI 开发混入文档尾巴。
+   - 目标：P1-1 评价与信用摘要、P1-2 投诉申诉与案件、P1-3 管理端治理、P1-4 通知与留痕均已阶段性收束并补充追踪矩阵；后续实现环境门禁也已更新为本地测试 + Ubuntu 24 服务器 smoke test。建议先提交当前纯文档改动，避免后续实现准备混入设计尾巴。
 
-2. `Qt 认证资料提交 UI`
+2. `服务器实战部署准备清单`
    - 优先级：高。
-   - 目标：实现登录后填写认证资料、上传认证材料、提交认证申请和状态显示的最小 UI 闭环。
-   - 提示词：`docs/prompts/codearts/20260519_round_09_qt_identity_submission_ui.md`。
+   - 目标：围绕 Ubuntu 24 服务器、后端服务、数据库、对象存储、Nginx/公网 IP、私有配置和 smoke test 留档，形成后续实现前的部署准备清单。
 
-3. `Windows Credential Manager 适配器`
+3. `P1 投诉申诉与案件模块小修`
+   - 优先级：高。
+   - 目标：仅限发现字段、编号或表述小问题时处理。
+
+4. `P1 评价与信用摘要模块小修`
+   - 优先级：高。
+   - 目标：仅限发现字段、编号或表述小问题时处理。
+
+5. `P1 管理端治理模块小修`
+   - 优先级：中。
+   - 目标：仅限发现字段、编号或表述小问题时处理；P1-3 主体已阶段性收束。
+
+6. `Windows Credential Manager 适配器`
    - 优先级：高。
    - 目标：替换当前内存 token store，使 token 可跨进程安全保存。
 
-4. `P1 需求发布与审核模块`
-   - 优先级：高。
-   - 目标：实现需求（搭子帖）的 CRUD、分类、搜索、状态管理。
-   - 需要先完成详细设计。
-
-5. `真实 OBS SDK 适配器`
+7. `真实 OBS SDK 适配器`
    - 优先级：中。
    - 目标：实现 HuaweiOBSObjectStorageService 替换 InMemoryObjectStorageService。
    - 需要华为云 OBS 凭据。
 
-6. `替换 no-op 邮件发送`
+8. `替换 no-op 邮件发送`
    - 优先级：中。
    - 目标：接入 SMTP 或华为云邮件服务发送校园邮箱验证码。
 
-7. `Testcontainers 集成测试`
+9. `Testcontainers 集成测试`
    - 优先级：低。
    - 目标：在 Docker 可用环境运行完整集成测试。
 
-8. `完整 RBAC 权限矩阵`
+10. `完整 RBAC 权限矩阵`
    - 优先级：低。
    - 目标：STUDENT / ADMIN / SUPER_ADMIN 角色权限细化。
+
+## 后续实现环境原则
+
+- 后续实现不再只以 Win11 本地环境通过为闭环，应尽早引入 Ubuntu 24 服务器实战部署验证。
+- 后端、数据库、对象存储适配、Nginx/公网 IP 访问和运行配置应在服务器环境中验证；Win11 本地主要承担 Qt 客户端开发、基础单元测试和快速调试。
+- 对象存储后续应从 `InMemoryObjectStorageService` 测试替身推进到真实 OBS/对象存储适配器；凭据只放服务器私有环境变量或私有配置，不写入仓库、文档或 Qt 客户端。
+- 后续每个实现批次除本地测试外，应尽量增加服务器 smoke test 或部署验证记录，避免 Win11 与 Ubuntu 24 环境差异在最后集中暴露。
+- 涉及后端、数据库迁移、对象存储、部署配置或公网访问的批次，完成门禁调整为“本地测试通过 + Ubuntu 24 服务器 smoke test 通过”；只在 Win11 本地通过不视为完整闭环。
+- 服务器 smoke test 至少记录部署/重启结果、健康检查、关键接口最小调用、数据库迁移或连通性、对象存储连通性和私有配置就绪情况。

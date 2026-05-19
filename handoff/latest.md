@@ -5,12 +5,70 @@
 ## 当前状态
 
 - 项目名称：校园搭子平台。
-- 当前阶段：正式代码开发。
-- 当前线程：Round 09 Qt 认证资料提交 UI（已完成）。
+- 当前阶段：详细设计深化 + 后续实现准备。
+- 当前线程：详细设计深化：P1 支撑能力模块。
 - Git 分支：main。
-- 工作区：有文档待提交。
+- 工作区：存在本轮文档改动。
 - 后端测试：56/56 通过。
 - Qt 测试：3/3 通过（api_client_config_test、campus_api_client_test、auth_token_store_test）。
+
+## 本轮设计进展
+
+- 已阅读 `AGENTS.md`、`docs/03_current_plan.md`、`handoff/latest.md`、`docs/13_detailed_design_v1.md`、`docs/06_execution_preparation_v1.md`、`docs/09_codearts_requirement_tables_v1.md`、`docs/12_code_generation_constraints_v1.md`。
+- 当前任务明确为继续完善《校园搭子平台》详细设计文档；不写代码，不调用 CodeArts，不生成实现 prompt。
+- 已确认 `PartnerPost` 采用“公共字段 + 场景扩展字段”的单对象模型。
+- 已在 `docs/13_detailed_design_v1.md` 的 P0-2 需求发布与审核模块中补充 `PartnerPost` 字段模型、公共字段清单、五类场景扩展字段口径、联系方式不写入发布物等规则。
+- 已确认并写入“发布者撤回审核”作为正式业务动作：`PENDING_REVIEW -> DRAFT`，并补充撤回与管理员审核并发时的 `POST_STATUS_CONFLICT` 边界。
+- 已确认并写入接口拆分：学生侧“我的发布接口”7 个，管理侧“审核接口”3 个，并补充基础错误码与 Qt API Client 分层约束。
+- 已确认并写入权限边界：未认证但已登录用户不得创建或保存服务端 `PartnerPost` 草稿。
+- 已确认并写入异常分支：公共字段或场景字段校验失败统一返回 `VALIDATION_FAILED`，通过 `details` 提供字段路径到错误信息的映射。
+- 已确认并写入后续实现批次：Batch 1 后端学生侧我的发布、Batch 2 后端管理侧需求审核、Batch 3 Qt 学生侧我的发布 UI、Batch 4 Qt 管理侧审核 UI，并补充每批测试入口。
+- 已确认并写入 P0 必需接口 DTO 字段：创建草稿、更新草稿、学生侧详情、我的发布列表项、管理审核详情、管理员审核请求。
+- 已确认并写入最小枚举和值域约束：`sceneType`、`status`、`timeMode`、`decision`、`allowedActions`，以及标题、正文、标签、附件数量、驳回原因等限制。
+- 已补充 P0-2 需求发布与审核追踪矩阵，覆盖 `IR3-IR8` 与 `US1-US5/US8` 到设计元素、接口和测试入口的映射。
+- 已补充 P0-2 用例图前说明和两条顺序图前说明：发布需求并提交审核、管理员审核需求。
+- P1 已开始进入评价与信用摘要模块；已确认评价为用户主动发起，不依赖关闭会话自动生成任务。
+- 已写入信用摘要初版计算口径：无显式评价的有效对话默认 4 星，普通显式评价最高 5 星，联系方式解锁后的显式评价最高 6 星，新账号初始视为 3 次 3 星对话 + 3 次 4 星对话，用户信用卡片展示平均星数和总对话次数。
+- 已确认有效对话定义：同一 `Conversation` 中双方各自至少发送 2 条用户消息才计入有效对话；信用卡片总对话次数只统计真实有效对话，不包含初始虚拟评分基线。
+- 已确认评价字段：星级必填、预设标签可选、不开放自由短评；信用卡片按 `标签名*次数` 展示高频标签，例如 `配合度高*3`。
+- 已确认评价修改规则：同一评价提交后 24 小时内允许修改一次，修改后按最新有效评价重算平均星数和标签计数。
+- 已确认评价争议挂接：评价申诉进入投诉申诉案件，`Review.status` 支持 `ACTIVE`、`DISPUTED`、`INVALIDATED`，管理员裁定后重算信用摘要。
+- 已确认评价与信用摘要接口拆分：评价操作接口 `POST/PUT/GET /api/me/reviews...`，信用摘要查询接口 `GET /api/users/{userId}/credit-summary` 和 `GET /api/me/credit-summary`。
+- 已确认评价与信用摘要后续实现批次：Batch 1 后端核心，Batch 2 Qt 信用卡片与评价入口，Batch 3 评价争议挂接到投诉申诉。
+- 已补充 P1-1 评价与信用摘要追踪矩阵，覆盖 `IR12-IR16` 与 `US6/US9/US10` 到设计元素、接口和测试入口的映射。
+- P1-2 已开始进入投诉申诉与案件模块；已确认投诉、申诉、举报和处理结果争议统一由 `CaseTicket` 承载，`targetType` 支持 `REVIEW`、`CONVERSATION`、`PARTNER_POST`、`USER`、`ADMIN_DECISION`。
+- 已确认案件状态机采用三态：`SUBMITTED`、`WAITING_FOR_UPDATE`、`CLOSED`；补证据和对方回应通过 `waitingForRole/updateReason` 区分。
+- 已确认案件创建权限边界，并补充恶意举报治理挂接：捏造证据、批量针对同一用户举报、反复提交无事实依据案件等可被标记为治理线索，后续由管理端按情节处罚。
+- 已确认证据附件规则：支持 jpg/jpeg/png/pdf，单文件不超过 10 MB，每个案件最多 10 个证据附件，后端中转上传并做权限校验。
+- 已确认回应规则：被投诉方或相关方可回应但不强制，`WAITING_FOR_UPDATE` 后提供 72 小时窗口，超时后管理员可按现有材料裁定，未回应本身不等于违规。
+- 已确认案件裁定结果：`REJECT_CASE`、`KEEP_ORIGINAL`、`INVALIDATE_REVIEW`、`HIDE_REVIEW_TAGS`、`REMOVE_POST`、`CLOSE_CONVERSATION`、`MARK_MALICIOUS`、`ESCALATE_GOVERNANCE`；具体账号处罚和审计留给管理端治理模块。
+- 已确认投诉申诉与案件接口拆分：用户侧案件接口负责创建、补证据、回应和查看进度；管理侧案件接口负责队列、详情、要求补充和裁定结案。
+- 已确认投诉申诉与案件后续实现批次：Batch 1 后端用户侧案件创建/证据/回应/我的案件，Batch 2 后端管理侧案件队列/要求补充/裁定结案，Batch 3 Qt 用户侧案件页 + Qt 管理端案件队列。
+- 已补充 P1-2 投诉申诉与案件追踪矩阵，覆盖 `IR11/IR14/IR15/IR16` 与 `US10/US11` 到设计元素、接口和测试入口的映射。
+- P1-3 已开始进入管理端治理模块；已确认账号处置、信用干预、恶意举报处罚等治理动作统一由 `GovernanceAction` 承载，动作类型包括 `WARNING`、`MUTE`、`SUSPEND_ACCOUNT`、`RESTORE_ACCOUNT`、`ADJUST_CREDIT`、`LIMIT_REPORTING`。
+- 已确认治理动作功能限制边界：`WARNING` 不限制功能，`MUTE` 限制表达类能力，`SUSPEND_ACCOUNT` 阻断关键互动但保留登录和申诉入口，`LIMIT_REPORTING` 只限制举报/申诉，`ADJUST_CREDIT` 只影响信用摘要。
+- 已确认管理员角色采用 `ADMIN / SUPER_ADMIN` 两级：普通管理员处理日常审核、案件和轻度治理，超级管理员执行封禁、恢复账号、信用干预、撤销治理动作和管理员账号管理。
+- 已确认信用干预边界：`ADJUST_CREDIT` 仅允许结构化调整，不允许手填最终平均星数；单次人工分值调整建议限制在 `-0.5` 到 `+0.5`。
+- 已确认恶意举报处罚梯度：第一次轻微恶意举报执行 `WARNING`；重复恶意举报或明显捏造执行 `LIMIT_REPORTING` 7 天；批量组织恶意举报或伪造证据执行 `MUTE` 7 天 + `LIMIT_REPORTING` 30 天；严重伪造证据、持续攻击他人或规避限制执行 `SUSPEND_ACCOUNT`，由 `SUPER_ADMIN` 执行。
+- 已确认管理端审计日志统一由 `AdminAuditLog` 承载，字段包括操作者、角色、动作、目标、来源、原因摘要、前后快照引用、`traceId`、来源 IP 和时间；审计日志记录引用与摘要，不复制敏感原文；关键管理写操作若审计失败，应回滚业务操作。
+- 已确认 P1-3 管理端治理接口按“治理动作接口 + 审计查询接口”拆分，不设计万能管理接口；治理动作接口包括创建、撤销、列表和详情，审计查询接口包括审计列表和详情。
+- 已确认 P1-3 后续实现批次拆为 3 批：Batch 1 后端治理动作创建/撤销/查询和权限校验；Batch 2 后端审计日志自动写入、查询和事务一致性；Batch 3 Qt 管理端治理页面与审计日志查看页面。
+- 已确认 P1-3 管理端治理 V1 核心用例限定为 6 个：查看用户治理档案、创建治理动作、撤销治理动作、查看审计日志、从案件升级治理、查看受限用户申诉入口。
+- 已确认 P1-3 图类说明优先覆盖两条高风险主流程：从案件升级治理、撤销治理动作；已补充活动流程、失败分支和顺序图参与者/主干说明。
+- 已确认 P1-3 治理关键对象收束为 4 个：`GovernanceAction`、`AdminAuditLog`、`RestrictionPolicy`、`CreditAdjustmentRecord`；其中 `RestrictionPolicy` 可作为从生效治理动作计算出的权限策略视图，不强制独立建表。
+- 已确认信用摘要变化只允许由 `ADJUST_CREDIT` 下的结构化 `CreditAdjustmentRecord` 触发；`WARNING`、`MUTE`、`SUSPEND_ACCOUNT`、`RESTORE_ACCOUNT`、`LIMIT_REPORTING` 本身不直接改变信用分或标签计数。
+- 已补充 P1-3 管理端治理追踪矩阵，覆盖 `IR16`、`US10`、`US11` 到 `GovernanceAction`、`AdminAuditLog`、`RestrictionPolicy`、`CreditAdjustmentRecord`、治理动作接口、审计查询接口和 Batch 1/2/3 测试入口的映射。
+- P1-3 管理端治理模块已阶段性收束；下一步建议进入 P1 通知与留痕模块。
+- P1-4 通知与留痕模块已开始；已确认 V1 只做站内通知和系统事件留痕，不做实时推送、短信、邮件、移动端 Push 或 WebSocket；核心对象为 `Notification` 与 `SystemEventLog`。
+- 已确认 P1-4 通知触发点限定为 8 类：认证审核结果、需求审核结果、收到新会话/邀约、评价提醒、评价争议处理结果、案件状态变化、治理动作生效/撤销、信用摘要人工调整；不做点赞、浏览、推荐曝光、营销公告和批量广播。
+- 已确认 `Notification` 只保留 `UNREAD` 与 `READ` 两态，不做删除、归档、撤回和过期；字段包括接收人、类型、标题、内容、来源对象、跳转目标、状态、创建时间和已读时间。
+- 已确认 `SystemEventLog` 只做业务事件留痕和通知派生追踪，字段包括事件类型、来源对象、触发用户、受影响用户、派生通知、摘要、时间和 `traceId`；不保存认证材料、聊天原文、证据原文、联系方式等敏感正文。
+- 已确认 P1-4 接口拆分：用户侧提供 `GET /api/me/notifications`、`GET /api/me/notifications/unread-count`、`POST /api/me/notifications/{notificationId}/read`、`POST /api/me/notifications/read-all`；管理侧只提供 `GET /api/admin/system-events` 和 `GET /api/admin/system-events/{eventId}`；不提供人工发通知或群发接口。
+- 已确认 P1-4 实现批次拆为 3 批：Batch 1 后端通知核心；Batch 2 后端系统事件与触发挂接；Batch 3 Qt 通知中心与管理端系统事件查询页面。
+- 用户补充确认：后续实现希望不局限于 Win11 本地环境，应进入 Ubuntu 24 服务器实战部署验证，包括数据库、对象存储、后端服务、Nginx/公网 IP 等；真实凭据不得进入仓库、文档或 Qt 客户端。
+- 已确认后续涉及后端、数据库迁移、对象存储、部署配置或公网访问的实现批次，完成门禁为“本地测试通过 + Ubuntu 24 服务器 smoke test 通过”；服务器 smoke test 至少记录部署/重启、健康检查、关键接口、数据库、对象存储和私有配置就绪情况。
+- 已补充 P1-4 通知与留痕追踪矩阵，覆盖 8 类通知触发点、`Notification`、`SystemEventLog`、用户侧通知接口、管理侧系统事件接口和 Batch 1/2/3 测试入口。
+- P1-1、P1-2、P1-3、P1-4 四个 P1 支撑模块均已阶段性收束。
 
 ## Git 提交历史
 
@@ -54,15 +112,57 @@
 - 没有替换 no-op 邮件发送
 - 没有开始 P1 需求发布与审核模块
 
+## 当前线程完成了什么
+
+- 辅助用户评估 CodeArts 每轮输出、检查 Git 提交、发现并纠正实现偏差。
+- 形成并归档多轮 CodeArts prompt。
+- 推动 P0 认证后端链路完成：注册、登录、JWT、认证资料提交、材料附件上传、管理员审核。
+- 推动 Qt 学生端 P0 认证链路完成：登录、注册、认证资料提交 UI、材料上传、状态回显。
+- 建立后续 CodeArts 使用规则：短批次、测试先行、提交门禁、禁止 `git add .` / `git add -A`。
+
+## 关键结论
+
+- P0 认证学生端演示链路已经可作为后续主业务开发的地基。
+- P0-2 需求发布与审核模块详细设计已经形成阶段性闭环，可支撑后续测试先行实现拆分。
+- P0 主链路详细设计已具备阶段性基线，后续可按软件工程过程模型进入 P1 支撑能力文档工作。
+- P1 推进顺序已确认为“评价与信用摘要 → 投诉申诉与案件 → 管理端治理 → 通知与留痕”。评价与信用摘要先行，因为它承接低压力联系结束后的评价入口，并为投诉申诉、管理端治理和通知留痕提供上游对象。
+
+## 本线程没有做什么
+
+- 没有实现 Windows Credential Manager 适配器。
+- 没有实现管理员审核 UI。
+- 没有适配真实 OBS SDK。
+- 没有替换 no-op 邮件发送。
+- 没有开始 P0-2 需求发布与审核模块编码。
+- 没有运行 Testcontainers/Docker 测试。
+
 ## 下一步候选事项
 
-1. `Windows Credential Manager 适配器` — 新开线程，优先级高；替换 InMemorySessionTokenStore
-2. `P1 需求发布与审核模块详细设计` — 新开线程，优先级高
-3. `真实 OBS SDK 适配器` — 新开线程，优先级中
-4. `替换 no-op 邮件发送` — 新开线程，优先级中
-5. `管理员审核 UI` — 新开线程，优先级中
+1. `提交当前纯文档留档` — P1 当前分支阶段性闭环后处理，优先级最高。
+2. `服务器实战部署准备清单` — 建议新开实现准备线程，围绕 Ubuntu 24、数据库、对象存储、后端服务、Nginx/公网 IP、私有配置和 smoke test 留档展开。
+3. `P1 投诉申诉与案件模块小修` — 仅限发现字段、编号或表述小问题时处理。
+4. `P1 评价与信用摘要模块小修` — 仅限发现字段、编号或表述小问题时处理。
+5. `P1 管理端治理模块小修` — 仅限发现字段、编号或表述小问题时处理。
+6. `Windows Credential Manager 适配器` — 后续实现线程，优先级中高。
+7. `真实 OBS SDK 适配器` — 后续实现线程，优先级中，需要凭证私有配置方案就位。
 
 ## 建议归档与下一线程
 
 - 建议归档当前线程：是。
-- 下一线程名称：`P1 需求发布与审核模块详细设计` 或 `Windows Credential Manager 适配器`
+- 下一线程名称：`详细设计深化：P1 评价与信用摘要模块`
+- 下一线程启动 prompt：
+
+```text
+请先阅读：
+- D:\big_homework\AGENTS.md
+- D:\big_homework\docs\03_current_plan.md
+- D:\big_homework\handoff\latest.md
+- D:\big_homework\docs\13_detailed_design_v1.md
+- D:\big_homework\docs\06_execution_preparation_v1.md
+- D:\big_homework\docs\09_codearts_requirement_tables_v1.md
+- D:\big_homework\docs\12_code_generation_constraints_v1.md
+
+当前任务：继续完善《校园搭子平台》详细设计文档。P0 主链路详细设计已具备阶段性基线，P0-2 需求发布与审核模块已阶段性收束。现在不要写代码，不调用 CodeArts，不生成实现 prompt。请采用“无情审问式”设计访谈，但每次只问一个问题，并给出推荐答案、理由、影响范围和代价。
+
+本轮目标：进入 P1 文档工作，优先细化“评价与信用摘要模块”，维护 `docs/13_detailed_design_v1.md` 和必要的当前计划/交接文档。需要明确评价触发条件、评价任务对象、评价字段、信用摘要变化规则、申诉挂接、接口契约、异常分支、测试入口和后续实现批次。继续遵守每次只问一个问题的设计访谈规则。
+```
