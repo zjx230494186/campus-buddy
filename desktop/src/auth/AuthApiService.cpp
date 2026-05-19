@@ -1,6 +1,6 @@
 #include "auth/AuthApiService.h"
 
-AuthApiService::AuthApiService(CampusApiClient &client, AuthTokenStore &tokenStore, QObject *parent)
+AuthApiService::AuthApiService(CampusApiClient &client, SecureTokenStore &tokenStore, QObject *parent)
     : QObject(parent),
       client_(client),
       tokenStore_(tokenStore)
@@ -30,34 +30,11 @@ void AuthApiService::login(const QString &campusEmail, const QString &password, 
     });
 }
 
-void AuthApiService::registerAccount(const QString &realName, const QString &studentNumber, const QString &campusEmail, const QString &password, const QString &verificationCode, AuthCallback callback)
-{
-    QJsonObject body;
-    body[QStringLiteral("realName")] = realName;
-    body[QStringLiteral("studentNumber")] = studentNumber;
-    body[QStringLiteral("campusEmail")] = campusEmail;
-    body[QStringLiteral("password")] = password;
-    body[QStringLiteral("verificationCode")] = verificationCode;
-
-    client_.postJson(QStringLiteral("/auth/register"), body, [callback = std::move(callback)](const ApiClientResponse &response) {
-        AuthResult result;
-        if (response.ok) {
-            result.success = true;
-        } else {
-            result.success = false;
-            result.errorCode = response.error.code;
-            result.errorMessage = response.error.message;
-        }
-        if (callback) {
-            callback(result);
-        }
-    });
-}
-
 void AuthApiService::sendVerificationCode(const QString &campusEmail, AuthCallback callback)
 {
     QJsonObject body;
     body[QStringLiteral("campusEmail")] = campusEmail;
+    body[QStringLiteral("purpose")] = QStringLiteral("REGISTER_OR_LOGIN");
 
     client_.postJson(QStringLiteral("/auth/campus-email/verification-codes"), body, [callback = std::move(callback)](const ApiClientResponse &response) {
         AuthResult result;
@@ -79,8 +56,33 @@ void AuthApiService::verifyCampusEmail(const QString &campusEmail, const QString
     QJsonObject body;
     body[QStringLiteral("campusEmail")] = campusEmail;
     body[QStringLiteral("code")] = code;
+    body[QStringLiteral("purpose")] = QStringLiteral("REGISTER_OR_LOGIN");
 
     client_.postJson(QStringLiteral("/auth/campus-email/verifications"), body, [callback = std::move(callback)](const ApiClientResponse &response) {
+        AuthResult result;
+        if (response.ok) {
+            result.success = true;
+            result.verificationTicket = response.json.value(QStringLiteral("verificationTicket")).toString();
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void AuthApiService::registerAccount(const QString &campusEmail, const QString &verificationTicket, const QString &password, const QString &displayName, AuthCallback callback)
+{
+    QJsonObject body;
+    body[QStringLiteral("campusEmail")] = campusEmail;
+    body[QStringLiteral("verificationTicket")] = verificationTicket;
+    body[QStringLiteral("password")] = password;
+    body[QStringLiteral("displayName")] = displayName;
+
+    client_.postJson(QStringLiteral("/auth/register"), body, [callback = std::move(callback)](const ApiClientResponse &response) {
         AuthResult result;
         if (response.ok) {
             result.success = true;
@@ -122,7 +124,7 @@ void AuthApiService::getIdentityVerificationStatus(AuthCallback callback)
         AuthResult result;
         if (response.ok) {
             result.success = true;
-            result.accessToken = response.json.value(QStringLiteral("authenticationStatus")).toString();
+            result.authenticationStatus = response.json.value(QStringLiteral("authenticationStatus")).toString();
         } else {
             result.success = false;
             result.errorCode = response.error.code;

@@ -20,17 +20,19 @@ signals:
 
 private slots:
     void onSendCodeClicked();
+    void onVerifyCodeClicked();
     void onRegisterClicked();
 
 private:
     AuthApiService &authService_;
+    QString verificationTicket_;
 
-    QLineEdit *realNameEdit_;
-    QLineEdit *studentNumberEdit_;
     QLineEdit *emailEdit_;
-    QLineEdit *passwordEdit_;
     QLineEdit *codeEdit_;
+    QLineEdit *displayNameEdit_;
+    QLineEdit *passwordEdit_;
     QPushButton *sendCodeButton_;
+    QPushButton *verifyCodeButton_;
     QPushButton *registerButton_;
     QPushButton *loginButton_;
     QLabel *statusLabel_;

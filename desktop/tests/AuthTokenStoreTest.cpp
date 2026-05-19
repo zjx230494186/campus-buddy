@@ -14,6 +14,7 @@ private slots:
     void setAndRetrieveAccessToken();
     void clearRemovesAccessToken();
     void hasAccessTokenReturnsFalseAfterClear();
+    void tokenIsNotPersistedToQSettings();
     void cleanupTestCase();
 
 private:
@@ -28,9 +29,6 @@ void AuthTokenStoreTest::initTestCase()
 
 void AuthTokenStoreTest::defaultStoreIsEmpty()
 {
-    QSettings settings(QStringLiteral("CampusBuddy"), QStringLiteral("Auth"));
-    settings.remove(TEST_KEY);
-
     AuthTokenStore store;
     QVERIFY(!store.hasAccessToken());
     QVERIFY(store.accessToken().isEmpty());
@@ -62,6 +60,23 @@ void AuthTokenStoreTest::hasAccessTokenReturnsFalseAfterClear()
     QVERIFY(store.hasAccessToken());
     store.clear();
     QVERIFY(!store.hasAccessToken());
+}
+
+void AuthTokenStoreTest::tokenIsNotPersistedToQSettings()
+{
+    QSettings settings(QStringLiteral("CampusBuddy"), QStringLiteral("Auth"));
+    settings.remove(TEST_KEY);
+
+    {
+        AuthTokenStore store;
+        store.setAccessToken(QStringLiteral("should-not-persist"));
+    }
+
+    QSettings check(QStringLiteral("CampusBuddy"), QStringLiteral("Auth"));
+    QVERIFY2(!check.contains(TEST_KEY),
+             "accessToken must NOT be persisted to QSettings");
+    QVERIFY2(check.value(TEST_KEY).toString().isEmpty(),
+             "QSettings must remain empty after AuthTokenStore usage");
 }
 
 void AuthTokenStoreTest::cleanupTestCase()

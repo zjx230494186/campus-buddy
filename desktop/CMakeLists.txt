@@ -15,6 +15,9 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthApiService.cpp
@@ -76,6 +79,9 @@ add_test(NAME campus_api_client_test COMMAND campus_api_client_test)
 
 qt_add_executable(auth_token_store_test
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/AuthTokenStoreTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
 )

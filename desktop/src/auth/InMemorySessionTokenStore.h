@@ -4,10 +4,10 @@
 
 #include "auth/SecureTokenStore.h"
 
-class AuthTokenStore : public SecureTokenStore
+class InMemorySessionTokenStore : public SecureTokenStore
 {
 public:
-    AuthTokenStore();
+    InMemorySessionTokenStore() = default;
 
     QString accessToken() const override;
     void setAccessToken(const QString &token) override;

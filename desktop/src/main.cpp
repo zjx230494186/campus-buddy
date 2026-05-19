@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     navigator.addWidget(registerPage);
     navigator.addWidget(homePage);
 
-    navigator.setCurrentIndex(tokenStore.hasAccessToken() ? 2 : 0);
+    navigator.setCurrentIndex(0);
 
     QObject::connect(loginPage, &LoginWidget::loginSuccess, [&navigator]() {
         navigator.setCurrentIndex(2);
@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
     });
 
     navigator.setWindowTitle(QStringLiteral("校园搭子平台"));
-    navigator.resize(420, 400);
+    navigator.resize(420, 480);
     navigator.show();
 
     if (QCoreApplication::arguments().contains("--smoke-test")) {

@@ -18,31 +18,30 @@ RegisterWidget::RegisterWidget(AuthApiService &authService, QWidget *parent)
     layout->addWidget(title);
 
     auto *formLayout = new QFormLayout();
-    realNameEdit_ = new QLineEdit(this);
-    realNameEdit_->setPlaceholderText(QStringLiteral("真实姓名"));
-    formLayout->addRow(QStringLiteral("姓名:"), realNameEdit_);
-
-    studentNumberEdit_ = new QLineEdit(this);
-    studentNumberEdit_->setPlaceholderText(QStringLiteral("学号"));
-    formLayout->addRow(QStringLiteral("学号:"), studentNumberEdit_);
-
     emailEdit_ = new QLineEdit(this);
     emailEdit_->setPlaceholderText(QStringLiteral("校园邮箱"));
     formLayout->addRow(QStringLiteral("邮箱:"), emailEdit_);
+
+    codeEdit_ = new QLineEdit(this);
+    codeEdit_->setPlaceholderText(QStringLiteral("验证码"));
+    formLayout->addRow(QStringLiteral("验证码:"), codeEdit_);
+
+    displayNameEdit_ = new QLineEdit(this);
+    displayNameEdit_->setPlaceholderText(QStringLiteral("显示名"));
+    formLayout->addRow(QStringLiteral("显示名:"), displayNameEdit_);
 
     passwordEdit_ = new QLineEdit(this);
     passwordEdit_->setEchoMode(QLineEdit::Password);
     passwordEdit_->setPlaceholderText(QStringLiteral("密码"));
     formLayout->addRow(QStringLiteral("密码:"), passwordEdit_);
 
-    codeEdit_ = new QLineEdit(this);
-    codeEdit_->setPlaceholderText(QStringLiteral("验证码"));
-    formLayout->addRow(QStringLiteral("验证码:"), codeEdit_);
-
     layout->addLayout(formLayout);
 
     sendCodeButton_ = new QPushButton(QStringLiteral("发送验证码"), this);
     layout->addWidget(sendCodeButton_);
+
+    verifyCodeButton_ = new QPushButton(QStringLiteral("校验验证码"), this);
+    layout->addWidget(verifyCodeButton_);
 
     registerButton_ = new QPushButton(QStringLiteral("注册"), this);
     layout->addWidget(registerButton_);
@@ -56,6 +55,7 @@ RegisterWidget::RegisterWidget(AuthApiService &authService, QWidget *parent)
     layout->addWidget(statusLabel_);
 
     connect(sendCodeButton_, &QPushButton::clicked, this, &RegisterWidget::onSendCodeClicked);
+    connect(verifyCodeButton_, &QPushButton::clicked, this, &RegisterWidget::onVerifyCodeClicked);
     connect(registerButton_, &QPushButton::clicked, this, &RegisterWidget::onRegisterClicked);
     connect(loginButton_, &QPushButton::clicked, this, &RegisterWidget::switchToLogin);
 }
@@ -81,25 +81,52 @@ void RegisterWidget::onSendCodeClicked()
     });
 }
 
+void RegisterWidget::onVerifyCodeClicked()
+{
+    const QString email = emailEdit_->text().trimmed();
+    const QString code = codeEdit_->text().trimmed();
+    if (email.isEmpty() || code.isEmpty()) {
+        statusLabel_->setText(QStringLiteral("请填写邮箱和验证码"));
+        return;
+    }
+
+    verifyCodeButton_->setEnabled(false);
+    statusLabel_->setText(QStringLiteral("校验中..."));
+
+    authService_.verifyCampusEmail(email, code, [this](const AuthResult &result) {
+        verifyCodeButton_->setEnabled(true);
+        if (result.success) {
+            verificationTicket_ = result.verificationTicket;
+            statusLabel_->setText(QStringLiteral("验证码校验成功"));
+        } else {
+            verificationTicket_.clear();
+            statusLabel_->setText(result.errorMessage.isEmpty() ? QStringLiteral("校验失败") : result.errorMessage);
+        }
+    });
+}
+
 void RegisterWidget::onRegisterClicked()
 {
-    const QString realName = realNameEdit_->text().trimmed();
-    const QString studentNumber = studentNumberEdit_->text().trimmed();
     const QString email = emailEdit_->text().trimmed();
+    const QString displayName = displayNameEdit_->text().trimmed();
     const QString password = passwordEdit_->text();
-    const QString code = codeEdit_->text().trimmed();
 
-    if (realName.isEmpty() || studentNumber.isEmpty() || email.isEmpty() || password.isEmpty() || code.isEmpty()) {
-        statusLabel_->setText(QStringLiteral("请填写所有字段"));
+    if (email.isEmpty() || displayName.isEmpty() || password.isEmpty()) {
+        statusLabel_->setText(QStringLiteral("请填写邮箱、显示名和密码"));
+        return;
+    }
+    if (verificationTicket_.isEmpty()) {
+        statusLabel_->setText(QStringLiteral("请先校验验证码"));
         return;
     }
 
     registerButton_->setEnabled(false);
     statusLabel_->setText(QStringLiteral("注册中..."));
 
-    authService_.registerAccount(realName, studentNumber, email, password, code, [this](const AuthResult &result) {
+    authService_.registerAccount(email, verificationTicket_, password, displayName, [this](const AuthResult &result) {
         registerButton_->setEnabled(true);
         if (result.success) {
+            verificationTicket_.clear();
             statusLabel_->setText(QStringLiteral("注册成功，请登录"));
             emit registerSuccess();
         } else {

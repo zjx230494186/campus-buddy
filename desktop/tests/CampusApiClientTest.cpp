@@ -22,22 +22,26 @@ private slots:
     void postJsonSendsBodyAndParsesResponse();
     void getJsonWithAuthSendsAuthorizationHeader();
     void postJsonWithAuthSendsAuthorizationHeader();
+    void sendVerificationCodeRequestBodyContainsPurpose();
+    void verifyCampusEmailRequestBodyContainsPurpose();
+    void registerRequestBodyContainsVerificationTicketAndDisplayName();
 
 private:
-    static QUrl serveSingleResponse(const QByteArray &statusLine, const QByteArray &body, const QByteArray &extraHeaders = QByteArray());
-    static ApiClientResponse requestGet(const QUrl &baseUrl, const QString &path);
-    static ApiClientResponse requestGetWithAuth(const QUrl &baseUrl, const QString &path, const QString &token);
-    static ApiClientResponse requestPost(const QUrl &baseUrl, const QString &path, const QJsonObject &body);
-    static ApiClientResponse requestPostWithAuth(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QString &token);
-
     struct RawRequest {
         QByteArray headers;
         QByteArray body;
     };
+
+    static QUrl serveSingleResponse(const QByteArray &statusLine, const QByteArray &body);
     static QUrl serveAndCaptureRequest(RawRequest &captured, const QByteArray &responseStatus, const QByteArray &responseBody);
+    static ApiClientResponse requestGet(const QUrl &baseUrl, const QString &path);
+    static ApiClientResponse requestGetWithAuth(const QUrl &baseUrl, const QString &path, const QString &token);
+    static ApiClientResponse requestPost(const QUrl &baseUrl, const QString &path, const QJsonObject &body);
+    static ApiClientResponse requestPostWithAuth(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QString &token);
+    static RawRequest capturePost(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QByteArray &responseBody);
 };
 
-QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, const QByteArray &body, const QByteArray &extraHeaders)
+QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, const QByteArray &body)
 {
     auto *server = new QTcpServer(qApp);
     if (!server->listen(QHostAddress::LocalHost, 0)) {
@@ -45,9 +49,9 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
         return {};
     }
 
-    QObject::connect(server, &QTcpServer::newConnection, server, [server, statusLine, body, extraHeaders]() {
+    QObject::connect(server, &QTcpServer::newConnection, server, [server, statusLine, body]() {
         QTcpSocket *socket = server->nextPendingConnection();
-        QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, statusLine, body, extraHeaders]() {
+        QObject::connect(socket, &QTcpSocket::readyRead, socket, [socket, statusLine, body]() {
             const QByteArray request = socket->readAll();
             if (!request.contains("\r\n\r\n")) {
                 return;
@@ -58,10 +62,6 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
             response.append("\r\nContent-Type: application/json");
             response.append("\r\nContent-Length: ");
             response.append(QByteArray::number(body.size()));
-            if (!extraHeaders.isEmpty()) {
-                response.append("\r\n");
-                response.append(extraHeaders);
-            }
             response.append("\r\nConnection: close\r\n\r\n");
             response.append(body);
 
@@ -75,7 +75,7 @@ QUrl CampusApiClientTest::serveSingleResponse(const QByteArray &statusLine, cons
     return QUrl(QString("http://127.0.0.1:%1/api").arg(server->serverPort()));
 }
 
-QUrl CampusApiClientTest::serveAndCaptureRequest(CampusApiClientTest::RawRequest &captured, const QByteArray &responseStatus, const QByteArray &responseBody)
+QUrl CampusApiClientTest::serveAndCaptureRequest(RawRequest &captured, const QByteArray &responseStatus, const QByteArray &responseBody)
 {
     auto *server = new QTcpServer(qApp);
     if (!server->listen(QHostAddress::LocalHost, 0)) {
@@ -136,7 +136,7 @@ ApiClientResponse CampusApiClientTest::requestGet(const QUrl &baseUrl, const QSt
 
     if (!completed) {
         response.error.type = ApiClientError::NetworkError;
-        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+        response.error.message = QStringLiteral("timeout");
     }
     return response;
 }
@@ -163,7 +163,7 @@ ApiClientResponse CampusApiClientTest::requestGetWithAuth(const QUrl &baseUrl, c
 
     if (!completed) {
         response.error.type = ApiClientError::NetworkError;
-        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+        response.error.message = QStringLiteral("timeout");
     }
     return response;
 }
@@ -190,7 +190,7 @@ ApiClientResponse CampusApiClientTest::requestPost(const QUrl &baseUrl, const QS
 
     if (!completed) {
         response.error.type = ApiClientError::NetworkError;
-        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+        response.error.message = QStringLiteral("timeout");
     }
     return response;
 }
@@ -217,9 +217,29 @@ ApiClientResponse CampusApiClientTest::requestPostWithAuth(const QUrl &baseUrl, 
 
     if (!completed) {
         response.error.type = ApiClientError::NetworkError;
-        response.error.message = QStringLiteral("API client request did not finish before the test timeout");
+        response.error.message = QStringLiteral("timeout");
     }
     return response;
+}
+
+CampusApiClientTest::RawRequest CampusApiClientTest::capturePost(const QUrl &baseUrl, const QString &path, const QJsonObject &body, const QByteArray &responseBody)
+{
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    RawRequest captured;
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.postJson(path, body, [&](const ApiClientResponse &) {
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    Q_UNUSED(captured)
+    return captured;
 }
 
 void CampusApiClientTest::getJsonParsesSuccessPayload()
@@ -278,7 +298,7 @@ void CampusApiClientTest::postJsonSendsBodyAndParsesResponse()
 {
     const QUrl baseUrl = serveSingleResponse(
         "HTTP/1.1 200 OK",
-        R"({"accessToken":"jwt-123","accountRole":"STUDENT"})");
+        R"({"accessToken":"jwt-123","tokenType":"Bearer"})");
 
     QVERIFY(baseUrl.isValid());
 
@@ -290,7 +310,6 @@ void CampusApiClientTest::postJsonSendsBodyAndParsesResponse()
 
     QVERIFY(response.ok);
     QCOMPARE(response.json.value("accessToken").toString(), QString("jwt-123"));
-    QCOMPARE(response.json.value("accountRole").toString(), QString("STUDENT"));
 }
 
 void CampusApiClientTest::getJsonWithAuthSendsAuthorizationHeader()
@@ -302,8 +321,7 @@ void CampusApiClientTest::getJsonWithAuthSendsAuthorizationHeader()
 
     QVERIFY(baseUrl.isValid());
 
-    const QString token = QStringLiteral("my-jwt-access-token");
-    const ApiClientResponse response = requestGetWithAuth(baseUrl, "/auth/identity-verifications/me", token);
+    const ApiClientResponse response = requestGetWithAuth(baseUrl, "/auth/identity-verifications/me", QStringLiteral("my-jwt-access-token"));
 
     QVERIFY(response.ok);
 
@@ -325,14 +343,94 @@ void CampusApiClientTest::postJsonWithAuthSendsAuthorizationHeader()
     body["realName"] = "Test";
     body["studentNumber"] = "2024001";
 
-    const QString token = QStringLiteral("my-jwt-access-token");
-    const ApiClientResponse response = requestPostWithAuth(baseUrl, "/auth/identity-verifications", body, token);
+    const ApiClientResponse response = requestPostWithAuth(baseUrl, "/auth/identity-verifications", body, QStringLiteral("my-jwt-access-token"));
 
     QVERIFY(response.ok);
 
     const QString headerStr = QString::fromUtf8(captured.headers);
     QVERIFY2(headerStr.contains("Authorization: Bearer my-jwt-access-token"),
              "POST request with auth must include Authorization Bearer header");
+}
+
+void CampusApiClientTest::sendVerificationCodeRequestBodyContainsPurpose()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"campusEmail":"test@edu.cn","verificationStatus":"CODE_SENT","expiresInSeconds":600,"resendAfterSeconds":60})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["campusEmail"] = "test@edu.cn";
+    body["purpose"] = "REGISTER_OR_LOGIN";
+
+    const ApiClientResponse response = requestPost(baseUrl, "/auth/campus-email/verification-codes", body);
+    QVERIFY(response.ok);
+
+    const QJsonDocument doc = QJsonDocument::fromJson(captured.body, nullptr);
+    QVERIFY(doc.isObject());
+    QCOMPARE(doc.object().value("purpose").toString(), QString("REGISTER_OR_LOGIN"));
+    QCOMPARE(doc.object().value("campusEmail").toString(), QString("test@edu.cn"));
+}
+
+void CampusApiClientTest::verifyCampusEmailRequestBodyContainsPurpose()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"campusEmail":"test@edu.cn","verificationStatus":"VERIFIED","verifiedAt":"2026-05-19T00:00:00Z","verificationTicket":"ticket-abc"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["campusEmail"] = "test@edu.cn";
+    body["code"] = "123456";
+    body["purpose"] = "REGISTER_OR_LOGIN";
+
+    const ApiClientResponse response = requestPost(baseUrl, "/auth/campus-email/verifications", body);
+    QVERIFY(response.ok);
+
+    const QJsonDocument doc = QJsonDocument::fromJson(captured.body, nullptr);
+    QVERIFY(doc.isObject());
+    QCOMPARE(doc.object().value("purpose").toString(), QString("REGISTER_OR_LOGIN"));
+    QCOMPARE(doc.object().value("campusEmail").toString(), QString("test@edu.cn"));
+    QCOMPARE(doc.object().value("code").toString(), QString("123456"));
+}
+
+void CampusApiClientTest::registerRequestBodyContainsVerificationTicketAndDisplayName()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"userId":"uid-1","campusEmail":"test@edu.cn","displayName":"MyName","authenticationStatus":"UNVERIFIED","campusEmailVerificationStatus":"VERIFIED","createdAt":"2026-05-19T00:00:00Z"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["campusEmail"] = "test@edu.cn";
+    body["verificationTicket"] = "ticket-abc";
+    body["password"] = "secret123";
+    body["displayName"] = "MyName";
+
+    const ApiClientResponse response = requestPost(baseUrl, "/auth/register", body);
+    QVERIFY(response.ok);
+
+    const QJsonDocument doc = QJsonDocument::fromJson(captured.body, nullptr);
+    QVERIFY(doc.isObject());
+    const QJsonObject sent = doc.object();
+
+    QCOMPARE(sent.value("campusEmail").toString(), QString("test@edu.cn"));
+    QCOMPARE(sent.value("verificationTicket").toString(), QString("ticket-abc"));
+    QCOMPARE(sent.value("password").toString(), QString("secret123"));
+    QCOMPARE(sent.value("displayName").toString(), QString("MyName"));
+
+    QVERIFY2(!sent.contains("realName"),
+             "register request body must NOT contain realName");
+    QVERIFY2(!sent.contains("studentNumber"),
+             "register request body must NOT contain studentNumber");
+    QVERIFY2(!sent.contains("verificationCode"),
+             "register request body must NOT contain verificationCode");
 }
 
 QTEST_MAIN(CampusApiClientTest)

@@ -47,7 +47,7 @@ void HomePageWidget::onCheckVerificationStatus()
 
     authService_.getIdentityVerificationStatus([this](const AuthResult &result) {
         if (result.success) {
-            verificationStatusLabel_->setText(QStringLiteral("认证状态: %1").arg(result.accessToken));
+            verificationStatusLabel_->setText(QStringLiteral("认证状态: %1").arg(result.authenticationStatus));
         } else {
             verificationStatusLabel_->setText(result.errorMessage.isEmpty() ? QStringLiteral("查询失败") : result.errorMessage);
         }
