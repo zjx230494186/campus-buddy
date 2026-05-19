@@ -193,10 +193,10 @@ P2 能力仅保留扩展点，不进入当前详细设计主体实现范围。
 | 需求发布与审核 | P0 | 已完成第一轮正文补全 | 承接结构化发布、草稿、提交审核、审核通过/驳回 |
 | 广场发现与推荐 | P0 | 已完成第一轮正文补全 | 承接广场列表、筛选、详情和规则推荐入口 |
 | 低压力联系 | P0 | 已完成第一轮正文补全 | 承接邀约确认、站内消息、联系方式卡片和解锁 |
-| 评价与信用摘要 | P1 | 待补充 | 承接互评、信用摘要、分值变更和来源解释 |
-| 投诉申诉与案件 | P1 | 待补充 | 承接投诉、申诉、证据、被投诉方回应 |
-| 管理端治理 | P1 | 待补充 | 承接审核、案件处理、账号处置、信用干预 |
-| 通知与留痕 | P1 | 进行中 | 承接状态通知、操作记录和后续追踪 |
+| 评价与信用摘要 | P1 | 已完成第一轮正文补全 | 承接互评、信用摘要、分值变更和来源解释 |
+| 投诉申诉与案件 | P1 | 已完成第一轮正文补全 | 承接投诉、申诉、证据、被投诉方回应 |
+| 管理端治理 | P1 | 已完成第一轮正文补全 | 承接审核、案件处理、账号处置、信用干预 |
+| 通知与留痕 | P1 | 已完成第一轮正文补全 | 承接状态通知、操作记录和后续追踪 |
 
 ### 4.3 模块正文补全规则
 
@@ -1683,18 +1683,84 @@ Batch 3 的 Qt 客户端测试与验证至少覆盖：
 - 被联系对象
 - 被投诉方
 - 管理员
+- 超级管理员
+- 系统定时/事件触发器
 
-### 5.3 用例图前说明待补充项
+### 5.3 总体用例图边界
 
-- 总体用例图边界
-- 账号认证模块用例
-- 需求发布与审核模块用例
-- 低压力联系模块用例
-- 评价与信用摘要模块用例
-- 投诉申诉与治理模块用例
-- 用例与 `US` / `FR` 的追踪关系
+总体用例图只表达 V1/P1 当前确定的业务能力边界，不把后续扩展能力、运营后台、营销通知、复杂风控看板或移动端能力画入当前系统边界。用例图的目标是帮助评审者理解“谁能做什么、哪些能力需要认证、哪些能力由管理员执行、哪些能力由系统事件触发”，而不是替代接口契约或数据库设计。
 
-### 5.4 P0-2 需求发布与审核用例图前说明
+系统边界内包括：
+
+- 账号准入与身份认证。
+- 需求发布、审核与广场输入。
+- 广场发现、筛选、详情和规则推荐入口。
+- 低压力联系、站内消息、联系方式卡片和解锁。
+- 评价与信用摘要。
+- 投诉申诉与案件。
+- 管理端治理、审计和信用干预。
+- 站内通知与系统事件留痕。
+
+系统边界外包括：
+
+- 真实线下活动履约过程。
+- 微信、QQ、手机号等外部联系工具本身。
+- 短信、邮件、移动端 Push、WebSocket 实时推送。
+- 复杂 BI 看板、营销公告、批量运营通知。
+- 对象存储、数据库、Nginx 等基础设施的内部实现细节。
+
+参与者边界如下：
+
+| 参与者 | 定位 | 可参与的主要用例 |
+|---|---|---|
+| 未认证学生 | 已登录但未通过校内身份认证的用户 | 浏览部分信息、提交认证资料、查看认证状态；不得发布需求、发起联系或保存服务端发布草稿 |
+| 已认证学生 | 通过校内身份认证的普通用户 | 发布需求、浏览广场、发起联系、站内沟通、交换联系方式、评价、投诉申诉、查看通知 |
+| 需求发布者 | 已认证学生在发布物上的角色 | 创建/编辑草稿、提交审核、撤回审核、主动下架、查看审核结果 |
+| 被联系对象 | 低压力联系中的另一方 | 查看邀约、站内沟通、确认交换联系方式、后续评价或举报 |
+| 案件相关方 | 投诉、申诉或举报中的发起方/回应方 | 创建案件、补充证据、提交回应、查看处理结果 |
+| 管理员 | `ADMIN` 角色 | 审核认证和需求、查看案件、要求补充、裁定普通案件、执行轻度治理、查看审计和系统事件 |
+| 超级管理员 | `SUPER_ADMIN` 角色 | 执行封禁、恢复账号、信用干预、撤销治理动作和高风险复核 |
+| 系统事件触发器 | 后端业务事件或状态变化 | 生成 `SystemEventLog`，派生 `Notification`，驱动通知和留痕 |
+
+### 5.4 模块用例拆分总览
+
+V1/P1 用例图建议按模块拆为 7 张小图，而不是在一张大图中塞入全部用例。总体图只保留模块级能力，细节图按职责边界展开。
+
+| 用例图 | 覆盖范围 | 主要参与者 | 不覆盖内容 |
+|---|---|---|---|
+| 账号准入与身份认证 | 注册/登录、提交认证资料、查看认证状态、管理员审核认证 | 未认证学生、已认证学生、管理员 | 真实邮件服务实现、对象存储内部细节 |
+| 需求发布与审核 | 草稿、提交审核、撤回审核、主动下架、管理员审核 | 已认证学生、需求发布者、管理员 | 广场排序、联系、评价 |
+| 广场发现与低压力联系 | 浏览需求、筛选、查看详情、发起联系、站内消息、联系方式解锁、拉黑 | 已认证学生、需求发布者、被联系对象 | 完整 IM、线下履约判断 |
+| 评价与信用摘要 | 主动评价、修改评价、查看信用摘要、查看标签、评价争议入口 | 已认证学生、被评价方 | 管理员案件裁定细节 |
+| 投诉申诉与案件 | 创建案件、补证据、回应、查看案件进度、管理员要求补充或裁定 | 案件相关方、管理员 | 账号处罚执行细节、审计日志实现 |
+| 管理端治理 | 查看治理档案、创建/撤销治理动作、信用干预、查看审计日志、从案件升级治理 | 管理员、超级管理员 | 复杂风控看板、批量运营处置 |
+| 通知与留痕 | 查看通知、未读数、标记已读、系统事件查询 | 已认证学生、管理员、系统事件触发器 | 人工发通知、群发、站外触达 |
+
+跨图关系建议：
+
+- “提交认证资料”通过后，用户才能进入“发布需求”“发起联系”等已认证学生用例。
+- “审核需求”通过后，发布物才进入广场发现输入范围。
+- “发起联系”和“站内消息”产生后，才可能进入“评价”和“投诉申诉”。
+- “评价争议”“会话举报”“需求举报”等用例进入统一 `CaseTicket` 案件链路。
+- “案件裁定”必要时扩展到“从案件升级治理”。
+- “治理动作”“案件状态变化”“审核结果”等状态变化触发通知与系统事件留痕。
+
+### 5.5 用例与需求编号映射口径
+
+用例图中的能力应优先映射到 `IR` 与 `US` 编号。当前小范围映射以第 12 章追踪矩阵为准；若最新需求分析报告对编号进行调整，应同步修订第 12 章和本节描述。
+
+| 能力区域 | 主要需求编号 |
+|---|---|
+| 账号准入与身份认证 | `IR1`、`IR2` |
+| 需求发布与审核 | `IR3`、`IR4`、`IR5`、`IR6`、`US1`、`US2`、`US3`、`US4`、`US5` |
+| 广场发现与推荐 | `IR7`、`IR8`、`US8` |
+| 低压力联系 | `IR9`、`IR10`、`US7` |
+| 举报、投诉、申诉与案件 | `IR11`、`IR14`、`IR15`、`US10`、`US11` |
+| 评价与信用摘要 | `IR12`、`IR13`、`US6`、`US9`、`US12` |
+| 管理端治理 | `IR16`、`US10`、`US11` |
+| 通知与留痕 | 由 `IR2`、`IR6`、`IR9`、`IR12`、`IR14`、`IR15`、`IR16` 等状态变化派生，当前以 P1-4 追踪矩阵为准 |
+
+### 5.6 P0-2 需求发布与审核用例图前说明
 
 P0-2 需求发布与审核模块用例图聚焦“发布者如何形成可审核发布物”以及“管理员如何完成先审后发裁定”。本图不覆盖广场浏览、发起联系、评价和投诉；这些能力分别进入 P0-3、P0-4 和 P1 模块图。
 
@@ -1732,32 +1798,96 @@ P0-2 需求发布与审核模块用例图聚焦“发布者如何形成可审核
 
 类图采用领域对象优先，不在详细设计阶段过早绑定数据库物理表结构。
 
-### 6.2 核心领域对象候选
+类图不要求展示所有 DTO、Controller、Repository 和数据库字段。正式类图应优先表达领域对象、对象间关联、聚合边界和关键状态字段。接口 DTO 可以在接口契约或实现批次中补充，不应把类图画成后端代码包结构图。
 
-- `User`
-- `UserProfile`
-- `AuthenticationRecord`
-- `PartnerPost`
-- `Conversation`
-- `Message`
-- `ContactCard`
-- `Review`
-- `CreditSummary`
-- `CreditChangeLog`
-- `CaseTicket`
-- `CaseResponse`
-- `ModerationRecord`
-- `Notification`
-- `SystemEventLog`
-- `Attachment`
+### 6.2 核心领域对象簇
 
-### 6.3 类图前说明待补充项
+核心领域对象按 8 个对象簇组织，避免把全部对象平铺成一张难以阅读的大图。
 
-- 对象职责
-- 对象关系
-- 聚合边界
-- 关键状态
-- 扩展点
+| 对象簇 | 主要对象 | 职责 |
+|---|---|---|
+| 账号与认证 | `User`、`UserProfile`、`AuthenticationRecord` | 账号身份、展示资料、校内认证状态和认证资料审核结果 |
+| 需求发布 | `PartnerPost`、`PostSearchCriteria`、`PostListItemView`、`PostDetailView` | 搭子需求发布物、场景字段、审核状态、广场输入和展示视图 |
+| 低压力联系 | `Conversation`、`Message`、`ContactCard`、`ContactUnlockRecord`、`BlockRelation` | 会话、站内消息、联系方式卡片、双方解锁、拉黑关系 |
+| 评价与信用 | `Review`、`CreditSummary`、`CreditChangeLog` | 用户主动评价、星级和标签、信用摘要计算和变化记录 |
+| 投诉申诉与案件 | `CaseTicket`、`CaseEvidence`、`CaseResponse` | 统一案件、证据、回应、状态流转和裁定结果 |
+| 管理端治理 | `GovernanceAction`、`AdminAuditLog`、`RestrictionPolicy`、`CreditAdjustmentRecord` | 账号处置、管理员审计、功能限制策略、结构化信用干预 |
+| 通知与留痕 | `Notification`、`SystemEventLog` | 用户可见站内通知、系统业务事件留痕和通知派生 |
+| 附件与对象存储 | `Attachment` | 认证材料、发布图片、案件证据等文件元数据和受控访问引用 |
+
+### 6.3 对象关系与聚合边界
+
+类图建议按对象簇拆分绘制，再用跨模块关系说明连接。每张类图都应避免变成“全系统对象网”，优先表达当前模块内强关联对象。
+
+账号与认证对象关系：
+
+- `User` 是账号主对象，承载登录身份、角色、认证状态和基础账号状态。
+- `UserProfile` 依附于 `User`，承载昵称、头像、简介等展示资料。
+- `AuthenticationRecord` 或认证提交对象依附于 `User`，记录校内认证资料提交、审核状态、驳回原因和材料附件引用。
+- 管理员角色本质上仍是 `User` 的角色或权限属性，不单独拆为管理员账号对象。
+
+需求发布对象关系：
+
+- `PartnerPost` 由 `User` 发布，`publisherId` 指向发布者。
+- `PartnerPost` 统一承载草稿、待审核、已发布、已驳回状态，不拆分 `PostDraft`。
+- `PostSearchCriteria`、`PostListItemView`、`PostDetailView` 是查询与展示视图对象，不是核心持久化聚合根。
+- `PartnerPost.attachmentIds` 指向 `Attachment`，不得保存对象存储裸地址。
+
+低压力联系对象关系：
+
+- `Conversation` 连接两个 `User`，并可记录关联 `PartnerPost` 或最近邀约上下文。
+- `Message` 归属于 `Conversation`，发送者为其中一个参与用户。
+- `ContactCard` 归属于 `User`，保存用户当前可交换联系方式；联系方式值不写入 `PartnerPost`。
+- `ContactUnlockRecord` 归属于 `Conversation`，记录双方是否确认交换联系方式和最终解锁时间。
+- `BlockRelation` 表达用户间拉黑关系，是消息、联系、联系方式查看和定向推送的统一前置约束。
+
+评价与信用对象关系：
+
+- `Review` 绑定 `Conversation`，并区分 `reviewerId` 与 `revieweeId`。
+- `CreditSummary` 是按用户聚合的信用摘要，可由评价、默认有效对话、初始虚拟评分基线和信用干预计算得到。
+- `CreditChangeLog` 记录信用摘要变化来源，不应替代 `Review` 或 `CreditAdjustmentRecord`。
+
+投诉申诉与案件对象关系：
+
+- `CaseTicket` 是统一案件对象，通过 `targetType + targetId` 指向 `Review`、`Conversation`、`PartnerPost`、`User` 或 `ADMIN_DECISION`。
+- `CaseEvidence` 归属于 `CaseTicket`，通过 `Attachment` 引用证据文件。
+- `CaseResponse` 归属于 `CaseTicket`，记录发起人、被投诉方或相关方的回应说明和证据引用。
+
+管理端治理对象关系：
+
+- `GovernanceAction` 指向被处置 `User`，并通过 `sourceType/sourceId` 关联案件、人工复核或系统检测来源。
+- `AdminAuditLog` 记录管理员关键操作，可关联治理动作、案件裁定、审核动作或信用干预。
+- `RestrictionPolicy` 可作为从生效 `GovernanceAction` 计算得到的策略视图，不强制独立建表。
+- `CreditAdjustmentRecord` 依附于 `GovernanceAction`，只在 `ADJUST_CREDIT` 下承接结构化信用干预明细。
+
+通知与留痕对象关系：
+
+- `SystemEventLog` 记录业务事件，包含 `sourceType/sourceId`、受影响用户和派生通知引用。
+- `Notification` 面向接收用户，通过 `recipientUserId` 归属于 `User`，通过 `sourceType/sourceId` 指向业务来源。
+- `Notification` 不替代 `SystemEventLog`，`SystemEventLog` 也不替代 `AdminAuditLog`。
+
+附件与对象存储对象关系：
+
+- `Attachment` 只保存文件元数据、归属关系、用途、存储键和受控访问所需信息。
+- 认证材料、发布图片、案件证据均通过 `Attachment` 引用对象存储文件。
+- 普通业务对象不得保存对象存储裸 URL，也不得复制附件原文内容。
+
+### 6.4 类图拆分建议
+
+正式类图建议拆为 4 组，而不是一张巨型类图：
+
+1. 学生主链路类图：`User`、`UserProfile`、`PartnerPost`、`Conversation`、`Message`、`ContactCard`、`ContactUnlockRecord`、`BlockRelation`、`Attachment`。
+2. 评价与信用类图：`Conversation`、`Review`、`CreditSummary`、`CreditChangeLog`、`CreditAdjustmentRecord`。
+3. 案件与治理类图：`CaseTicket`、`CaseEvidence`、`CaseResponse`、`GovernanceAction`、`AdminAuditLog`、`RestrictionPolicy`。
+4. 通知与留痕类图：`SystemEventLog`、`Notification`，并通过 `sourceType/sourceId` 指向其他模块对象。
+
+### 6.5 类图扩展点
+
+- 多学校扩展时，`User`、`PartnerPost`、`CaseTicket`、`SystemEventLog` 等对象可通过 `schoolId` 或学校上下文扩展。
+- 更多搭子场景扩展时，优先扩展 `PartnerPost.sceneType` 和 `scenePayload` 校验结构，不新增平行发布对象。
+- 消息能力扩展时，可在 `Message` 增加更多消息类型，但 V1 纯文本消息边界不变。
+- 通知渠道扩展时，可在 `Notification` 或后续投递对象上增加渠道，不改变 `SystemEventLog` 作为事件源的定位。
+- 对象存储扩展时，业务对象继续引用 `Attachment`，不直接依赖具体云厂商 SDK。
 
 ## 7. 关键状态设计与状态图前说明
 
@@ -1765,22 +1895,192 @@ P0-2 需求发布与审核模块用例图聚焦“发布者如何形成可审核
 
 状态图只覆盖状态复杂、容易出错、影响流程判断的对象。
 
+状态图不覆盖所有领域对象。`SystemEventLog`、`Attachment`、`CreditSummary` 等对象更多是事件记录、文件元数据或计算摘要，不作为 V1 主状态图对象。若某对象只有“创建后保留”这一类简单生命周期，不单独绘制状态图。
+
 ### 7.2 第一版状态图对象
 
-- 用户认证状态
-- 搭子需求状态
-- 联系方式解锁状态
-- 评价任务状态
-- 投诉/申诉案件状态
+第一版状态图只覆盖 8 个高风险状态对象：
 
-### 7.3 状态图前说明待补充项
+| 状态对象 | 状态字段或状态视图 | 覆盖理由 |
+|---|---|---|
+| 用户认证状态 | `User.authenticationStatus` | 决定是否可发布需求、发起联系、保存服务端草稿等关键权限 |
+| 搭子需求状态 | `PartnerPost.status` | 决定发布、审核、广场展示、撤回和下架链路 |
+| 会话状态 | `Conversation.status` | 决定能否发送消息、解锁联系方式、重新激活会话 |
+| 联系方式解锁状态 | `ContactUnlockRecord.status` 或双方确认视图 | 决定是否可查看联系方式 |
+| 评价状态 | `Review.status` | 决定评价是否计入信用摘要、是否处于争议或被撤销影响 |
+| 案件状态 | `CaseTicket.status` | 决定能否补证据、回应、进入管理端队列或关闭 |
+| 治理动作生效/撤销状态 | `GovernanceAction` 生效视图 | 决定账号限制是否当前生效、是否可撤销 |
+| 通知状态 | `Notification.status` | 决定未读数和通知中心展示 |
 
-- 状态集合
-- 触发条件
-- 合法流转
-- 非法流转
-- 终止状态
-- 异常处理
+### 7.3 状态集合与合法流转摘要
+
+#### 7.3.1 用户认证状态
+
+`User.authenticationStatus` 状态集合：
+
+- `UNVERIFIED`
+- `PENDING_REVIEW`
+- `VERIFIED`
+- `REJECTED`
+- `SUSPENDED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| `UNVERIFIED` | 用户提交认证资料 | `PENDING_REVIEW` |
+| `PENDING_REVIEW` | 管理员审核通过 | `VERIFIED` |
+| `PENDING_REVIEW` | 管理员审核驳回 | `REJECTED` |
+| `REJECTED` | 用户重新提交认证资料 | `PENDING_REVIEW` |
+| `VERIFIED` | 高风险治理动作限制账号 | `SUSPENDED` |
+| `SUSPENDED` | 超级管理员恢复账号 | `VERIFIED` 或恢复前状态 |
+
+认证状态图应体现：`SUSPENDED` 是治理动作触发的受限状态，不是普通认证审核结果；未认证或待审核用户不得进入发布和联系等已认证能力链路。
+
+#### 7.3.2 搭子需求状态
+
+`PartnerPost.status` 状态集合：
+
+- `DRAFT`
+- `PENDING_REVIEW`
+- `PUBLISHED`
+- `REJECTED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| 无记录 | 发布者创建草稿 | `DRAFT` |
+| `DRAFT` | 发布者提交审核且校验通过 | `PENDING_REVIEW` |
+| `PENDING_REVIEW` | 发布者撤回审核 | `DRAFT` |
+| `PENDING_REVIEW` | 管理员审核通过 | `PUBLISHED` |
+| `PENDING_REVIEW` | 管理员审核驳回 | `REJECTED` |
+| `REJECTED` | 发布者编辑被驳回需求 | `DRAFT` |
+| `PUBLISHED` | 发布者主动下架 | `DRAFT` |
+
+非法流转包括：未认证用户创建服务端草稿、`PENDING_REVIEW` 直接编辑内容、`PUBLISHED` 直接编辑并保持发布、`REJECTED` 直接提交审核而未进入编辑草稿链路。
+
+#### 7.3.3 会话状态
+
+`Conversation.status` 状态集合：
+
+- `ACTIVE`
+- `CLOSED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| 无记录 | 发起联系并创建会话 | `ACTIVE` |
+| `ACTIVE` | 任一参与方主动关闭会话 | `CLOSED` |
+| `ACTIVE` | 任一参与方拉黑对方 | `CLOSED` |
+| `CLOSED` | 同一双方基于新的 `PartnerPost` 发起新邀约 | `ACTIVE` |
+
+状态图应体现：关闭后的会话不能手动直接重新打开；重新激活必须由新的需求邀约触发，并重新满足发起联系、拉黑关系和联系方式卡片等前置条件。
+
+#### 7.3.4 联系方式解锁状态
+
+联系方式解锁可通过 `ContactUnlockRecord` 的状态字段或双方确认视图表达。建议状态集合：
+
+- `LOCKED`
+- `WAITING_FOR_PEER`
+- `UNLOCKED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| `LOCKED` | 一方确认愿意交换联系方式 | `WAITING_FOR_PEER` |
+| `WAITING_FOR_PEER` | 另一方也确认交换 | `UNLOCKED` |
+| `WAITING_FOR_PEER` | 会话关闭或拉黑 | `LOCKED` 或失效视图 |
+| `UNLOCKED` | 会话关闭或拉黑 | 失效视图，普通客户端不再展示联系方式 |
+
+状态图应体现：`UNLOCKED` 不等于永久可见。会话关闭或拉黑后，即使存在历史解锁记录，普通客户端也不继续展示联系方式。
+
+#### 7.3.5 评价状态
+
+`Review.status` 状态集合：
+
+- `ACTIVE`
+- `DISPUTED`
+- `INVALIDATED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| 无记录 | 用户提交评价 | `ACTIVE` |
+| `ACTIVE` | 被评价方发起评价争议案件 | `DISPUTED` |
+| `DISPUTED` | 管理员维持评价 | `ACTIVE` |
+| `DISPUTED` | 管理员撤销评价影响 | `INVALIDATED` |
+
+评价状态图应体现：标签隐藏可以作为信用干预或评价处理结果存在，不一定改变 `Review.status`；`INVALIDATED` 后评价不再计入平均星数和标签统计，但原评价记录不物理删除。
+
+#### 7.3.6 案件状态
+
+`CaseTicket.status` 状态集合：
+
+- `SUBMITTED`
+- `WAITING_FOR_UPDATE`
+- `CLOSED`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| 无记录 | 用户创建案件 | `SUBMITTED` |
+| `SUBMITTED` | 管理员要求补充或回应 | `WAITING_FOR_UPDATE` |
+| `SUBMITTED` | 管理员直接裁定 | `CLOSED` |
+| `WAITING_FOR_UPDATE` | 相关方补充证据或回应 | `SUBMITTED` |
+| `WAITING_FOR_UPDATE` | 管理员基于现有材料裁定 | `CLOSED` |
+
+案件状态图应体现：`CLOSED` 后不得继续补证据或回应；用户不认可处理结果时，应基于 `ADMIN_DECISION` 创建新案件，而不是重开旧案件。
+
+#### 7.3.7 治理动作生效与撤销状态
+
+`GovernanceAction` 不一定需要单一 `status` 字段，可由 `effectiveFrom`、`effectiveUntil`、`reversedAt` 计算生效视图。建议状态视图：
+
+- `SCHEDULED`
+- `ACTIVE`
+- `EXPIRED`
+- `REVERSED`
+
+核心流转：
+
+| 起始视图 | 触发条件或动作 | 目标视图 |
+|---|---|---|
+| 无记录 | 管理员创建未来生效治理动作 | `SCHEDULED` |
+| 无记录 | 管理员创建立即生效治理动作 | `ACTIVE` |
+| `SCHEDULED` | 到达 `effectiveFrom` | `ACTIVE` |
+| `ACTIVE` | 到达 `effectiveUntil` | `EXPIRED` |
+| `SCHEDULED` / `ACTIVE` | 超级管理员撤销 | `REVERSED` |
+
+状态图应体现：撤销不是删除；`REVERSED` 保留原治理动作和撤销审计记录。账号功能限制由当前仍生效的治理动作计算，而不是只看用户表单一字段。
+
+#### 7.3.8 通知状态
+
+`Notification.status` 状态集合：
+
+- `UNREAD`
+- `READ`
+
+核心流转：
+
+| 起始状态 | 触发动作 | 目标状态 |
+|---|---|---|
+| 无记录 | 系统创建通知 | `UNREAD` |
+| `UNREAD` | 用户标记已读或打开通知详情 | `READ` |
+| `READ` | 用户重复标记已读 | `READ` |
+
+通知状态图应体现：V1 不提供删除、归档、撤回和过期；业务结果修正时创建新通知说明变化，不修改或删除旧通知。
+
+### 7.4 状态图一致性约束
+
+- 状态图中的状态名称必须与正文、接口 DTO、错误码和测试用例保持一致。
+- 状态变更必须由明确业务动作触发，不能由客户端本地状态直接决定。
+- 客户端可根据状态隐藏或禁用按钮，但后端必须重新校验状态和权限。
+- 并发状态冲突统一返回对应状态冲突错误，例如 `POST_STATUS_CONFLICT`、`CASE_STATUS_CONFLICT`、`GOVERNANCE_ACTION_CONFLICT`。
+- 终止或完成类状态不等于物理删除；历史记录应保留，用于评价、案件、治理、通知和审计。
 
 ## 8. 关键业务流程与活动图前说明
 
@@ -1788,22 +2088,209 @@ P0-2 需求发布与审核模块用例图聚焦“发布者如何形成可审核
 
 活动图优先覆盖 V1 主链路，不优先绘制零散页面操作。
 
+活动图用于说明跨角色、跨模块的业务推进顺序。列表查询、筛选排序、普通资料编辑、单页表单交互等局部操作不单独绘制活动图，可由用例说明、接口契约和测试用例覆盖。
+
 ### 8.2 第一版活动图范围
 
-1. 用户注册、登录与校内身份认证。
-2. 需求发布、管理员审核与广场展示。
-3. 用户浏览需求、发起邀约或站内消息、交换联系方式。
-4. 活动结束、互评与信用摘要更新。
-5. 投诉/申诉、被投诉方回应、管理员处理。
+第一版活动图只覆盖 6 条主流程：
 
-### 8.3 活动图前说明待补充项
+1. 认证闭环。
+2. 需求发布审核。
+3. 广场联系解锁。
+4. 评价信用。
+5. 投诉申诉案件。
+6. 治理通知闭环。
 
-- 参与角色
-- 起点和终点
-- 主路径
-- 异常分支
-- 状态变化
-- 需求编号来源
+### 8.3 认证闭环活动图说明
+
+参与角色：未认证学生、已认证学生、管理员。
+
+起点：用户使用校园邮箱注册或登录后，尚未完成校内身份认证。
+
+终点：用户认证状态进入 `VERIFIED` 或 `REJECTED`，客户端展示下一步可执行动作。
+
+主路径：
+
+1. 用户通过校园邮箱验证码完成注册或登录。
+2. 系统创建或识别 `User`，认证状态为 `UNVERIFIED`。
+3. 用户提交认证资料和材料附件。
+4. 系统校验字段、附件归属和认证状态，将认证提交置为待审核。
+5. 管理员查看认证审核队列和材料摘要。
+6. 管理员审核通过，用户认证状态进入 `VERIFIED`。
+7. 系统生成认证审核结果通知和系统事件。
+
+异常分支：
+
+- 验证码无效或过期：登录/注册失败。
+- 认证资料字段缺失：返回字段校验错误。
+- 附件不属于当前用户或格式不合法：提交失败。
+- 认证审核驳回：状态进入 `REJECTED`，用户可修改后重提。
+- 用户已处于 `PENDING_REVIEW` 或 `VERIFIED`：重复提交按既有认证规则拒绝。
+
+状态变化：`User.authenticationStatus` 从 `UNVERIFIED` 到 `PENDING_REVIEW`，再到 `VERIFIED` 或 `REJECTED`。
+
+需求来源：`IR1`、`IR2`。
+
+### 8.4 需求发布审核活动图说明
+
+参与角色：已认证学生、需求发布者、管理员、系统事件触发器。
+
+起点：已认证学生准备发布搭子需求。
+
+终点：需求进入 `PUBLISHED` 并成为广场输入，或进入 `REJECTED` 等待修改。
+
+主路径：
+
+1. 已认证学生创建 `PartnerPost` 草稿。
+2. 发布者填写公共字段和场景字段。
+3. 发布者提交审核。
+4. 后端执行发布资格、归属、字段、附件和状态校验。
+5. 需求状态进入 `PENDING_REVIEW`。
+6. 管理员查看审核队列和需求详情。
+7. 管理员审核通过，需求状态进入 `PUBLISHED`。
+8. 系统生成需求审核结果通知和系统事件。
+9. 广场发现模块可读取该需求作为展示输入。
+
+异常分支：
+
+- 用户未认证：不得创建服务端草稿或提交审核。
+- 提交字段不完整：返回 `VALIDATION_FAILED`。
+- 发布者撤回审核：`PENDING_REVIEW -> DRAFT`。
+- 管理员驳回：`PENDING_REVIEW -> REJECTED`，记录驳回原因。
+- 审核与撤回并发：返回 `POST_STATUS_CONFLICT`。
+
+状态变化：`PartnerPost.status` 在 `DRAFT`、`PENDING_REVIEW`、`PUBLISHED`、`REJECTED` 间流转。
+
+需求来源：`IR3`、`IR4`、`IR5`、`IR6`、`IR7`、`US1`、`US2`、`US3`、`US4`、`US5`、`US8`。
+
+### 8.5 广场联系解锁活动图说明
+
+参与角色：已认证学生、需求发布者、被联系对象、系统事件触发器。
+
+起点：用户在广场或需求详情页看到已发布需求。
+
+终点：双方建立站内会话并在双方确认后解锁联系方式；或会话关闭/拉黑后终止互动。
+
+主路径：
+
+1. 用户浏览广场、筛选需求并打开需求详情。
+2. 用户发起低压力联系并输入初始邀约消息。
+3. 后端校验双方认证状态、需求状态、拉黑关系和联系方式卡片要求。
+4. 系统创建或复用双方有效 `Conversation`，发送初始邀约消息。
+5. 系统生成新会话/邀约通知和系统事件。
+6. 双方通过站内消息沟通。
+7. 一方确认愿意交换联系方式，解锁状态进入等待对方确认。
+8. 另一方确认后，联系方式解锁。
+9. 双方可查看对方当前有效 `ContactCard` 内容。
+
+异常分支：
+
+- 目标需求非 `PUBLISHED`：不得发起联系。
+- 发起者等于发布者：拒绝发起。
+- 任一方被治理限制或拉黑：拒绝发起或发送消息。
+- 任一方缺少可交换联系方式：在解锁前要求补全。
+- 会话关闭或拉黑：不得继续发送消息或查看联系方式。
+
+状态变化：`Conversation.status` 在 `ACTIVE` / `CLOSED` 间流转；`ContactUnlockRecord` 在 `LOCKED`、`WAITING_FOR_PEER`、`UNLOCKED` 或失效视图间变化。
+
+需求来源：`IR7`、`IR8`、`IR9`、`IR10`、`US7`、`US8`。
+
+### 8.6 评价信用活动图说明
+
+参与角色：已认证学生、评价者、被评价者、系统事件触发器。
+
+起点：双方存在有效对话，即同一 `Conversation` 中双方各自至少发送过 2 条用户消息。
+
+终点：评价记录保存，信用摘要重算；或无显式评价时按默认规则进入信用摘要。
+
+主路径：
+
+1. 系统识别会话达到有效对话门槛。
+2. 系统生成评价提醒通知和系统事件。
+3. 用户主动进入评价入口。
+4. 用户提交星级和可选预设标签。
+5. 后端校验会话可评价、评价上限和重复评价规则。
+6. 系统保存 `Review`。
+7. 系统重算被评价方 `CreditSummary`。
+8. 用户信用卡片展示平均星数、真实有效总对话次数和高频标签。
+
+异常分支：
+
+- 会话未达到有效对话门槛：不得评价。
+- 已存在同一会话同一评价者对同一被评价者的有效评价：按修改规则处理或返回重复错误。
+- 超过 24 小时修改窗口或已修改一次：拒绝修改。
+- 评价被申诉：进入评价争议案件，`Review.status -> DISPUTED`。
+- 管理员撤销评价影响：`Review.status -> INVALIDATED` 并重算信用摘要。
+
+状态变化：`Review.status` 在 `ACTIVE`、`DISPUTED`、`INVALIDATED` 间流转；`CreditSummary` 按评价、默认有效对话、初始基线和信用干预重算。
+
+需求来源：`IR12`、`IR13`、`US6`、`US9`、`US12`。
+
+### 8.7 投诉申诉案件活动图说明
+
+参与角色：案件发起人、回应方、管理员、系统事件触发器。
+
+起点：用户对评价、会话、需求、用户或管理处理结果产生争议。
+
+终点：案件进入 `CLOSED`，相关业务对象按裁定结果回写，必要时形成治理线索。
+
+主路径：
+
+1. 用户选择目标对象和原因，创建 `CaseTicket`。
+2. 用户填写说明并上传 0 到 10 个证据附件。
+3. 案件状态进入 `SUBMITTED`。
+4. 管理员查看案件队列和详情。
+5. 管理员认为材料不足或需要对方回应，案件进入 `WAITING_FOR_UPDATE`。
+6. 系统通知需要补充或回应的一方。
+7. 相关方补充证据或提交回应，案件回到 `SUBMITTED`。
+8. 管理员裁定案件，案件进入 `CLOSED`。
+9. 系统根据裁定结果回写评价、会话、需求或治理线索。
+10. 系统生成案件状态变化通知和系统事件。
+
+异常分支：
+
+- 用户无权针对目标对象创建案件：返回不可感知或无权限错误。
+- 附件数量超过 10 个或格式不合法：拒绝提交。
+- 72 小时未回应：管理员可基于现有材料裁定，但未回应本身不自动等于违规。
+- 案件关闭后继续补证据或回应：返回 `CASE_STATUS_CONFLICT`。
+- 用户不认可处理结果：基于 `ADMIN_DECISION` 创建新案件，不重开旧案。
+
+状态变化：`CaseTicket.status` 在 `SUBMITTED`、`WAITING_FOR_UPDATE`、`CLOSED` 间流转；相关 `Review`、`Conversation`、`PartnerPost` 或治理线索按裁定结果变化。
+
+需求来源：`IR11`、`IR14`、`IR15`、`IR16`、`US10`、`US11`。
+
+### 8.8 治理通知闭环活动图说明
+
+参与角色：管理员、超级管理员、被治理用户、系统事件触发器。
+
+起点：案件裁定、恶意举报认定、人工复核或系统检测形成治理需求。
+
+终点：治理动作生效或撤销，限制策略或信用摘要变化完成，用户收到通知，系统事件和审计日志留痕。
+
+主路径：
+
+1. 管理员从案件或用户治理档案发起治理动作。
+2. 后端校验管理员角色、目标用户、来源对象和治理动作权限。
+3. 系统创建 `GovernanceAction`。
+4. 若动作限制功能，`RestrictionPolicy` 计算当前能力限制。
+5. 若动作是 `ADJUST_CREDIT`，系统创建 `CreditAdjustmentRecord` 并重算信用摘要。
+6. 后端写入 `AdminAuditLog`。
+7. 系统写入 `SystemEventLog`。
+8. 系统向被治理用户创建 `Notification`。
+9. 被治理用户查看处理结果和必要申诉入口。
+10. 若超级管理员撤销治理动作，系统追加撤销信息、审计日志、系统事件和通知。
+
+异常分支：
+
+- 普通管理员执行高风险动作：返回 `FORBIDDEN`。
+- 治理动作与现有生效动作冲突：返回 `GOVERNANCE_ACTION_CONFLICT`。
+- 审计日志写入失败：治理动作回滚。
+- 通知或事件派生失败：按本模块事务策略回滚或进入可重试流程。
+- 被限制用户申诉：进入 `ADMIN_DECISION` 类型案件。
+
+状态变化：`GovernanceAction` 生效视图在 `SCHEDULED`、`ACTIVE`、`EXPIRED`、`REVERSED` 间变化；`Notification.status` 初始为 `UNREAD`；信用摘要只由 `ADJUST_CREDIT` 下的结构化记录影响。
+
+需求来源：`IR16`、`US10`、`US11`，并承接 P1-4 通知与留痕触发点。
 
 ## 9. 关键交互协作与顺序图前说明
 
@@ -1811,29 +2298,102 @@ P0-2 需求发布与审核模块用例图聚焦“发布者如何形成可审核
 
 顺序图只画跨模块协作最强的关键用例，不覆盖每个页面操作。
 
+顺序图用于服务后续实现和联调，重点表达 Qt API Client、后端 Controller、Service、Repository、对象存储、通知事件、审计治理等参与对象之间的调用顺序。纯查询类页面、筛选排序、表单本地校验等场景不单独绘制顺序图。
+
 ### 9.2 第一版顺序图范围
 
 1. 提交认证资料。
-2. 发布需求并提交审核。
-3. 管理员审核通过需求。
-4. 发起站内联系并解锁联系方式。
-5. 提交评价并更新信用摘要。
-6. 提交申诉并由管理员裁定。
+2. 审核认证。
+3. 发布并提交审核。
+4. 审核需求。
+5. 发起联系并解锁联系方式。
+6. 提交评价并重算信用。
+7. 创建案件并裁定。
+8. 治理动作并通知。
 
-### 9.3 顺序图前说明待补充项
+### 9.3 顺序图共用约束
 
-- 参与对象
-- 触发事件
-- 调用顺序
-- 返回结果
-- 失败处理
-- 与接口契约的关系
+- 顺序图中的接口路径必须与正文接口契约一致。
+- Qt UI Widget 不直接调用网络层，应通过 ViewModel/Presenter 和 API Client 发起请求。
+- 后端 Controller 负责认证上下文、请求 DTO 和响应结构，核心业务校验放在 Service。
+- Repository 只表达持久化边界，不在顺序图中展开数据库表结构。
+- 涉及附件读取或上传时，通过 `ObjectStorageService` 或附件服务表达，不暴露对象存储裸 URL。
+- 涉及管理操作时，必须体现角色校验和审计/事件留痕。
+- 涉及状态变化时，必须体现状态冲突失败分支。
+- 涉及通知时，必须体现 `SystemEventLog` 与 `Notification` 的派生位置。
 
-### 9.4 P0-2 需求发布与审核顺序图前说明
+### 9.4 提交认证资料顺序图前说明
+
+参与对象：
+
+- `Student`
+- `Qt IdentityVerificationWidget / ViewModel`
+- `AuthApiService`
+- `IdentityVerificationController`
+- `IdentityVerificationService`
+- `IdentityVerificationSubmissionRepository`
+- `IdentityMaterialAttachmentService`
+- `ObjectStorageService`
+
+主路径：
+
+1. 学生在 Qt 认证资料页面填写真实姓名、学号、学院、专业、年级并选择材料文件。
+2. Qt 客户端先调用认证材料上传接口。
+3. 后端校验登录态、文件类型、大小和用途。
+4. `IdentityMaterialAttachmentService` 通过 `ObjectStorageService` 保存材料文件，返回 `materialAttachmentId`。
+5. Qt 客户端提交认证资料表单和 `materialAttachmentId`。
+6. `IdentityVerificationController` 接收请求并传入当前用户上下文。
+7. `IdentityVerificationService` 校验当前认证状态和材料归属。
+8. 后端创建或更新认证提交记录，用户认证状态进入 `PENDING_REVIEW`。
+9. Qt 客户端刷新认证状态。
+
+失败分支：
+
+- 未登录：返回 `UNAUTHORIZED`。
+- 文件类型、大小或用途不合法：返回 `VALIDATION_FAILED`。
+- 附件不属于当前用户：返回 `FORBIDDEN`。
+- 用户已认证或已有待审核提交：返回对应认证状态冲突错误。
+
+### 9.5 审核认证顺序图前说明
+
+参与对象：
+
+- `Admin`
+- `Qt AdminIdentityReviewView / ViewModel`
+- `AdminIdentityApiService`
+- `AdminIdentityVerificationController`
+- `IdentityVerificationAdminService`
+- `IdentityVerificationSubmissionRepository`
+- `UserRepository`
+- `AdminAuditLogService`
+- `SystemEventLogService`
+- `NotificationService`
+
+主路径：
+
+1. 管理员打开认证审核队列。
+2. Qt 管理端调用认证审核队列接口。
+3. 后端校验 `ROLE_ADMIN`。
+4. 管理员打开认证详情并查看材料摘要或受控材料。
+5. 管理员提交审核通过或驳回。
+6. 后端确认认证提交仍处于待审核状态。
+7. 审核通过时，用户认证状态进入 `VERIFIED`；驳回时进入 `REJECTED` 并记录原因。
+8. 后端写入必要审计或审核留痕。
+9. 后端写入 `SystemEventLog` 并创建认证审核结果 `Notification`。
+10. Qt 管理端刷新审核队列。
+
+失败分支：
+
+- 非管理员访问：返回 `FORBIDDEN`。
+- 审核目标不存在或已被处理：返回状态冲突。
+- 驳回未填写原因：返回 `VALIDATION_FAILED`。
+- 事件或通知派生失败：按通知模块事务策略处理。
+
+### 9.6 发布并提交审核顺序图前说明
 
 P0-2 至少需要两张顺序图前说明：一张覆盖发布者保存草稿并提交审核，一张覆盖管理员审核通过或驳回。顺序图应体现 Qt 客户端、后端 Controller、Service、Repository、附件访问服务和权限校验之间的调用关系，但不需要展开数据库物理表细节。
 
-#### 9.4.1 发布需求并提交审核
+#### 9.6.1 发布需求并提交审核
 
 参与对象：
 
@@ -1866,7 +2426,7 @@ P0-2 至少需要两张顺序图前说明：一张覆盖发布者保存草稿并
 - 字段校验失败：返回 `VALIDATION_FAILED`，并在 `details` 中返回字段级错误。
 - 当前状态不是 `DRAFT`：返回 `POST_STATUS_CONFLICT`。
 
-#### 9.4.2 管理员审核需求
+### 9.7 审核需求顺序图前说明
 
 参与对象：
 
@@ -1898,6 +2458,172 @@ P0-2 至少需要两张顺序图前说明：一张覆盖发布者保存草稿并
 - 驳回未填写原因：返回 `VALIDATION_FAILED`。
 - 发布者已撤回或需求已被其他管理员裁定：返回 `POST_STATUS_CONFLICT`。
 - 审核通过时发布者已达到 10 条 `PUBLISHED` 上限：返回 `PUBLISHED_POST_LIMIT_EXCEEDED`。
+
+通过或驳回后，后端还应写入 `SystemEventLog` 并创建需求审核结果 `Notification`，通知发布者审核结果。若后续接入 `AdminAuditLog`，管理端审核动作也应进入管理操作留痕。
+
+### 9.8 发起联系并解锁联系方式顺序图前说明
+
+参与对象：
+
+- `Requester`
+- `Publisher`
+- `Qt PostDetail / ConversationViewModel`
+- `ConversationApiService`
+- `ConversationController`
+- `ConversationService`
+- `PartnerPostRepository`
+- `ConversationRepository`
+- `ContactCardService`
+- `ContactUnlockService`
+- `RestrictionPolicyService`
+- `SystemEventLogService`
+- `NotificationService`
+
+主路径：
+
+1. 用户在需求详情页点击发起联系并输入初始邀约消息。
+2. Qt 客户端调用发起联系接口。
+3. 后端校验登录态、认证状态、目标需求为 `PUBLISHED`、双方不是同一人。
+4. 后端校验拉黑关系和治理限制。
+5. 后端查找双方是否已有有效会话；若有则复用，若无则创建 `Conversation`。
+6. 后端写入初始邀约 `Message`。
+7. 后端写入 `SystemEventLog` 并创建新会话/邀约 `Notification`。
+8. 双方在会话中发送站内消息。
+9. 一方确认交换联系方式，`ContactUnlockService` 记录单方确认。
+10. 另一方确认后，联系方式解锁。
+11. 后端返回对方当前有效 `ContactCard` 内容。
+
+失败分支：
+
+- 用户未认证或被治理限制：拒绝发起联系。
+- 目标需求不可见或非 `PUBLISHED`：返回不可感知或状态错误。
+- 存在拉黑关系：拒绝互动。
+- 初始邀约消息为空或超长：返回 `VALIDATION_FAILED`。
+- 解锁时任一方未维护联系方式卡片：要求补全。
+- 会话已关闭且无新需求邀约：不得静默恢复。
+
+### 9.9 提交评价并重算信用顺序图前说明
+
+参与对象：
+
+- `Reviewer`
+- `Qt ReviewView / CreditCardViewModel`
+- `ReviewApiService`
+- `ReviewController`
+- `ReviewService`
+- `ConversationRepository`
+- `ContactUnlockRecordRepository`
+- `ReviewRepository`
+- `CreditSummaryService`
+- `CreditChangeLogRepository`
+- `SystemEventLogService`
+- `NotificationService`
+
+主路径：
+
+1. 系统或用户进入可评价入口。
+2. Qt 客户端提交星级和可选标签。
+3. `ReviewController` 接收当前用户上下文和评价请求。
+4. `ReviewService` 校验会话存在、双方参与关系和有效对话门槛。
+5. 后端根据是否完成联系方式解锁校验最高星级上限。
+6. 后端校验同一评价者对同一被评价者在同一会话中是否已有评价。
+7. 后端保存或按修改规则更新 `Review`。
+8. `CreditSummaryService` 重算被评价方信用摘要。
+9. 后端写入必要信用变化记录。
+10. Qt 客户端刷新评价结果和信用卡片。
+
+失败分支：
+
+- 会话不可评价：返回 `CONVERSATION_NOT_REVIEWABLE`。
+- 重复创建评价：返回 `REVIEW_ALREADY_EXISTS`。
+- 修改超过 24 小时或已修改一次：返回对应修改限制错误。
+- 星级超过当前上限：返回 `VALIDATION_FAILED`。
+
+### 9.10 创建案件并裁定顺序图前说明
+
+参与对象：
+
+- `Complainant`
+- `Respondent`
+- `Admin`
+- `Qt CaseView / AdminCaseViewModel`
+- `CaseApiService`
+- `AdminCaseApiService`
+- `CaseController`
+- `AdminCaseController`
+- `CaseService`
+- `CaseTicketRepository`
+- `CaseEvidenceService`
+- `ObjectStorageService`
+- `SystemEventLogService`
+- `NotificationService`
+
+主路径：
+
+1. 用户针对评价、会话、需求、用户或管理处理结果创建案件。
+2. Qt 客户端提交 `CreateCaseRequest` 和可选证据附件引用。
+3. 后端校验目标对象存在、可感知性和创建权限。
+4. 后端保存 `CaseTicket`，状态为 `SUBMITTED`。
+5. 管理员查看案件队列和案件详情。
+6. 管理员要求补充材料或回应，案件进入 `WAITING_FOR_UPDATE`，系统通知相关方。
+7. 相关方补充证据或回应，案件回到 `SUBMITTED`。
+8. 管理员裁定案件，设置 `decisionResult` 和 `decisionNote`。
+9. 后端执行必要业务回写，例如撤销评价影响、隐藏标签、关闭会话、下架需求或标记恶意举报。
+10. 案件进入 `CLOSED`。
+11. 后端写入 `SystemEventLog` 并创建案件状态变化通知。
+
+失败分支：
+
+- 用户无权针对目标创建案件：返回 `FORBIDDEN` 或目标不可感知。
+- 证据数量超过上限或格式不合法：返回 `CASE_EVIDENCE_LIMIT_EXCEEDED` 或 `VALIDATION_FAILED`。
+- 案件已关闭后继续补证据或回应：返回 `CASE_STATUS_CONFLICT`。
+- 非管理员裁定案件：返回 `FORBIDDEN`。
+
+### 9.11 治理动作并通知顺序图前说明
+
+参与对象：
+
+- `Admin` / `SuperAdmin`
+- `Qt AdminGovernanceViewModel`
+- `AdminGovernanceApiService`
+- `AdminGovernanceController`
+- `GovernanceActionService`
+- `GovernanceActionRepository`
+- `RestrictionPolicyService`
+- `CreditSummaryService`
+- `AdminAuditLogService`
+- `SystemEventLogService`
+- `NotificationService`
+
+主路径：
+
+1. 管理员从案件详情或用户治理档案创建治理动作。
+2. Qt 管理端调用 `POST /api/admin/governance-actions`。
+3. 后端校验管理员角色、动作类型权限、目标用户和来源对象。
+4. 后端检查现有生效治理动作是否冲突。
+5. 后端保存 `GovernanceAction`。
+6. 若动作限制功能，`RestrictionPolicyService` 更新或计算限制视图。
+7. 若动作是 `ADJUST_CREDIT`，`CreditSummaryService` 应用结构化信用干预并重算信用摘要。
+8. `AdminAuditLogService` 写入管理员审计日志。
+9. `SystemEventLogService` 写入系统事件。
+10. `NotificationService` 创建治理动作或信用调整通知。
+11. Qt 管理端刷新治理档案。
+
+撤销路径：
+
+1. 超级管理员提交撤销请求和 `reverseReason`。
+2. 后端校验 `SUPER_ADMIN` 角色和治理动作可撤销性。
+3. 后端写入撤销字段。
+4. 后端解除限制或回退信用干预。
+5. 后端追加审计日志、系统事件和通知。
+
+失败分支：
+
+- 普通管理员执行高风险动作：返回 `FORBIDDEN`。
+- 治理动作不可撤销或已撤销：返回 `GOVERNANCE_ACTION_NOT_REVERSIBLE`。
+- 治理动作冲突：返回 `GOVERNANCE_ACTION_CONFLICT`。
+- 审计日志写入失败：治理动作创建或撤销回滚。
+- 通知或事件派生失败：按通知模块事务策略处理。
 
 ## 10. 管理端治理详细设计
 
