@@ -24,6 +24,9 @@ HomePageWidget::HomePageWidget(AuthApiService &authService, QWidget *parent)
     verificationStatusLabel_->setAlignment(Qt::AlignCenter);
     layout->addWidget(verificationStatusLabel_);
 
+    verificationWidget_ = new IdentityVerificationWidget(authService_, this);
+    layout->addWidget(verificationWidget_);
+
     checkStatusButton_ = new QPushButton(QStringLiteral("查询认证状态"), this);
     layout->addWidget(checkStatusButton_);
 
@@ -48,6 +51,7 @@ void HomePageWidget::onCheckVerificationStatus()
     authService_.getIdentityVerificationStatus([this](const AuthResult &result) {
         if (result.success) {
             verificationStatusLabel_->setText(QStringLiteral("认证状态: %1").arg(result.authenticationStatus));
+            verificationWidget_->setStatus(result.authenticationStatus, result.rejectReason);
         } else {
             verificationStatusLabel_->setText(result.errorMessage.isEmpty() ? QStringLiteral("查询失败") : result.errorMessage);
         }

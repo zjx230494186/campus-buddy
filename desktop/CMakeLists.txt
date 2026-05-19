@@ -30,6 +30,8 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/RegisterWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/IdentityVerificationWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/IdentityVerificationWidget.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})

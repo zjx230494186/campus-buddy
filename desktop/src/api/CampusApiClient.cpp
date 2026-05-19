@@ -81,6 +81,31 @@ void CampusApiClient::postJson(const QString &path, const QJsonObject &body, con
     });
 }
 
+void CampusApiClient::uploadMultipart(const QString &path, QHttpMultiPart *multiPart, const QString &accessToken, ResponseCallback callback)
+{
+    QNetworkRequest request(buildUrl(path));
+    request.setRawHeader("Accept", "application/json");
+    if (!accessToken.isEmpty()) {
+        request.setRawHeader("Authorization", QString("Bearer %1").arg(accessToken).toUtf8());
+    }
+
+    QNetworkReply *reply = network_.post(request, multiPart);
+    multiPart->setParent(reply);
+    QObject::connect(reply, &QNetworkReply::finished, this, [reply, callback = std::move(callback)]() {
+        const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QNetworkReply::NetworkError networkError = reply->error();
+        const QString networkErrorText = reply->errorString();
+        const QByteArray body = reply->readAll();
+
+        const ApiClientResponse response = parseReply(httpStatus, networkError, networkErrorText, body);
+        reply->deleteLater();
+
+        if (callback) {
+            callback(response);
+        }
+    });
+}
+
 QUrl CampusApiClient::buildUrl(const QString &path) const
 {
     QUrl url(config_.apiBaseUrl());

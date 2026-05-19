@@ -5,6 +5,7 @@
 #include <QWidget>
 
 #include "auth/AuthApiService.h"
+#include "ui/IdentityVerificationWidget.h"
 
 class HomePageWidget : public QWidget
 {
@@ -22,6 +23,7 @@ private slots:
 
 private:
     AuthApiService &authService_;
+    IdentityVerificationWidget *verificationWidget_;
     QPushButton *logoutButton_;
     QPushButton *checkStatusButton_;
     QLabel *statusLabel_;

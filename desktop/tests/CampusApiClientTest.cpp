@@ -25,6 +25,8 @@ private slots:
     void sendVerificationCodeRequestBodyContainsPurpose();
     void verifyCampusEmailRequestBodyContainsPurpose();
     void registerRequestBodyContainsVerificationTicketAndDisplayName();
+    void submitIdentityVerificationRequestBodyContainsAllFields();
+    void identityVerificationStatusResponseParsesAllFields();
 
 private:
     struct RawRequest {
@@ -282,7 +284,8 @@ void CampusApiClientTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/main.cpp"),
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/LoginWidget.cpp"),
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/RegisterWidget.cpp"),
-        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/HomePageWidget.cpp")
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/HomePageWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/IdentityVerificationWidget.cpp")
     };
 
     for (const QString &path : widgetLayerFiles) {
@@ -431,6 +434,56 @@ void CampusApiClientTest::registerRequestBodyContainsVerificationTicketAndDispla
              "register request body must NOT contain studentNumber");
     QVERIFY2(!sent.contains("verificationCode"),
              "register request body must NOT contain verificationCode");
+}
+
+void CampusApiClientTest::submitIdentityVerificationRequestBodyContainsAllFields()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured,
+        "HTTP/1.1 200 OK",
+        R"({"authenticationStatus":"PENDING_REVIEW","submittedAt":"2026-05-19T00:00:00Z","realName":"Zhang","studentNumber":"2024001","college":"CS","major":"SE","grade":"2024"})");
+
+    QVERIFY(baseUrl.isValid());
+
+    QJsonObject body;
+    body["realName"] = "Zhang";
+    body["studentNumber"] = "2024001";
+    body["college"] = "CS";
+    body["major"] = "SE";
+    body["grade"] = "2024";
+    body["materialAttachmentId"] = "att-uuid-123";
+
+    const ApiClientResponse response = requestPostWithAuth(baseUrl, "/auth/identity-verifications", body, QStringLiteral("my-jwt-token"));
+    QVERIFY(response.ok);
+
+    const QJsonDocument doc = QJsonDocument::fromJson(captured.body, nullptr);
+    QVERIFY(doc.isObject());
+    const QJsonObject sent = doc.object();
+
+    QCOMPARE(sent.value("realName").toString(), QString("Zhang"));
+    QCOMPARE(sent.value("studentNumber").toString(), QString("2024001"));
+    QCOMPARE(sent.value("college").toString(), QString("CS"));
+    QCOMPARE(sent.value("major").toString(), QString("SE"));
+    QCOMPARE(sent.value("grade").toString(), QString("2024"));
+    QCOMPARE(sent.value("materialAttachmentId").toString(), QString("att-uuid-123"));
+}
+
+void CampusApiClientTest::identityVerificationStatusResponseParsesAllFields()
+{
+    const QUrl baseUrl = serveSingleResponse(
+        "HTTP/1.1 200 OK",
+        R"({"authenticationStatus":"REJECTED","reviewStatus":"REJECTED","submittedAt":"2026-05-19T00:00:00Z","reviewedAt":"2026-05-19T01:00:00Z","rejectReason":"Material unclear","realName":"Zhang","studentNumber":"2024001","college":"CS","major":"SE","grade":"2024","allowedActions":["SUBMIT"]})");
+
+    QVERIFY(baseUrl.isValid());
+
+    const ApiClientResponse response = requestGetWithAuth(baseUrl, "/auth/identity-verifications/me", QStringLiteral("my-jwt-token"));
+    QVERIFY(response.ok);
+
+    QCOMPARE(response.json.value("authenticationStatus").toString(), QString("REJECTED"));
+    QCOMPARE(response.json.value("reviewStatus").toString(), QString("REJECTED"));
+    QCOMPARE(response.json.value("rejectReason").toString(), QString("Material unclear"));
+    QCOMPARE(response.json.value("allowedActions").toArray().size(), 1);
+    QCOMPARE(response.json.value("allowedActions").toArray()[0].toString(), QString("SUBMIT"));
 }
 
 QTEST_MAIN(CampusApiClientTest)
