@@ -6,7 +6,7 @@
 
 - 项目名称：校园搭子平台。
 - 当前阶段：正式代码开发。
-- 当前线程：Qt 客户端认证集成复核。
+- 当前线程：Round 08 Qt 认证集成契约审计与修正（已完成）。
 - Git 分支：main。
 - 工作区：干净。
 - 后端测试：56/56 通过。
@@ -24,46 +24,47 @@
 - `8edd057` feat(auth): add identity material attachment upload
 - `b850d37` docs(codearts): record round06/07 validation and update handoff
 - `ca058c3` feat(desktop): add login/register UI and auth API integration
+- `957c283` docs(handoff): update latest.md after Qt client auth integration
+- `8bb54bd` docs(codearts): record round07 handoff and round08 prompt
+- `e53f11a` fix(desktop): align auth flow with backend contract
 
 ## 当前线程完成了什么
 
-- CampusApiClient：新增 postJson、getJson/postJson 带 Bearer 认证头
-- AuthTokenStore：基于 QSettings 的 accessToken 持久化
-- AuthApiService：封装 login、register、sendVerificationCode、verifyCampusEmail、submitIdentityVerification、getIdentityVerificationStatus
-- LoginWidget：邮箱+密码登录表单
-- RegisterWidget：注册表单（含验证码发送）
-- HomePageWidget：简单主页（查询认证状态+退出登录）
-- main.cpp：QStackedWidget 导航（登录/注册/主页切换）
-- Qt 测试：AuthTokenStoreTest (5) + CampusApiClientTest (6) + ApiClientConfigTest (原有)
+- SecureTokenStore 抽象 + InMemorySessionTokenStore 内存实现（token 不写 QSettings）
+- AuthTokenStore 改为内存存储，不再使用 QSettings
+- AuthResult 新增 authenticationStatus、verificationTicket 独立字段
+- sendVerificationCode：请求体包含 purpose=REGISTER_OR_LOGIN
+- verifyCampusEmail：请求体包含 purpose，读取 verificationTicket
+- registerAccount：请求体使用 campusEmail/verificationTicket/password/displayName
+- RegisterWidget：email → 发送验证码 → 校验验证码 → displayName+密码 → 注册
+- HomePageWidget：读取 result.authenticationStatus
+- Qt 3/3 测试通过，后端 56/56 不变
 
 ## 关键结论
 
-- Qt 客户端从技术探路骨架升级为可交互的登录/注册/主页应用
-- 所有 P0 认证 API 均已通过 AuthApiService 对接
-- UI 层不直接使用 QNetworkAccessManager（测试验证）
+- Qt 客户端认证流程与后端真实契约对齐
+- Token 不再持久化到 QSettings（符合详细设计约束）
+- 当前 token 为内存会话存储，进程退出即丢失
 
 ## 本线程没有做什么
 
-- 没有实现认证资料提交 UI（身份验证表单+附件上传）
+- 没有实现 Windows Credential Manager 适配器
+- 没有实现认证资料提交 UI
+- 没有实现附件上传 UI
 - 没有实现管理员审核 UI
 - 没有适配真实 OBS SDK
 - 没有替换 no-op 邮件发送
-- 没有运行 Testcontainers/Docker 测试
-- 没有实现完整 RBAC
 - 没有开始 P1 需求发布与审核模块
 
 ## 下一步候选事项
 
-1. `提交 Round 08 纯文档留档` — 复用当前线程或交给 CodeArts 在下一轮开头处理，优先级最高
-2. `Qt 认证集成契约审计与修正` — 复用当前线程，优先级高；先修注册 verificationTicket、验证码 purpose、认证状态字段、token 存储
-3. `认证资料提交 UI` — 复用当前线程，优先级高；前置是 Qt 认证契约修正完成
-4. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
-5. `真实 OBS SDK 适配器` — 新开线程，优先级中
-6. `替换 no-op 邮件发送` — 新开线程，优先级中
+1. `Windows Credential Manager 适配器` — 新开线程，优先级高；替换 InMemorySessionTokenStore
+2. `认证资料提交 UI` — 复用或新开线程，优先级高；在 HomePageWidget 中添加身份验证提交表单
+3. `P1 需求发布与审核模块` — 新开线程，优先级高；需要先完成详细设计
+4. `真实 OBS SDK 适配器` — 新开线程，优先级中
+5. `替换 no-op 邮件发送` — 新开线程，优先级中
 
 ## 建议归档与下一线程
 
-- 建议归档当前线程：否（可复用，但应先修 Qt 认证契约）。
-- 下一线程名称：`Qt 认证集成契约审计与修正`
-- CodeArts 提示词：`D:\big_homework\docs\prompts\codearts\20260519_round_08_qt_auth_integration_contract_fix.md`
-- 或：归档后新开 `P1 需求发布与审核模块详细设计`
+- 建议归档当前线程：是。
+- 下一线程名称：`Qt 认证资料提交 UI` 或 `P1 需求发布与审核模块详细设计`
