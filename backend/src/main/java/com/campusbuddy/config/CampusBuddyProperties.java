@@ -67,6 +67,8 @@ public class CampusBuddyProperties {
         private String accessMode = "backend-proxy";
         private boolean publicRead = false;
         private boolean corsEnabled = false;
+        private String accessKeyId;
+        private String secretAccessKey;
 
         public String getProvider() {
             return provider;
@@ -122,6 +124,22 @@ public class CampusBuddyProperties {
 
         public void setCorsEnabled(boolean corsEnabled) {
             this.corsEnabled = corsEnabled;
+        }
+
+        public String getAccessKeyId() {
+            return accessKeyId;
+        }
+
+        public void setAccessKeyId(String accessKeyId) {
+            this.accessKeyId = accessKeyId;
+        }
+
+        public String getSecretAccessKey() {
+            return secretAccessKey;
+        }
+
+        public void setSecretAccessKey(String secretAccessKey) {
+            this.secretAccessKey = secretAccessKey;
         }
     }
 }

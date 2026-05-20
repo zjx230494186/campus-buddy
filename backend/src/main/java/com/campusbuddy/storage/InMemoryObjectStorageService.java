@@ -22,4 +22,9 @@ public class InMemoryObjectStorageService implements ObjectStorageService {
         }
         return new ByteArrayInputStream(data);
     }
+
+    @Override
+    public void deleteObject(String key) {
+        store.remove(key);
+    }
 }

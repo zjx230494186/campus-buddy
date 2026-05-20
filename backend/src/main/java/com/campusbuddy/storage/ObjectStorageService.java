@@ -7,4 +7,6 @@ public interface ObjectStorageService {
     void putObject(String key, String contentType, byte[] data);
 
     InputStream getObject(String key);
+
+    void deleteObject(String key);
 }
