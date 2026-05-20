@@ -1,5 +1,7 @@
 package com.campusbuddy.review;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,4 +13,6 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     List<Review> findByRevieweeIdAndStatus(UUID revieweeId, String status);
     List<Review> findByReviewerId(UUID reviewerId);
     Optional<Review> findByIdAndReviewerId(Long id, UUID reviewerId);
+    Page<Review> findByReviewerId(UUID reviewerId, Pageable pageable);
+    Page<Review> findByRevieweeId(UUID revieweeId, Pageable pageable);
 }

@@ -3,6 +3,9 @@ package com.campusbuddy.review;
 import com.campusbuddy.auth.UserAccountRepository;
 import com.campusbuddy.common.ApiException;
 import com.campusbuddy.contact.ContactContextService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -125,7 +128,33 @@ public class ReviewService {
         return PRESET_TAGS;
     }
 
+    @Transactional(readOnly = true)
+    public ReviewListResponse listGivenReviews(UUID reviewerId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Review> reviewPage = reviewRepository.findByReviewerId(reviewerId, pageRequest);
+        return toListResponse(reviewPage);
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewListResponse listReceivedReviews(UUID revieweeId, int page, int size) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Review> reviewPage = reviewRepository.findByRevieweeId(revieweeId, pageRequest);
+        return toListResponse(reviewPage);
+    }
+
+    private ReviewListResponse toListResponse(Page<Review> reviewPage) {
+        List<ReviewResponse> items = reviewPage.getContent().stream().map(this::toResponse).toList();
+        return new ReviewListResponse(
+                items,
+                reviewPage.getNumber(),
+                reviewPage.getSize(),
+                reviewPage.getTotalElements(),
+                reviewPage.getTotalPages()
+        );
+    }
+
     public record CreateReviewRequest(Long conversationId, UUID revieweeId, int rating, java.util.List<String> reviewTags) {}
     public record UpdateReviewRequest(int rating, java.util.List<String> reviewTags) {}
     public record ReviewResponse(Long id, Long conversationId, UUID reviewerId, UUID revieweeId, int rating, java.util.List<String> reviewTags, String status, boolean modifiedOnce, Instant createdAt, Instant updatedAt) {}
+    public record ReviewListResponse(java.util.List<ReviewResponse> items, int page, int size, long totalElements, int totalPages) {}
 }
