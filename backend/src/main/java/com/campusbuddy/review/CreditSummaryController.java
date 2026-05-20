@@ -18,11 +18,11 @@ public class CreditSummaryController {
     }
 
     @GetMapping(value = "/users/{userId}/credit-summary", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<CreditSummaryService.CreditSummaryResponse> getPublicCreditSummary(
+    ResponseEntity<CreditSummaryService.PublicCreditSummaryResponse> getPublicCreditSummary(
             @PathVariable UUID userId
     ) {
-        CreditSummaryService.CreditSummaryResponse response = creditSummaryService.getCreditSummary(userId, false);
-        return ResponseEntity.ok(response);
+        CreditSummaryService.CreditSummaryResponse summary = creditSummaryService.getCreditSummary(userId, false);
+        return ResponseEntity.ok(creditSummaryService.toPublicResponse(summary));
     }
 
     @GetMapping(value = "/me/credit-summary", produces = MediaType.APPLICATION_JSON_VALUE)

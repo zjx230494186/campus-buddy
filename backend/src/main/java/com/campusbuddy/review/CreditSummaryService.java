@@ -98,5 +98,25 @@ public class CreditSummaryService {
             Instant updatedAt
     ) {}
 
+    public record PublicCreditSummaryResponse(
+            UUID userId,
+            double averageRating,
+            long realConversationCount,
+            long ratingSampleCount,
+            List<CreditSummaryTagResponse> topTags,
+            Instant updatedAt
+    ) {}
+
+    public PublicCreditSummaryResponse toPublicResponse(CreditSummaryResponse response) {
+        return new PublicCreditSummaryResponse(
+                response.userId(),
+                response.averageRating(),
+                response.realConversationCount(),
+                response.ratingSampleCount(),
+                response.topTags(),
+                response.updatedAt()
+        );
+    }
+
     public record CreditSummaryTagResponse(String tagName, long count) {}
 }

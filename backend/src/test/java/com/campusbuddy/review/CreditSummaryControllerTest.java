@@ -163,6 +163,34 @@ class CreditSummaryControllerTest {
         assertFalse(response.contains("reviewerName"));
     }
 
+    @Test
+    void publicCreditSummaryDoesNotExposeDisputedReviewCount() throws Exception {
+        String emailA = uniqueEmail();
+        String emailB = uniqueEmail();
+        String tokenA = registerAndLoginVerified(emailA, "Str0ngP@ss1", "UserA");
+        registerAndLoginVerified(emailB, "Str0ngP@ss2", "UserB");
+
+        UUID userB = userAccountRepository.findByCampusEmail(emailB).orElseThrow().getUserId();
+
+        String response = mockMvc.perform(get("/api/users/" + userB + "/credit-summary")
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertFalse(response.contains("disputedReviewCount"));
+    }
+
+    @Test
+    void myCreditSummaryIncludesDisputedReviewCount() throws Exception {
+        String emailA = uniqueEmail();
+        String tokenA = registerAndLoginVerified(emailA, "Str0ngP@ss1", "UserA");
+
+        mockMvc.perform(get("/api/me/credit-summary")
+                        .header("Authorization", "Bearer " + tokenA))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disputedReviewCount").value(0));
+    }
+
     private void assertFalse(boolean condition) {
         if (condition) throw new AssertionError("Expected field not to be present in response");
     }
