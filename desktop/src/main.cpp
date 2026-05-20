@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QProcessEnvironment>
 #include <QStackedWidget>
 #include <QStringList>
 #include <QTimer>
@@ -15,7 +16,9 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
 
-    const ApiClientConfig config;
+    const ApiClientConfig config = ApiClientConfig::fromRuntime(
+        QCoreApplication::arguments(),
+        QProcessEnvironment::systemEnvironment());
     CampusApiClient apiClient(config);
     AuthTokenStore tokenStore;
     AuthApiService authService(apiClient, tokenStore);

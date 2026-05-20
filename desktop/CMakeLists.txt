@@ -95,3 +95,17 @@ target_include_directories(auth_token_store_test PRIVATE
 )
 
 add_test(NAME auth_token_store_test COMMAND auth_token_store_test)
+
+qt_add_executable(qt_server_integration_smoke
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtServerIntegrationSmoke.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+)
+
+target_link_libraries(qt_server_integration_smoke PRIVATE Qt6::Core Qt6::Network)
+
+target_include_directories(qt_server_integration_smoke PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
