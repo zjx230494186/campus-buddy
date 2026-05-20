@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -35,6 +36,7 @@ class IdentityVerificationMaterialAttachmentEndpointTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private CapturingCampusEmailVerificationCodeSender codeSender;
     @Autowired private UserAccountRepository userAccountRepository;
+    @Autowired private IdentityMaterialAttachmentRepository attachmentRepository;
     @Autowired private com.campusbuddy.security.JwtService jwtService;
 
     @Test
@@ -183,6 +185,84 @@ class IdentityVerificationMaterialAttachmentEndpointTest {
         mockMvc.perform(get("/api/admin/identity-verifications/00000000-0000-0000-0000-000000000000/material")
                         .header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteOwnUnreferencedMaterialReturnsNoContent() throws Exception {
+        String email = "mat-delete-own@campus.edu.cn";
+        String token = registerAndLogin(email, "Str0ngPassword!", "MatDeleteOwn");
+        String attachmentId = uploadMaterial(token, "image/png", "to-delete.png", new byte[]{1, 2, 3, 4, 5});
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/" + attachmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        UUID aid = UUID.fromString(attachmentId);
+        IdentityMaterialAttachment attachment = attachmentRepository.findById(aid).orElseThrow();
+        org.junit.jupiter.api.Assertions.assertEquals("DELETED", attachment.getStatus(),
+                "Attachment status must be DELETED, not physically removed");
+    }
+
+    @Test
+    void deleteRequiresAuthentication() throws Exception {
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/00000000-0000-0000-0000-000000000000"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteOtherUsersMaterialReturnsNotFound() throws Exception {
+        String ownerEmail = "mat-del-owner@campus.edu.cn";
+        String ownerToken = registerAndLogin(ownerEmail, "Str0ngPassword!", "MatDelOwner");
+        String attachmentId = uploadMaterial(ownerToken, "image/png", "owner.png", new byte[]{1, 2, 3});
+
+        String otherEmail = "mat-del-other@campus.edu.cn";
+        String otherToken = registerAndLogin(otherEmail, "Str0ngPassword!", "MatDelOther");
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/" + attachmentId)
+                        .header("Authorization", "Bearer " + otherToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteReferencedMaterialReturnsConflict() throws Exception {
+        String email = "mat-del-ref@campus.edu.cn";
+        String token = registerAndLogin(email, "Str0ngPassword!", "MatDelRef");
+        String attachmentId = uploadMaterial(token, "image/png", "referenced.png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(post("/api/auth/identity-verifications")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"realName\":\"Refer\",\"studentNumber\":\"2024998\",\"college\":\"CS\",\"major\":\"SE\",\"grade\":\"2024\",\"materialAttachmentId\":\"" + attachmentId + "\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/" + attachmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void deleteNonexistentMaterialReturnsNotFound() throws Exception {
+        String email = "mat-del-none@campus.edu.cn";
+        String token = registerAndLogin(email, "Str0ngPassword!", "MatDelNone");
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/00000000-0000-0000-0000-000000000000")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteAlreadyDeletedMaterialReturnsNotFound() throws Exception {
+        String email = "mat-del-twice@campus.edu.cn";
+        String token = registerAndLogin(email, "Str0ngPassword!", "MatDelTwice");
+        String attachmentId = uploadMaterial(token, "image/png", "twice.png", new byte[]{1, 2, 3});
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/" + attachmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(delete("/api/auth/identity-verifications/materials/" + attachmentId)
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isNotFound());
     }
 
     private String registerAndLogin(String email, String password, String displayName) throws Exception {

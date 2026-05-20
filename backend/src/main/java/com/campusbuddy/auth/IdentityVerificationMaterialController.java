@@ -3,6 +3,8 @@ package com.campusbuddy.auth;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -32,5 +34,15 @@ public class IdentityVerificationMaterialController {
                 userId, file.getContentType(), file.getOriginalFilename(), file.getBytes()
         );
         return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/materials/{attachmentId}")
+    ResponseEntity<Void> deleteMaterial(
+            Authentication authentication,
+            @PathVariable UUID attachmentId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        attachmentService.delete(userId, attachmentId);
+        return ResponseEntity.noContent().build();
     }
 }

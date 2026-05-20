@@ -10,4 +10,5 @@ public interface IdentityVerificationSubmissionRepository extends JpaRepository<
     Optional<IdentityVerificationSubmission> findByUserId(UUID userId);
     boolean existsByUserId(UUID userId);
     List<IdentityVerificationSubmission> findByReviewStatus(String reviewStatus);
+    boolean existsByMaterialAttachmentId(UUID materialAttachmentId);
 }

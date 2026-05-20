@@ -99,6 +99,32 @@ static ApiClientResponse blockingUpload(CampusApiClient &client, const QString &
     return response;
 }
 
+static ApiClientResponse blockingDelete(CampusApiClient &client, const QString &path, const QString &token)
+{
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.deleteResource(path, token, [&](const ApiClientResponse &result) {
+        response = result;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(10000);
+    loop.exec();
+
+    if (!completed) {
+        response.error.type = ApiClientError::NetworkError;
+        response.error.message = QStringLiteral("timeout");
+    }
+    return response;
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -166,6 +192,7 @@ int main(int argc, char *argv[])
     }
 
     out << Qt::endl << "--- 4. POST /auth/identity-verifications/materials (upload) ---" << Qt::endl;
+    QString uploadedAttachmentId;
     if (!accessToken.isEmpty()) {
         QByteArray testData(512, '\0');
         for (int i = 0; i < testData.size(); ++i) {
@@ -190,6 +217,7 @@ int main(int argc, char *argv[])
 
             bool allFieldsPresent = !attachmentId.isEmpty() && !respContentType.isEmpty() && sizeBytes > 0 && !sha256.isEmpty();
             if (allFieldsPresent) {
+                uploadedAttachmentId = attachmentId;
                 out << "PASS: attachmentId length=" << attachmentId.length()
                     << " contentType=" << respContentType
                     << " sizeBytes=" << sizeBytes
@@ -206,6 +234,21 @@ int main(int argc, char *argv[])
     } else {
         out << "SKIP: no access token for upload" << Qt::endl;
         failures++;
+    }
+
+    out << Qt::endl << "--- 5. DELETE /auth/identity-verifications/materials/{id} (cleanup) ---" << Qt::endl;
+    if (!uploadedAttachmentId.isEmpty() && !accessToken.isEmpty()) {
+        QString deletePath = QStringLiteral("/auth/identity-verifications/materials/") + uploadedAttachmentId;
+        ApiClientResponse delResp = blockingDelete(client, deletePath, accessToken);
+        if (delResp.ok) {
+            out << "PASS: delete succeeded (204 No Content)" << Qt::endl;
+        } else {
+            out << "FAIL: delete ok=" << delResp.ok << " httpStatus=" << delResp.error.httpStatus
+                << " code=" << delResp.error.code << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no attachment to delete" << Qt::endl;
     }
 
     out << Qt::endl;

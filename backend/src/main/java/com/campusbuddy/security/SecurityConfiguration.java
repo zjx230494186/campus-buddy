@@ -37,7 +37,7 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/probe/secure").authenticated()
-                        .requestMatchers("/api/auth/identity-verifications", "/api/auth/identity-verifications/me", "/api/auth/identity-verifications/materials").authenticated()
+                        .requestMatchers("/api/auth/identity-verifications", "/api/auth/identity-verifications/me", "/api/auth/identity-verifications/materials", "/api/auth/identity-verifications/materials/*").authenticated()
                         .requestMatchers("/api/me/reviews/**").authenticated()
                         .requestMatchers("/api/me/credit-summary").authenticated()
                         .requestMatchers("/api/users/*/credit-summary").authenticated()

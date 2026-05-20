@@ -81,6 +81,27 @@ void CampusApiClient::postJson(const QString &path, const QJsonObject &body, con
     });
 }
 
+void CampusApiClient::deleteResource(const QString &path, const QString &accessToken, ResponseCallback callback)
+{
+    QNetworkRequest request(buildUrl(path));
+    setCommonHeaders(request, accessToken);
+
+    QNetworkReply *reply = network_.deleteResource(request);
+    QObject::connect(reply, &QNetworkReply::finished, this, [reply, callback = std::move(callback)]() {
+        const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QNetworkReply::NetworkError networkError = reply->error();
+        const QString networkErrorText = reply->errorString();
+        const QByteArray body = reply->readAll();
+
+        const ApiClientResponse response = parseReply(httpStatus, networkError, networkErrorText, body);
+        reply->deleteLater();
+
+        if (callback) {
+            callback(response);
+        }
+    });
+}
+
 void CampusApiClient::uploadMultipart(const QString &path, QHttpMultiPart *multiPart, const QString &accessToken, ResponseCallback callback)
 {
     QNetworkRequest request(buildUrl(path));
@@ -134,6 +155,11 @@ ApiClientResponse CampusApiClient::parseReply(int httpStatus, QNetworkReply::Net
     if (networkError != QNetworkReply::NoError && httpStatus == 0) {
         response.error.type = ApiClientError::NetworkError;
         response.error.message = networkErrorText;
+        return response;
+    }
+
+    if (httpStatus >= 200 && httpStatus < 300 && body.isEmpty()) {
+        response.ok = true;
         return response;
     }
 

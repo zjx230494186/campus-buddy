@@ -25,13 +25,16 @@ class IdentityMaterialAttachmentService {
 
     private final IdentityMaterialAttachmentRepository attachmentRepository;
     private final UserAccountRepository userAccountRepository;
+    private final IdentityVerificationSubmissionRepository submissionRepository;
     private final ObjectStorageService objectStorageService;
 
     IdentityMaterialAttachmentService(IdentityMaterialAttachmentRepository attachmentRepository,
                                       UserAccountRepository userAccountRepository,
+                                      IdentityVerificationSubmissionRepository submissionRepository,
                                       ObjectStorageService objectStorageService) {
         this.attachmentRepository = attachmentRepository;
         this.userAccountRepository = userAccountRepository;
+        this.submissionRepository = submissionRepository;
         this.objectStorageService = objectStorageService;
     }
 
@@ -74,6 +77,28 @@ class IdentityMaterialAttachmentService {
         return attachmentRepository.findById(attachmentId)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND",
                         "Attachment not found", "attachmentId does not exist"));
+    }
+
+    @Transactional
+    void delete(UUID userId, UUID attachmentId) {
+        IdentityMaterialAttachment attachment = attachmentRepository
+                .findByAttachmentIdAndOwnerUserId(attachmentId, userId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND",
+                        "Attachment not found", "attachmentId does not exist or not owned by user"));
+
+        if ("DELETED".equals(attachment.getStatus())) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "ATTACHMENT_NOT_FOUND",
+                    "Attachment not found", "attachment already deleted");
+        }
+
+        if (submissionRepository.existsByMaterialAttachmentId(attachmentId)) {
+            throw new ApiException(HttpStatus.CONFLICT, "ATTACHMENT_REFERENCED",
+                    "Attachment is referenced by a verification submission", "cannot delete referenced attachment");
+        }
+
+        objectStorageService.deleteObject(attachment.getObjectKey());
+        attachment.setStatus("DELETED");
+        attachmentRepository.save(attachment);
     }
 
     private String generateObjectKey() {
