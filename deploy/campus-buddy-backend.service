@@ -1,0 +1,17 @@
+[Unit]
+Description=Campus Buddy Backend (Spring Boot deploy profile)
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/campus-buddy
+ExecStart=/srv/campus-buddy/start_backend_service.sh
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
