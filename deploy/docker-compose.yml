@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_DB: campus_buddy
       POSTGRES_USER: campus_buddy
-      POSTGRES_PASSWORD: campus_buddy_dev_password
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-campus_buddy_dev_password}
     ports:
       - "5432:5432"
     volumes:
@@ -20,10 +20,12 @@ services:
       context: ../backend
       dockerfile: Dockerfile
     environment:
+      SPRING_PROFILES_ACTIVE: deploy
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/campus_buddy
       SPRING_DATASOURCE_USERNAME: campus_buddy
-      SPRING_DATASOURCE_PASSWORD: campus_buddy_dev_password
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-campus_buddy_dev_password}
       SPRING_FLYWAY_ENABLED: "true"
+      JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8080:8080"
     depends_on:

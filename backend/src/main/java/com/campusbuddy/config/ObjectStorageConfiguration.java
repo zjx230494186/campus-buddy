@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Profile;
 public class ObjectStorageConfiguration {
 
     @Bean
-    @Profile({"test", "local"})
+    @Profile({"test", "local", "local-h2", "deploy"})
     ObjectStorageService inMemoryObjectStorageService() {
         return new InMemoryObjectStorageService();
     }
