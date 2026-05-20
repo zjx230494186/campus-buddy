@@ -81,8 +81,8 @@ class ContactPersistenceIntegrationTest {
         conversationMessageRepository.save(new ConversationMessage(conv.getId(), p1, "USER_TEXT", now.plusSeconds(1)));
         conversationMessageRepository.save(new ConversationMessage(conv.getId(), null, "SYSTEM", now.plusSeconds(2)));
 
-        long userCount = conversationMessageRepository.countByConversationIdAndSenderIdAndMessageTypeNot(
-                conv.getId(), p1, "SYSTEM");
+        long userCount = conversationMessageRepository.countByConversationIdAndSenderIdAndMessageType(
+                conv.getId(), p1, "USER_TEXT");
         assertEquals(2, userCount);
     }
 
