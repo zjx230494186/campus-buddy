@@ -16,6 +16,7 @@ public class ObsObjectStorageService implements ObjectStorageService {
 
     private final ObsClient obsClient;
     private final String bucketName;
+    private volatile boolean closed = false;
 
     public ObsObjectStorageService(CampusBuddyProperties.ObjectStorage config) {
         String endpoint = config.getEndpoint();
@@ -69,8 +70,13 @@ public class ObsObjectStorageService implements ObjectStorageService {
     }
 
     public void close() throws IOException {
+        closed = true;
         if (obsClient != null) {
             obsClient.close();
         }
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 }

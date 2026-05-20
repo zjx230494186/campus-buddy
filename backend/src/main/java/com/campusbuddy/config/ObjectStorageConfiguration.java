@@ -16,7 +16,7 @@ public class ObjectStorageConfiguration {
         return new InMemoryObjectStorageService();
     }
 
-    @Bean
+    @Bean(destroyMethod = "close")
     @Profile("deploy")
     ObjectStorageService obsObjectStorageService(CampusBuddyProperties campusBuddyProperties) {
         return new ObsObjectStorageService(campusBuddyProperties.getObjectStorage());
