@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
-
 @Service
 public class CreditSummaryService {
 
@@ -30,7 +29,11 @@ public class CreditSummaryService {
         List<Review> activeReviews = reviewRepository.findByRevieweeIdAndStatus(userId, "ACTIVE");
         List<Conversation> allConversations = contactContextService.findConversationsByParticipant(userId);
 
-        long realConversationCount = allConversations.size();
+        List<Conversation> validConversations = allConversations.stream()
+                .filter(conv -> contactContextService.isValidConversation(conv.getId()))
+                .toList();
+
+        long realConversationCount = validConversations.size();
 
         Map<Long, Review> reviewByConversation = activeReviews.stream()
                 .collect(Collectors.toMap(Review::getConversationId, r -> r, (a, b) -> a));
@@ -38,7 +41,7 @@ public class CreditSummaryService {
         long totalRating = VIRTUAL_BASELINE_TOTAL;
         long sampleCount = VIRTUAL_BASELINE_COUNT;
 
-        for (Conversation conv : allConversations) {
+        for (Conversation conv : validConversations) {
             Review review = reviewByConversation.get(conv.getId());
             if (review != null) {
                 totalRating += review.getRating();
@@ -48,11 +51,14 @@ public class CreditSummaryService {
             sampleCount++;
         }
 
-        double averageRating = sampleCount > 0 ? (double) totalRating / sampleCount : 0.0;
+        Set<Long> validConversationIds = validConversations.stream()
+                .map(Conversation::getId)
+                .collect(Collectors.toSet());
 
         Map<String, Long> tagCounts = new LinkedHashMap<>();
         for (Review review : activeReviews) {
-            if (review.getReviewTags() != null && !review.getReviewTags().isBlank()) {
+            if (validConversationIds.contains(review.getConversationId())
+                    && review.getReviewTags() != null && !review.getReviewTags().isBlank()) {
                 for (String tag : review.getReviewTags().split(",")) {
                     String trimmed = tag.trim();
                     if (!trimmed.isEmpty()) {
@@ -61,6 +67,8 @@ public class CreditSummaryService {
                 }
             }
         }
+
+        double averageRating = sampleCount > 0 ? (double) totalRating / sampleCount : 0.0;
 
         List<CreditSummaryTagResponse> topTags = tagCounts.entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed()

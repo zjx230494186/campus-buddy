@@ -141,6 +141,44 @@ class CreditSummaryServiceTest {
         assertEquals(0, summary.disputedReviewCount());
     }
 
+    @Test
+    void invalidConversationNotCountedInSummary() {
+        Instant now = Instant.now();
+        UUID userA = createRealUser(now);
+        UUID userB = createRealUser(now);
+        Conversation conv = conversationRepository.save(new Conversation(userA, userB, "ACTIVE", now));
+        conversationMessageRepository.save(new ConversationMessage(conv.getId(), userA, "USER_TEXT", now));
+
+        var summaryB = creditSummaryService.getCreditSummary(userB, false);
+        assertEquals(0, summaryB.realConversationCount());
+        assertEquals(6, summaryB.ratingSampleCount());
+        assertEquals(3.5, summaryB.averageRating(), 0.01);
+
+        createValidConversation(userA, userB, now.plusSeconds(100));
+        var summaryB2 = creditSummaryService.getCreditSummary(userB, false);
+        assertEquals(1, summaryB2.realConversationCount());
+        assertEquals(7, summaryB2.ratingSampleCount());
+        assertEquals(3.6, summaryB2.averageRating(), 0.01);
+    }
+
+    @Test
+    void reviewOnInvalidConversationNotCountedInSummary() {
+        Instant now = Instant.now();
+        UUID userA = createRealUser(now);
+        UUID userB = createRealUser(now);
+        Conversation invalidConv = conversationRepository.save(new Conversation(userA, userB, "ACTIVE", now));
+        conversationMessageRepository.save(new ConversationMessage(invalidConv.getId(), userA, "USER_TEXT", now));
+
+        Review dirtyReview = new Review(invalidConv.getId(), userA, userB, 5, "守时", now);
+        reviewRepository.save(dirtyReview);
+
+        var summaryB = creditSummaryService.getCreditSummary(userB, false);
+        assertEquals(0, summaryB.realConversationCount());
+        assertEquals(6, summaryB.ratingSampleCount());
+        assertEquals(3.5, summaryB.averageRating(), 0.01);
+        assertTrue(summaryB.topTags().isEmpty());
+    }
+
     private Conversation createValidConversation(UUID p1, UUID p2, Instant base) {
         Conversation conv = conversationRepository.save(new Conversation(p1, p2, "ACTIVE", base));
         conversationMessageRepository.save(new ConversationMessage(conv.getId(), p1, "USER_TEXT", base.plusSeconds(1)));

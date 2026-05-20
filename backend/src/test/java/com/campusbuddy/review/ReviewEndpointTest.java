@@ -18,7 +18,9 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -383,6 +385,64 @@ class ReviewEndpointTest {
                         .content("{\"rating\":3}"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("REVIEW_NOT_FOUND"));
+    }
+
+    @Test
+    void modifyAfter24HoursRejected() throws Exception {
+        Instant reviewTime = Instant.parse("2026-05-19T00:00:00Z");
+        String emailA = uniqueEmail();
+        String emailB = uniqueEmail();
+        String tokenA = registerAndLoginVerified(emailA, "Str0ngP@ss1", "UserA");
+        registerAndLoginVerified(emailB, "Str0ngP@ss2", "UserB");
+
+        UUID userA = userAccountRepository.findByCampusEmail(emailA).orElseThrow().getUserId();
+        UUID userB = userAccountRepository.findByCampusEmail(emailB).orElseThrow().getUserId();
+        Conversation conv = createValidConversation(userA, userB, reviewTime);
+
+        Review review = new Review(conv.getId(), userA, userB, 5, null, reviewTime);
+        reviewRepository.save(review);
+
+        mockMvc.perform(put("/api/me/reviews/" + review.getId())
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rating\":3}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("REVIEW_MODIFICATION_EXPIRED"));
+    }
+
+    @Test
+    void modifyTo6StarOnNormalConversationRejected() throws Exception {
+        String emailA = uniqueEmail();
+        String emailB = uniqueEmail();
+        String tokenA = registerAndLoginVerified(emailA, "Str0ngP@ss1", "UserA");
+        registerAndLoginVerified(emailB, "Str0ngP@ss2", "UserB");
+
+        UUID userA = userAccountRepository.findByCampusEmail(emailA).orElseThrow().getUserId();
+        UUID userB = userAccountRepository.findByCampusEmail(emailB).orElseThrow().getUserId();
+        Conversation conv = createValidConversation(userA, userB, Instant.now());
+
+        String createResult = mockMvc.perform(post("/api/me/reviews")
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"conversationId\":" + conv.getId() + ",\"revieweeId\":\"" + userB + "\",\"rating\":5}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        long reviewId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(createResult).get("id").asLong();
+
+        mockMvc.perform(put("/api/me/reviews/" + reviewId)
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rating\":6}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"));
+
+        mockMvc.perform(put("/api/me/reviews/" + reviewId)
+                        .header("Authorization", "Bearer " + tokenA)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"rating\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.modifiedOnce").value(true));
     }
 
     private Conversation createValidConversation(UUID p1, UUID p2, Instant now) {
