@@ -1,5 +1,7 @@
 #include <QCoreApplication>
 #include <QEventLoop>
+#include <QFile>
+#include <QHttpMultiPart>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkReply>
@@ -7,6 +9,8 @@
 #include <QTimer>
 
 #include "api/CampusApiClient.h"
+#include "auth/AuthTokenStore.h"
+#include "auth/AuthApiService.h"
 #include "domain/ApiClientConfig.h"
 
 static ApiClientResponse blockingGet(CampusApiClient &client, const QString &path, const QString &token = QString())
@@ -43,7 +47,7 @@ static ApiClientResponse blockingGet(CampusApiClient &client, const QString &pat
     return response;
 }
 
-static ApiClientResponse blockingPost(CampusApiClient &client, const QString &path, const QJsonObject &body)
+static ApiClientResponse blockingPost(CampusApiClient &client, const QString &path, const QJsonObject &body, const QString &token = QString())
 {
     QEventLoop loop;
     QTimer timeout;
@@ -53,7 +57,33 @@ static ApiClientResponse blockingPost(CampusApiClient &client, const QString &pa
     bool completed = false;
 
     QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    client.postJson(path, body, [&](const ApiClientResponse &result) {
+    client.postJson(path, body, token, [&](const ApiClientResponse &result) {
+        response = result;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(10000);
+    loop.exec();
+
+    if (!completed) {
+        response.error.type = ApiClientError::NetworkError;
+        response.error.message = QStringLiteral("timeout");
+    }
+    return response;
+}
+
+static ApiClientResponse blockingUpload(CampusApiClient &client, const QString &path, QHttpMultiPart *multiPart, const QString &token)
+{
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.uploadMultipart(path, multiPart, token, [&](const ApiClientResponse &result) {
         response = result;
         completed = true;
         loop.quit();
@@ -72,15 +102,27 @@ static ApiClientResponse blockingPost(CampusApiClient &client, const QString &pa
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
+    QTextStream out(stdout);
 
-    const QString baseUrl = qEnvironmentVariable("CAMPUS_BUDDY_API_BASE_URL",
-                                                  QStringLiteral("http://114.116.203.78/api"));
+    const QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+
+    const QString baseUrl = env.value("CAMPUS_BUDDY_API_BASE_URL",
+                                       QStringLiteral("http://114.116.203.78/api"));
+    const QString smokeEmail = env.value("CAMPUS_BUDDY_SMOKE_EMAIL");
+    const QString smokePassword = env.value("CAMPUS_BUDDY_SMOKE_PASSWORD");
+
+    if (smokeEmail.isEmpty() || smokePassword.isEmpty()) {
+        out << "ERROR: CAMPUS_BUDDY_SMOKE_EMAIL and/or CAMPUS_BUDDY_SMOKE_PASSWORD not set" << Qt::endl;
+        out << "Required environment variables:" << Qt::endl;
+        out << "  CAMPUS_BUDDY_SMOKE_EMAIL" << Qt::endl;
+        out << "  CAMPUS_BUDDY_SMOKE_PASSWORD" << Qt::endl;
+        return 2;
+    }
+
     const ApiClientConfig config(baseUrl, 10000, 1000, true);
     CampusApiClient client(config);
 
     int failures = 0;
-
-    QTextStream out(stdout);
 
     out << "=== Qt Server Integration Smoke ===" << Qt::endl;
     out << "Base URL: " << baseUrl << Qt::endl;
@@ -96,8 +138,8 @@ int main(int argc, char *argv[])
 
     out << Qt::endl << "--- 2. POST /auth/login ---" << Qt::endl;
     QJsonObject loginBody;
-    loginBody["campusEmail"] = "smoketest@campus.edu.cn";
-    loginBody["password"] = "SmokeTest123!";
+    loginBody["campusEmail"] = smokeEmail;
+    loginBody["password"] = smokePassword;
     ApiClientResponse login = blockingPost(client, "/auth/login", loginBody);
     QString accessToken;
     if (login.ok) {
@@ -120,6 +162,49 @@ int main(int argc, char *argv[])
         }
     } else {
         out << "SKIP: no access token" << Qt::endl;
+        failures++;
+    }
+
+    out << Qt::endl << "--- 4. POST /auth/identity-verifications/materials (upload) ---" << Qt::endl;
+    if (!accessToken.isEmpty()) {
+        QByteArray testData(512, '\0');
+        for (int i = 0; i < testData.size(); ++i) {
+            testData[i] = static_cast<char>(i & 0xFF);
+        }
+
+        auto *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+        QHttpPart filePart;
+        filePart.setHeader(QNetworkRequest::ContentDispositionHeader,
+                            QVariant(QStringLiteral("form-data; name=\"file\"; filename=\"smoke_test_material.pdf\"")));
+        filePart.setHeader(QNetworkRequest::ContentTypeHeader, QVariant("application/pdf"));
+        filePart.setBody(testData);
+        multiPart->append(filePart);
+
+        ApiClientResponse upload = blockingUpload(client, "/auth/identity-verifications/materials", multiPart, accessToken);
+
+        if (upload.ok) {
+            const QString attachmentId = upload.json.value("attachmentId").toString();
+            const QString respContentType = upload.json.value("contentType").toString();
+            const int sizeBytes = upload.json.value("sizeBytes").toInt();
+            const QString sha256 = upload.json.value("sha256").toString();
+
+            bool allFieldsPresent = !attachmentId.isEmpty() && !respContentType.isEmpty() && sizeBytes > 0 && !sha256.isEmpty();
+            if (allFieldsPresent) {
+                out << "PASS: attachmentId length=" << attachmentId.length()
+                    << " contentType=" << respContentType
+                    << " sizeBytes=" << sizeBytes
+                    << " sha256 length=" << sha256.length() << Qt::endl;
+            } else {
+                out << "FAIL: missing fields in upload response" << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "FAIL: ok=" << upload.ok << " httpStatus=" << upload.error.httpStatus
+                << " code=" << upload.error.code << " message=" << upload.error.message << Qt::endl;
+            out << "NOTE: upload may fail if test account has VERIFIED status blocking re-upload" << Qt::endl;
+        }
+    } else {
+        out << "SKIP: no access token for upload" << Qt::endl;
         failures++;
     }
 

@@ -100,6 +100,9 @@ qt_add_executable(qt_server_integration_smoke
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtServerIntegrationSmoke.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
 )
@@ -109,3 +112,19 @@ target_link_libraries(qt_server_integration_smoke PRIVATE Qt6::Core Qt6::Network
 target_include_directories(qt_server_integration_smoke PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
+
+qt_add_executable(server_smoke_security_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/ServerSmokeSecurityTest.cpp
+)
+
+target_link_libraries(server_smoke_security_test PRIVATE Qt6::Test)
+
+target_include_directories(server_smoke_security_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(server_smoke_security_test PRIVATE
+    CAMPUS_BUDDY_DESKTOP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+add_test(NAME server_smoke_security_test COMMAND server_smoke_security_test)
