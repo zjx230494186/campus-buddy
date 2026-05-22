@@ -135,4 +135,6 @@ public class PartnerPost {
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
     public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
     public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
+    public void setReviewedBy(UUID reviewedBy) { this.reviewedBy = reviewedBy; }
+    public void setReviewedAt(Instant reviewedAt) { this.reviewedAt = reviewedAt; }
 }

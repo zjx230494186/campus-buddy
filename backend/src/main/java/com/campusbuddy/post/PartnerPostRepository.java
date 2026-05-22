@@ -11,4 +11,6 @@ public interface PartnerPostRepository extends JpaRepository<PartnerPost, UUID> 
     Page<PartnerPost> findByPublisherId(UUID publisherId, Pageable pageable);
     Page<PartnerPost> findByPublisherIdAndStatus(UUID publisherId, String status, Pageable pageable);
     Optional<PartnerPost> findByIdAndPublisherId(UUID id, UUID publisherId);
+    Page<PartnerPost> findByStatus(String status, Pageable pageable);
+    long countByPublisherIdAndStatus(UUID publisherId, String status);
 }
