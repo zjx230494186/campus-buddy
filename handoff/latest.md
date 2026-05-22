@@ -2,15 +2,93 @@
 
 本文档服务于新线程快速接手。
 
+## 2026-05-21 当前交接：CodeArts 代码实现 + Codex 文档兜底
+
+### 当前分工
+
+- CodeArts：承担老师要求的代码实现主体，并为每轮代码改动写一手技术留档，尤其是 `docs/validation/` 中的红灯、绿灯、回归、服务器 smoke、敏感信息检查和未覆盖风险。
+- Codex：负责复核 CodeArts 的 Git 变更、测试与 validation，纠正边界问题，并把多轮技术结果整理为稳定项目文档、runbook 和下一轮 prompt。
+
+### 最新工程状态
+
+- 最新已复核提交：Round 28 代码待提交。
+- Round 21：服务器 smoke test 已验证 P0 联系依赖 + P1 评价信用接口，Flyway V1-V7 通过，公网 health 通过。
+- Round 22：deploy profile 已接入真实华为云 OBS，服务器 PUT / GET / SHA-256 / DELETE smoke 通过。
+- Round 23：ObsClient 生命周期关闭接入 Spring `destroyMethod`，启动脚本不再通过进程命令行暴露 DB/JWT/OBS secret。
+- Round 24：systemd 服务化完成——`campus-buddy-backend` 服务 active + enabled，开机自启；wrapper 脚本 source env + 映射 OBS 变量名；进程命令行仅 `--spring.profiles.active=deploy`；8 项 API smoke + OBS PUT/GET/DELETE 全部通过；146/146 本地回归通过。
+- Round 25：Qt 客户端新增运行时 API base URL 配置，服务器联调验证 health、login、credit-summary。
+- Round 26：Qt server smoke 移除硬编码测试邮箱/密码，改用 `CAMPUS_BUDDY_SMOKE_EMAIL` / `CAMPUS_BUDDY_SMOKE_PASSWORD`；扩展验证身份认证材料上传；本轮复核已将 validation 中旧测试密码字面量脱敏。
+- Round 27：新增本人未引用认证材料删除接口，Qt server smoke 上传材料后调用 DELETE 清理；后端 153/153、Qt 27/27，全量 180/180 通过；服务器 systemd 重启成功，health 200，上传后删除返回 204。
+- Round 28：PartnerPost 学生草稿 CRUD 后端 API 完成——Flyway V8 partner_post 表迁移成功；POST/PUT/GET/GET 分页端点实现；163/163 本地测试通过；服务器部署成功，V8 迁移到 v8；5/5 服务器 smoke test 通过（创建/列表/详情/更新/401）。
+- 服务器私有配置入口：`/etc/campus-buddy/backend.env`，权限 `600`，owner `root:root`；不得读取、打印或记录真实值。
+- 已新增稳定 runbook：`docs/25_server_deploy_and_obs_runbook_v1.md`。
+- 已新增剩余功能路线图：`docs/26_remaining_function_completion_roadmap_v1.md`。
+
+### 下一步候选
+
+1. `P0-2 需求发布与审核 Batch 1B 后端学生侧提交与下架`：提交审核、撤回审核、主动下架和提交审核强校验。（推荐下一轮）
+2. `P0-2 需求发布与审核 Batch 2 后端管理侧`：管理员审核队列、审核详情、通过/驳回。
+3. `P0-2 需求发布与审核 Batch 1A+1B Qt 客户端联调`：Qt 客户端接入 PartnerPost 草稿 CRUD + 提交/下架。
+4. `P0-3 广场发现与推荐后端`：已发布需求列表、筛选、搜索、详情和发布者公开摘要。
+5. `P0-4 低压力联系后端`：基于已发布需求发起联系、站内短文本消息、轮询、未读数、联系方式卡片和解锁。
+6. `Qt 学生侧发布/广场/联系 UI`：补齐课程演示主链路。
+7. `HTTPS / 域名 / 备案`：真实试用或展示前处理，解决公网 HTTP 明文传输风险。
+
+## 2026-05-20 临时线程交接：P0 低压力联系最小后端依赖规格
+
+### 当前线程完成了什么
+
+- 已阅读用户指定上下文，包括 `AGENTS.md`、`docs/03_current_plan.md`、`handoff/latest.md`、`docs/13_detailed_design_v1.md`、`docs/06_execution_preparation_v1.md`、`docs/12_code_generation_constraints_v1.md`、`docs/21_codearts_prompt_review_workflow_v1.md`、`docs/22_codearts_unattended_prompt_engineering_v1.md`、P1-1 的 `.codeartsdoer` 规格与设计，以及 Round 14 prompt。
+- 新增 `docs/24_p0_contact_min_dependency_spec_v1.md`，作为稳定项目规格文档。
+- 文档明确该工作是 `P0 低压力联系最小后端依赖切片`，目标是解除 `P1-1 评价与信用摘要 Batch 1 后端核心` 的阻断。
+- 文档只定义 `Conversation`、`ConversationMessage`、`ContactUnlockRecord` 的最小字段、状态、消息类型、查询能力、测试入口和门禁。
+- 文档明确不做 Qt UI、完整聊天系统、WebSocket、图片消息、附件/OBS、联系方式明文保存、邀约完整状态机、举报、通知、管理端、P1-1 评价实现。
+- 已更新 `docs/03_current_plan.md`，把当前阶段主题与推荐下一步调整为先做 P0 联系最小依赖实现 prompt。
+
+### 下一步候选事项
+
+1. `CodeArts P0 低压力联系最小依赖实现 prompt 设计` — 建议新开或切回 CodeArts prompt 设计线程，优先级最高；基于 `docs/24_p0_contact_min_dependency_spec_v1.md` 生成可复制给 CodeArts 的实现提示词。该线程本身仍不直接写业务代码、不调用 CodeArts。
+2. `P0 低压力联系最小依赖 CodeArts 实现` — 建议由 CodeArts 执行；必须测试先行、红灯确认、最小实现、绿灯确认、必要回归、`docs/validation/` 留档、本地测试 + Ubuntu 24 服务器 smoke test 门禁、敏感信息检查、明确 Git 提交边界。
+3. `P1-1 评价与信用摘要 Batch 1 后端核心` — 建议在 P0 最小依赖实现通过后再复用或新开 P1-1 实现线程。
+4. `提交当前纯文档留档` — 建议在 prompt 设计交接确认后处理，不要和后续业务实现提交混在一起。
+
+### 是否建议切回 CodeArts prompt 设计线程
+
+- 建议：是。
+- 理由：本线程已完成稳定规格补充；下一步不是继续扩大设计，而是把规格转成严格受边界约束的 CodeArts 实现 prompt。
+
+### 下一线程建议名称
+
+`CodeArts P0 联系最小依赖实现 prompt 设计与复核`
+
+### 可直接复制的下一线程启动 prompt
+
+```text
+请先阅读：
+- D:\big_homework\AGENTS.md
+- D:\big_homework\docs\03_current_plan.md
+- D:\big_homework\handoff\latest.md
+- D:\big_homework\docs\12_code_generation_constraints_v1.md
+- D:\big_homework\docs\21_codearts_prompt_review_workflow_v1.md
+- D:\big_homework\docs\22_codearts_unattended_prompt_engineering_v1.md
+- D:\big_homework\docs\24_p0_contact_min_dependency_spec_v1.md
+- D:\big_homework\.codeartsdoer\specs\p1-review-credit-batch1\design.md
+
+当前任务：切回 CodeArts prompt 设计与复核线程。现在不要直接写业务代码，不调用 CodeArts，不改后端实现，不创建 Git commit。
+
+请基于 `docs/24_p0_contact_min_dependency_spec_v1.md` 设计下一轮可直接复制给 CodeArts 的实现提示词，目标为 `P0 低压力联系最小后端依赖 Batch 1`。提示词必须要求 CodeArts 只实现 Conversation、ConversationMessage、ContactUnlockRecord 及最小 Repository/Service 查询能力，测试先行、红灯确认、绿灯确认、必要回归、docs/validation 留档、本地测试 + Ubuntu 24 服务器 smoke test 门禁、敏感信息检查和明确 Git 提交边界。
+
+明确禁止 CodeArts 扩大为完整 IM、Qt UI、WebSocket、图片消息、附件/OBS、联系方式明文保存、邀约完整状态机、举报、通知、管理端或 P1-1 评价实现。
+```
+
 ## 当前状态
 
 - 项目名称：校园搭子平台。
-- 当前阶段：详细设计深化 + 后续实现准备。
-- 当前线程：详细设计深化：P1 支撑能力模块。
-- Git 分支：main。
-- 工作区：存在本轮文档改动。
-- 后端测试：56/56 通过。
-- Qt 测试：3/3 通过（api_client_config_test、campus_api_client_test、auth_token_store_test）。
+- 当前阶段：P1-1 评价与信用摘要 Batch 1 后端核心已实现。
+- 当前线程：Round 17 — P1-1 review/credit batch1 backend core。
+- Git 分支：main，HEAD: `193a35e feat(review): add review submission/modification and credit summary APIs`。
+- 后端测试：109/109 通过。
+- Qt 测试：3/3 通过。
 
 ## 本轮设计进展
 
@@ -74,6 +152,10 @@
 - 第 7 章已收束 8 个高风险状态对象：`User.authenticationStatus`、`PartnerPost.status`、`Conversation.status`、`ContactUnlockRecord` 解锁状态、`Review.status`、`CaseTicket.status`、`GovernanceAction` 生效/撤销视图、`Notification.status`；已补齐状态集合、合法流转和一致性约束。
 - 第 8 章已按 6 条主流程补齐活动图前说明：认证闭环、需求发布审核、广场联系解锁、评价信用、投诉申诉案件、治理通知闭环。
 - 第 9 章已按 8 条关键交互补齐顺序图前说明：提交认证资料、审核认证、发布并提交审核、审核需求、发起联系并解锁、提交评价并重算信用、创建案件并裁定、治理动作并通知。
+- 已新增 `docs/23_server_smoke_test_readiness_checklist_v1.md`，作为后续 Ubuntu 24 服务器实战部署准备和 smoke test 留档清单，覆盖环境基线、私有配置、数据库、对象存储、Nginx/公网 IP、每批 smoke test 步骤和验证记录模板。
+- 用户最新要求：下一步需要设计提供给 CodeArts 的 P1 开发 prompt，并准备好工作交接。下一线程应先做 prompt 设计与归档，不直接写业务代码。
+- 用户补充要求：下一线程将临时作为 CodeArts prompt 设计与复核线程。用户每次对话会返回 CodeArts 的报告，该线程需要检查 CodeArts 完成情况、Git 变更、测试与留档，并针对性给出下一步提示词。
+- 推荐首轮 CodeArts P1 开发 prompt 从 `P1-1 评价与信用摘要 Batch 1 后端核心` 开始；如果用户在下一线程指定其他 P1 模块，应以用户最新指令为准。
 
 ## Git 提交历史
 
@@ -143,18 +225,19 @@
 
 ## 下一步候选事项
 
-1. `提交当前纯文档留档` — 第 5-9 章全局设计视图已阶段性补齐，建议先提交纯文档改动，优先级最高。
-2. `服务器实战部署准备清单` — 建议新开实现准备线程，围绕 Ubuntu 24、数据库、对象存储、后端服务、Nginx/公网 IP、私有配置和 smoke test 留档展开。
-3. `P1 投诉申诉与案件模块小修` — 仅限发现字段、编号或表述小问题时处理。
-4. `P1 评价与信用摘要模块小修` — 仅限发现字段、编号或表述小问题时处理。
-5. `P1 管理端治理模块小修` — 仅限发现字段、编号或表述小问题时处理。
-6. `Windows Credential Manager 适配器` — 后续实现线程，优先级中高。
-7. `真实 OBS SDK 适配器` — 后续实现线程，优先级中，需要凭证私有配置方案就位。
+1. `CodeArts P1 开发 prompt 设计与复核` — 建议新开 prompt 设计线程，优先级最高；每轮先复核用户带回的 CodeArts 报告、Git 变更、测试和留档，再产出下一轮可复制提示词并归档到 `docs/prompts/codearts/`。
+2. `提交当前纯文档留档` — CodeArts P1 prompt 设计交接确认后处理，优先级高。
+3. `服务器基线复核` — 建议新开实现准备线程，按 `docs/23_server_smoke_test_readiness_checklist_v1.md` 逐项确认 Ubuntu 24、SSH、安全组、Nginx、公网 IP、PostgreSQL、OBS 和私有配置。
+4. `P1 投诉申诉与案件模块小修` — 仅限发现字段、编号或表述小问题时处理。
+5. `P1 评价与信用摘要模块小修` — 仅限发现字段、编号或表述小问题时处理。
+6. `P1 管理端治理模块小修` — 仅限发现字段、编号或表述小问题时处理。
+7. `Windows Credential Manager 适配器` — 后续实现线程，优先级中高。
+8. `真实 OBS SDK 适配器` — 后续实现线程，优先级中，需要凭证私有配置方案就位。
 
 ## 建议归档与下一线程
 
 - 建议归档当前线程：是。
-- 下一线程名称：`详细设计深化：P1 评价与信用摘要模块`
+- 下一线程名称：`CodeArts P1 开发 prompt 设计与复核`
 - 下一线程启动 prompt：
 
 ```text
@@ -166,8 +249,11 @@
 - D:\big_homework\docs\06_execution_preparation_v1.md
 - D:\big_homework\docs\09_codearts_requirement_tables_v1.md
 - D:\big_homework\docs\12_code_generation_constraints_v1.md
+- D:\big_homework\docs\21_codearts_prompt_review_workflow_v1.md
+- D:\big_homework\docs\22_codearts_unattended_prompt_engineering_v1.md
+- D:\big_homework\docs\23_server_smoke_test_readiness_checklist_v1.md
 
-当前任务：继续完善《校园搭子平台》详细设计文档。P0 主链路详细设计已具备阶段性基线，P0-2 需求发布与审核模块已阶段性收束。现在不要写代码，不调用 CodeArts，不生成实现 prompt。请采用“无情审问式”设计访谈，但每次只问一个问题，并给出推荐答案、理由、影响范围和代价。
+当前任务：临时作为 CodeArts P1 开发 prompt 设计与复核线程运行。现在不要直接写业务代码，不调用 CodeArts，不改后端实现。用户每轮会带回 CodeArts 的报告或提交信息；请先检查 CodeArts 完成情况、Git 变更范围、测试结果、验证留档和敏感信息风险，再针对性设计下一轮可直接复制给 CodeArts 的提示词，并将 prompt 归档到 `docs/prompts/codearts/`。
 
-本轮目标：进入 P1 文档工作，优先细化“评价与信用摘要模块”，维护 `docs/13_detailed_design_v1.md` 和必要的当前计划/交接文档。需要明确评价触发条件、评价任务对象、评价字段、信用摘要变化规则、申诉挂接、接口契约、异常分支、测试入口和后续实现批次。继续遵守每次只问一个问题的设计访谈规则。
+推荐首轮 CodeArts P1 开发目标：`P1-1 评价与信用摘要 Batch 1 后端核心`。要求 prompt 必须遵守测试先行、红灯确认、最小实现、绿灯确认、必要回归、`docs/validation/` 留档、本地测试 + 服务器 smoke test 门禁、敏感信息禁止项和 Git 提交边界。若发现 P1-1 依赖尚未实现的 P0 会话/联系对象导致无法直接实现，应在 prompt 中明确前置依赖和停止条件，不允许 CodeArts 自行扩大到整个 P1 或补完整系统。
 ```

@@ -39,6 +39,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/probe/secure").authenticated()
                         .requestMatchers("/api/auth/identity-verifications", "/api/auth/identity-verifications/me", "/api/auth/identity-verifications/materials", "/api/auth/identity-verifications/materials/*").authenticated()
                         .requestMatchers("/api/me/reviews/**").authenticated()
+                        .requestMatchers("/api/me/partner-posts/**").authenticated()
                         .requestMatchers("/api/me/credit-summary").authenticated()
                         .requestMatchers("/api/users/*/credit-summary").authenticated()
                         .requestMatchers("/api/health", "/api/system/info").permitAll()
