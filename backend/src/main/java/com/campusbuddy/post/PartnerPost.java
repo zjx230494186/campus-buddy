@@ -133,5 +133,6 @@ public class PartnerPost {
     public void setAttachmentIds(List<String> attachmentIds) { this.attachmentIds = attachmentIds; }
     public void setScenePayload(Map<String, Object> scenePayload) { this.scenePayload = scenePayload; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public void setRejectReason(String rejectReason) { this.rejectReason = rejectReason; }
     public void setPublishedAt(Instant publishedAt) { this.publishedAt = publishedAt; }
 }

@@ -59,4 +59,34 @@ public class PartnerPostController {
         PartnerPostService.PostResponse response = postService.getMyPost(userId, postId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping(value = "/{postId}/submit-review", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PartnerPostService.PostResponse> submitReview(
+            Authentication authentication,
+            @PathVariable UUID postId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        PartnerPostService.PostResponse response = postService.submitReview(userId, postId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/{postId}/withdraw-review", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PartnerPostService.PostResponse> withdrawReview(
+            Authentication authentication,
+            @PathVariable UUID postId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        PartnerPostService.PostResponse response = postService.withdrawReview(userId, postId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/{postId}/unpublish", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<PartnerPostService.PostResponse> unpublish(
+            Authentication authentication,
+            @PathVariable UUID postId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        PartnerPostService.PostResponse response = postService.unpublish(userId, postId);
+        return ResponseEntity.ok(response);
+    }
 }
