@@ -1,6 +1,7 @@
 #include "api/ContactConversationApiService.h"
 
 #include <QJsonArray>
+#include <QUrlQuery>
 
 ContactConversationApiService::ContactConversationApiService(CampusApiClient &client, SecureTokenStore &tokenStore, QObject *parent)
     : QObject(parent),
@@ -35,7 +36,10 @@ void ContactConversationApiService::requestContact(const QString &postId, const 
 
 void ContactConversationApiService::listConversations(int page, int size, ConversationListCallback callback)
 {
-    QString path = QStringLiteral("/me/conversations?page=%1&size=%2").arg(page).arg(size);
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("page"), QString::number(page));
+    query.addQueryItem(QStringLiteral("size"), QString::number(size));
+    QString path = QStringLiteral("/me/conversations?") + query.toString();
 
     client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
         ConversationListResult result;
@@ -96,15 +100,47 @@ void ContactConversationApiService::sendMessage(long long conversationId, const 
 
 void ContactConversationApiService::queryMessages(long long conversationId, int page, int size, MessageListCallback callback)
 {
-    queryMessages(conversationId, 0, size, std::move(callback));
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("page"), QString::number(page));
+    query.addQueryItem(QStringLiteral("size"), QString::number(size));
+    QString path = QStringLiteral("/me/conversations/%1/messages?").arg(conversationId) + query.toString();
+
+    client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        MessageListResult result;
+        if (response.ok) {
+            result.success = true;
+            result.page = response.json.value(QStringLiteral("page")).toInt();
+            result.size = response.json.value(QStringLiteral("size")).toInt();
+            result.totalElements = response.json.value(QStringLiteral("totalElements")).toInteger();
+            result.totalPages = response.json.value(QStringLiteral("totalPages")).toInt();
+
+            const QJsonArray items = response.json.value(QStringLiteral("items")).toArray();
+            for (const QJsonValue &v : items) {
+                MessageItem item;
+                item.messageId = v.toObject().value(QStringLiteral("messageId")).toInteger();
+                item.senderId = v.toObject().value(QStringLiteral("senderId")).toString();
+                item.messageType = v.toObject().value(QStringLiteral("messageType")).toString();
+                item.content = v.toObject().value(QStringLiteral("content")).toString();
+                item.createdAt = v.toObject().value(QStringLiteral("createdAt")).toString();
+                result.items.append(item);
+            }
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
 }
 
 void ContactConversationApiService::queryMessages(long long conversationId, long long afterMessageId, int size, MessageListCallback callback)
 {
-    QString path = QStringLiteral("/me/conversations/%1/messages?size=%2").arg(conversationId).arg(size);
-    if (afterMessageId > 0) {
-        path += QStringLiteral("&afterMessageId=%1").arg(afterMessageId);
-    }
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("afterMessageId"), QString::number(afterMessageId));
+    query.addQueryItem(QStringLiteral("size"), QString::number(size));
+    QString path = QStringLiteral("/me/conversations/%1/messages?").arg(conversationId) + query.toString();
 
     client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
         MessageListResult result;

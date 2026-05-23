@@ -44,6 +44,10 @@ void ServerSmokeSecurityTest::smokeRequiresEnvVariables()
              "QtServerIntegrationSmoke.cpp must reference CAMPUS_BUDDY_SMOKE_EMAIL");
     QVERIFY2(content.contains("CAMPUS_BUDDY_SMOKE_PASSWORD"),
              "QtServerIntegrationSmoke.cpp must reference CAMPUS_BUDDY_SMOKE_PASSWORD");
+    QVERIFY2(content.contains("CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL"),
+             "QtServerIntegrationSmoke.cpp must reference CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL");
+    QVERIFY2(content.contains("CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD"),
+             "QtServerIntegrationSmoke.cpp must reference CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD");
 }
 
 QTEST_MAIN(ServerSmokeSecurityTest)

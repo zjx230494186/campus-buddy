@@ -13,6 +13,7 @@
 #include "api/ContactConversationApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "auth/AuthApiService.h"
+#include "auth/InMemorySessionTokenStore.h"
 #include "domain/ApiClientConfig.h"
 
 static ApiClientResponse blockingGet(CampusApiClient &client, const QString &path, const QString &token = QString())
@@ -138,12 +139,20 @@ int main(int argc, char *argv[])
                                        QStringLiteral("http://114.116.203.78/api"));
     const QString smokeEmail = env.value("CAMPUS_BUDDY_SMOKE_EMAIL");
     const QString smokePassword = env.value("CAMPUS_BUDDY_SMOKE_PASSWORD");
+    const QString adminEmail = env.value("CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL");
+    const QString adminPassword = env.value("CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD");
 
     if (smokeEmail.isEmpty() || smokePassword.isEmpty()) {
         out << "ERROR: CAMPUS_BUDDY_SMOKE_EMAIL and/or CAMPUS_BUDDY_SMOKE_PASSWORD not set" << Qt::endl;
         out << "Required environment variables:" << Qt::endl;
         out << "  CAMPUS_BUDDY_SMOKE_EMAIL" << Qt::endl;
         out << "  CAMPUS_BUDDY_SMOKE_PASSWORD" << Qt::endl;
+        out << "  CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL" << Qt::endl;
+        out << "  CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD" << Qt::endl;
+        return 2;
+    }
+    if (adminEmail.isEmpty() || adminPassword.isEmpty()) {
+        out << "ERROR: CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL and/or CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD not set" << Qt::endl;
         return 2;
     }
 
@@ -287,15 +296,28 @@ int main(int argc, char *argv[])
         failures++;
     }
 
-    out << Qt::endl << "--- 7. POST /partner-posts/{id}/contact-requests ---" << Qt::endl;
+    out << Qt::endl << "--- 7. POST /partner-posts/{id}/contact-requests (as admin) ---" << Qt::endl;
     long long smokeConvId = 0;
-    if (!firstPublishedPostId.isEmpty()) {
+    if (!firstPublishedPostId.isEmpty() && !adminEmail.isEmpty()) {
+        QJsonObject adminLoginBody;
+        adminLoginBody["campusEmail"] = adminEmail;
+        adminLoginBody["password"] = adminPassword;
+        ApiClientResponse adminLogin = blockingPost(client, "/auth/login", adminLoginBody);
+        QString adminToken;
+        if (adminLogin.ok) {
+            adminToken = adminLogin.json.value("accessToken").toString();
+        }
+
+        InMemorySessionTokenStore adminTokenStore;
+        adminTokenStore.setAccessToken(adminToken);
+        ContactConversationApiService adminContactService(client, adminTokenStore);
+
         QEventLoop loop7;
         QTimer timeout7;
         timeout7.setSingleShot(true);
         ContactRequestResult contactResult;
         QObject::connect(&timeout7, &QTimer::timeout, &loop7, &QEventLoop::quit);
-        contactService.requestContact(firstPublishedPostId, QStringLiteral("smoke test contact"), [&](const ContactRequestResult &r) {
+        adminContactService.requestContact(firstPublishedPostId, QStringLiteral("smoke test contact"), [&](const ContactRequestResult &r) {
             contactResult = r;
             loop7.quit();
         });
@@ -311,7 +333,7 @@ int main(int argc, char *argv[])
             failures++;
         }
     } else {
-        out << "SKIP: no published post to contact" << Qt::endl;
+        out << "SKIP: no published post or admin credentials to contact" << Qt::endl;
         failures++;
     }
 

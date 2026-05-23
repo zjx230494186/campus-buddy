@@ -131,16 +131,23 @@ QUrl CampusApiClient::buildUrl(const QString &path) const
 {
     QUrl url(config_.apiBaseUrl());
     QString basePath = url.path();
-    QString relativePath = path;
 
     if (basePath.endsWith('/')) {
         basePath.chop(1);
     }
+
+    QUrl relativeUrl(path);
+    QString relativePath = relativeUrl.path();
     while (relativePath.startsWith('/')) {
         relativePath.remove(0, 1);
     }
 
     url.setPath(basePath + "/" + relativePath);
+
+    if (relativeUrl.hasQuery()) {
+        url.setQuery(relativeUrl.query());
+    }
+
     return url;
 }
 

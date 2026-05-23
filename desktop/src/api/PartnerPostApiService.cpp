@@ -1,6 +1,7 @@
 #include "api/PartnerPostApiService.h"
 
 #include <QJsonArray>
+#include <QUrlQuery>
 
 PartnerPostApiService::PartnerPostApiService(CampusApiClient &client, SecureTokenStore &tokenStore, QObject *parent)
     : QObject(parent),
@@ -16,13 +17,17 @@ void PartnerPostApiService::listPosts(int page, int size, PlazaListCallback call
 
 void PartnerPostApiService::listPosts(const QString &sceneType, const QString &keyword, int page, int size, PlazaListCallback callback)
 {
-    QString path = QStringLiteral("/partner-posts?page=%1&size=%2").arg(page).arg(size);
+    QUrlQuery query;
+    query.addQueryItem(QStringLiteral("page"), QString::number(page));
+    query.addQueryItem(QStringLiteral("size"), QString::number(size));
     if (!sceneType.isEmpty()) {
-        path += QStringLiteral("&sceneType=%1").arg(sceneType);
+        query.addQueryItem(QStringLiteral("sceneType"), sceneType);
     }
     if (!keyword.isEmpty()) {
-        path += QStringLiteral("&keyword=%1").arg(keyword);
+        query.addQueryItem(QStringLiteral("keyword"), keyword);
     }
+
+    QString path = QStringLiteral("/partner-posts?") + query.toString();
 
     client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
         PlazaListResult result;
