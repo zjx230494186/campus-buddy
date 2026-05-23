@@ -49,6 +49,7 @@ public:
     void getJson(const QString &path, const QString &accessToken, ResponseCallback callback);
     void postJson(const QString &path, const QJsonObject &body, ResponseCallback callback);
     void postJson(const QString &path, const QJsonObject &body, const QString &accessToken, ResponseCallback callback);
+    void putJson(const QString &path, const QJsonObject &body, const QString &accessToken, ResponseCallback callback);
     void deleteResource(const QString &path, const QString &accessToken, ResponseCallback callback);
     void uploadMultipart(const QString &path, QHttpMultiPart *multiPart, const QString &accessToken, ResponseCallback callback);
 

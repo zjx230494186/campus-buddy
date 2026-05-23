@@ -11,6 +11,7 @@
 #include "api/CampusApiClient.h"
 #include "api/PartnerPostApiService.h"
 #include "api/ContactConversationApiService.h"
+#include "api/MyPartnerPostApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "auth/AuthApiService.h"
 #include "auth/InMemorySessionTokenStore.h"
@@ -409,6 +410,185 @@ int main(int argc, char *argv[])
         }
     } else {
         out << "SKIP: no conversation/message for afterMessageId test" << Qt::endl;
+    }
+
+    MyPartnerPostApiService myPostService(client, plazaTokenStore);
+
+    out << Qt::endl << "--- 11. POST /me/partner-posts (create draft) ---" << Qt::endl;
+    QString smokeDraftPostId;
+    if (!accessToken.isEmpty()) {
+        MyPostDraftRequest draftReq;
+        draftReq.sceneType = QStringLiteral("STUDY");
+        draftReq.title = QStringLiteral("Smoke Test Draft");
+        draftReq.description = QStringLiteral("Created by Qt smoke test");
+        draftReq.timeMode = QStringLiteral("TEXT_PREFERENCE");
+        draftReq.timeText = QStringLiteral("weekends");
+        draftReq.locationText = QStringLiteral("Library");
+        draftReq.participantCount = 2;
+        draftReq.targetRequirement = QStringLiteral("GPA > 3.0");
+        draftReq.contactPreference = QStringLiteral("in-app chat");
+        draftReq.scenePayload.insert(QStringLiteral("studyGoal"), QStringLiteral("pass exam"));
+
+        QEventLoop loop11;
+        QTimer timeout11;
+        timeout11.setSingleShot(true);
+        MyPostResult draftResult;
+        QObject::connect(&timeout11, &QTimer::timeout, &loop11, &QEventLoop::quit);
+        myPostService.createDraft(draftReq, [&](const MyPostResult &r) {
+            draftResult = r;
+            loop11.quit();
+        });
+        timeout11.start(10000);
+        loop11.exec();
+
+        if (draftResult.success) {
+            smokeDraftPostId = draftResult.post.postId;
+            out << "PASS: postId length=" << smokeDraftPostId.length()
+                << " status=" << draftResult.post.status << Qt::endl;
+        } else {
+            out << "FAIL: success=" << draftResult.success << " errorCode=" << draftResult.errorCode
+                << " errorMessage=" << draftResult.errorMessage << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no token for create draft" << Qt::endl;
+        failures++;
+    }
+
+    out << Qt::endl << "--- 12. PUT /me/partner-posts/{id} (update draft) ---" << Qt::endl;
+    if (!smokeDraftPostId.isEmpty()) {
+        MyPostDraftRequest updateReq;
+        updateReq.sceneType = QStringLiteral("STUDY");
+        updateReq.title = QStringLiteral("Smoke Test Draft Updated");
+        updateReq.description = QStringLiteral("Updated by Qt smoke test");
+        updateReq.timeMode = QStringLiteral("TEXT_PREFERENCE");
+        updateReq.timeText = QStringLiteral("weekends");
+        updateReq.locationText = QStringLiteral("Library");
+        updateReq.participantCount = 2;
+        updateReq.targetRequirement = QStringLiteral("GPA > 3.0");
+        updateReq.contactPreference = QStringLiteral("in-app chat");
+        updateReq.scenePayload.insert(QStringLiteral("studyGoal"), QStringLiteral("pass exam"));
+
+        QEventLoop loop12;
+        QTimer timeout12;
+        timeout12.setSingleShot(true);
+        MyPostResult updateResult;
+        QObject::connect(&timeout12, &QTimer::timeout, &loop12, &QEventLoop::quit);
+        myPostService.updateDraft(smokeDraftPostId, updateReq, [&](const MyPostResult &r) {
+            updateResult = r;
+            loop12.quit();
+        });
+        timeout12.start(10000);
+        loop12.exec();
+
+        if (updateResult.success && updateResult.post.status == QStringLiteral("DRAFT")) {
+            out << "PASS: status=" << updateResult.post.status << Qt::endl;
+        } else {
+            out << "FAIL: success=" << updateResult.success << " status=" << updateResult.post.status
+                << " errorCode=" << updateResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no draft to update" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 13. GET /me/partner-posts (list my posts) ---" << Qt::endl;
+    if (!accessToken.isEmpty()) {
+        QEventLoop loop13;
+        QTimer timeout13;
+        timeout13.setSingleShot(true);
+        MyPostListResult myListResult;
+        QObject::connect(&timeout13, &QTimer::timeout, &loop13, &QEventLoop::quit);
+        myPostService.listMyPosts(0, 20, [&](const MyPostListResult &r) {
+            myListResult = r;
+            loop13.quit();
+        });
+        timeout13.start(10000);
+        loop13.exec();
+
+        if (myListResult.success && myListResult.items.size() >= 1) {
+            out << "PASS: items=" << myListResult.items.size() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << myListResult.success << " items=" << myListResult.items.size()
+                << " errorCode=" << myListResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no token for list my posts" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 14. GET /me/partner-posts/{id} (my post detail) ---" << Qt::endl;
+    if (!smokeDraftPostId.isEmpty()) {
+        QEventLoop loop14;
+        QTimer timeout14;
+        timeout14.setSingleShot(true);
+        MyPostResult detailResult;
+        QObject::connect(&timeout14, &QTimer::timeout, &loop14, &QEventLoop::quit);
+        myPostService.getMyPostDetail(smokeDraftPostId, [&](const MyPostResult &r) {
+            detailResult = r;
+            loop14.quit();
+        });
+        timeout14.start(10000);
+        loop14.exec();
+
+        if (detailResult.success && detailResult.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW"))) {
+            out << "PASS: allowedActions count=" << detailResult.post.allowedActions.size() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << detailResult.success << " errorCode=" << detailResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no draft for detail" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 15. POST /me/partner-posts/{id}/submit-review ---" << Qt::endl;
+    if (!smokeDraftPostId.isEmpty()) {
+        QEventLoop loop15;
+        QTimer timeout15;
+        timeout15.setSingleShot(true);
+        PostActionResult submitResult;
+        QObject::connect(&timeout15, &QTimer::timeout, &loop15, &QEventLoop::quit);
+        myPostService.submitReview(smokeDraftPostId, [&](const PostActionResult &r) {
+            submitResult = r;
+            loop15.quit();
+        });
+        timeout15.start(10000);
+        loop15.exec();
+
+        if (submitResult.success && submitResult.post.status == QStringLiteral("PENDING_REVIEW")) {
+            out << "PASS: status=" << submitResult.post.status << Qt::endl;
+        } else {
+            out << "FAIL: success=" << submitResult.success << " status=" << submitResult.post.status
+                << " errorCode=" << submitResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no draft for submit review" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 16. POST /me/partner-posts/{id}/withdraw-review ---" << Qt::endl;
+    if (!smokeDraftPostId.isEmpty()) {
+        QEventLoop loop16;
+        QTimer timeout16;
+        timeout16.setSingleShot(true);
+        PostActionResult withdrawResult;
+        QObject::connect(&timeout16, &QTimer::timeout, &loop16, &QEventLoop::quit);
+        myPostService.withdrawReview(smokeDraftPostId, [&](const PostActionResult &r) {
+            withdrawResult = r;
+            loop16.quit();
+        });
+        timeout16.start(10000);
+        loop16.exec();
+
+        if (withdrawResult.success && withdrawResult.post.status == QStringLiteral("DRAFT")) {
+            out << "PASS: status=" << withdrawResult.post.status << Qt::endl;
+        } else {
+            out << "FAIL: success=" << withdrawResult.success << " status=" << withdrawResult.post.status
+                << " errorCode=" << withdrawResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no post for withdraw review" << Qt::endl;
     }
 
     out << Qt::endl;

@@ -81,6 +81,28 @@ void CampusApiClient::postJson(const QString &path, const QJsonObject &body, con
     });
 }
 
+void CampusApiClient::putJson(const QString &path, const QJsonObject &body, const QString &accessToken, ResponseCallback callback)
+{
+    QNetworkRequest request(buildUrl(path));
+    setCommonHeaders(request, accessToken);
+
+    const QByteArray data = QJsonDocument(body).toJson(QJsonDocument::Compact);
+    QNetworkReply *reply = network_.put(request, data);
+    QObject::connect(reply, &QNetworkReply::finished, this, [reply, callback = std::move(callback)]() {
+        const int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QNetworkReply::NetworkError networkError = reply->error();
+        const QString networkErrorText = reply->errorString();
+        const QByteArray body = reply->readAll();
+
+        const ApiClientResponse response = parseReply(httpStatus, networkError, networkErrorText, body);
+        reply->deleteLater();
+
+        if (callback) {
+            callback(response);
+        }
+    });
+}
+
 void CampusApiClient::deleteResource(const QString &path, const QString &accessToken, ResponseCallback callback)
 {
     QNetworkRequest request(buildUrl(path));
