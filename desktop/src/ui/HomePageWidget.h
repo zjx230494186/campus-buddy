@@ -13,6 +13,7 @@
 #include "ui/PostEditorWidget.h"
 #include "ui/MyPostsWidget.h"
 #include "ui/PlazaWidget.h"
+#include "ui/ConversationsWidget.h"
 
 class HomePageWidget : public QWidget
 {
@@ -41,6 +42,7 @@ private:
     PostEditorWidget *postEditorWidget_;
     MyPostsWidget *myPostsWidget_;
     PlazaWidget *plazaWidget_;
+    ConversationsWidget *conversationsWidget_;
 
     QPushButton *logoutButton_;
     QPushButton *checkStatusButton_;

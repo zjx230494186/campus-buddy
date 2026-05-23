@@ -1,0 +1,36 @@
+#pragma once
+
+#include <QLabel>
+#include <QListWidget>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QWidget>
+
+#include "api/ContactConversationApiService.h"
+
+class ConversationsWidget : public QWidget
+{
+    Q_OBJECT
+
+public:
+    explicit ConversationsWidget(ContactConversationApiService &contactService, QWidget *parent = nullptr);
+
+private slots:
+    void onRefreshConversations();
+    void onConversationSelected();
+    void onSendMessage();
+
+private:
+    ContactConversationApiService &contactService_;
+
+    QListWidget *conversationListWidget_;
+    QLabel *conversationStatusLabel_;
+    QListWidget *messageListWidget_;
+    QLineEdit *messageEdit_;
+    QPushButton *sendButton_;
+    QPushButton *refreshButton_;
+    QLabel *statusLabel_;
+
+    QList<ConversationListItem> conversations_;
+    long long currentConversationId_ = 0;
+};

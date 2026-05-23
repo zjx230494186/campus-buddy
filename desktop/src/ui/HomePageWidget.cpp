@@ -49,6 +49,9 @@ HomePageWidget::HomePageWidget(AuthApiService &authService,
     plazaWidget_ = new PlazaWidget(plazaService, contactService, tabWidget_);
     tabWidget_->addTab(plazaWidget_, QStringLiteral("广场"));
 
+    conversationsWidget_ = new ConversationsWidget(contactService, tabWidget_);
+    tabWidget_->addTab(conversationsWidget_, QStringLiteral("会话"));
+
     layout->addWidget(tabWidget_);
 
     logoutButton_ = new QPushButton(QStringLiteral("退出登录"), this);

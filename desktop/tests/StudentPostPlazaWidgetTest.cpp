@@ -12,6 +12,7 @@ private slots:
     void postEditorWidgetSourceDoesNotContainHardcodedCredentials();
     void myPostsWidgetSourceDoesNotContainHardcodedCredentials();
     void plazaWidgetSourceDoesNotContainHardcodedCredentials();
+    void conversationsWidgetSourceDoesNotContainHardcodedCredentials();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -24,7 +25,8 @@ void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManag
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/IdentityVerificationWidget.cpp"),
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PostEditorWidget.cpp"),
         QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/MyPostsWidget.cpp"),
-        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PlazaWidget.cpp")
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PlazaWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp")
     };
 
     for (const QString &path : widgetLayerFiles) {
@@ -65,6 +67,17 @@ void StudentPostPlazaWidgetTest::plazaWidgetSourceDoesNotContainHardcodedCredent
 
     QRegularExpression passwordPattern("(password|Password|secret)\\s*[=\"]\\s*\"[^\"]+\"");
     QVERIFY2(!content.contains(passwordPattern), "PlazaWidget must not contain hardcoded password");
+}
+
+void StudentPostPlazaWidgetTest::conversationsWidgetSourceDoesNotContainHardcodedCredentials()
+{
+    QFile file(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp"));
+    QVERIFY(file.open(QIODevice::ReadOnly | QIODevice::Text));
+    const QString content = QString::fromUtf8(file.readAll());
+
+    QRegularExpression passwordPattern("(password|Password|secret)\\s*[=\"]\\s*\"[^\"]+\"");
+    QVERIFY2(!content.contains(passwordPattern), "ConversationsWidget must not contain hardcoded password");
+    QVERIFY2(!content.contains("@campus.edu.cn"), "ConversationsWidget must not contain hardcoded email");
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)

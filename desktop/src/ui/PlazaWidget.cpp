@@ -22,8 +22,8 @@ PlazaWidget::PlazaWidget(PartnerPostApiService &plazaService,
     auto *filterLayout = new QVBoxLayout();
     sceneTypeFilter_ = new QComboBox(this);
     sceneTypeFilter_->setObjectName(QStringLiteral("sceneTypeFilter"));
-    sceneTypeFilter_->addItems({QStringLiteral("全部"), QStringLiteral("STUDY"), QStringLiteral("SPORT"),
-                                QStringLiteral("TRAVEL"), QStringLiteral("FOOD"), QStringLiteral("OTHER")});
+    sceneTypeFilter_->addItems({QStringLiteral("全部"), QStringLiteral("MEAL"), QStringLiteral("STUDY"), QStringLiteral("SPORT"),
+                                QStringLiteral("COURSE_TEAM"), QStringLiteral("INNOVATION_PROJECT")});
     filterLayout->addWidget(sceneTypeFilter_);
 
     keywordFilter_ = new QLineEdit(this);
@@ -111,28 +111,40 @@ void PlazaWidget::onItemSelected()
     }
 
     const auto &item = items_[selectedIndex_];
-    QString creditInfo;
-    if (item.publisherCreditSummary.averageRating > 0) {
-        creditInfo = QStringLiteral("  信用: %1星(%2评)").arg(item.publisherCreditSummary.averageRating).arg(item.publisherCreditSummary.ratingSampleCount);
-    }
-    detailLabel_->setText(
-        QStringLiteral("标题: %1\n发布者: %2 [%3]%4\n场景: %5\n时间: %6  地点: %7\n标签: %8%9")
-            .arg(item.title)
-            .arg(item.publisherDisplayName)
-            .arg(item.publisherAuthenticationStatus)
-            .arg(creditInfo)
-            .arg(item.sceneType)
-            .arg(item.timeText)
-            .arg(item.locationText)
-            .arg(item.tags.join(QStringLiteral(", ")))
-            .arg(item.ownPost ? QStringLiteral("\n(自己的发布)") : QString()));
+    detailLabel_->setText(QStringLiteral("加载详情..."));
+    contactButton_->setEnabled(false);
 
-    contactButton_->setEnabled(!item.ownPost);
-    if (item.ownPost) {
-        contactButton_->setText(QStringLiteral("不能联系自己的发布"));
-    } else {
-        contactButton_->setText(QStringLiteral("发起联系"));
-    }
+    plazaService_.getPostDetail(item.postId, [this](const PlazaDetailResult &result) {
+        if (result.success) {
+            QString creditInfo;
+            if (result.publisherCreditSummary.averageRating > 0) {
+                creditInfo = QStringLiteral("  信用: %1星(%2评)").arg(result.publisherCreditSummary.averageRating).arg(result.publisherCreditSummary.ratingSampleCount);
+            }
+            detailLabel_->setText(
+                QStringLiteral("标题: %1\n描述: %2\n发布者: %3 [%4]%5\n场景: %6\n时间: %7  地点: %8\n要求: %9\n标签: %10%11")
+                    .arg(result.title)
+                    .arg(result.description.left(200))
+                    .arg(result.publisherDisplayName)
+                    .arg(result.publisherAuthenticationStatus)
+                    .arg(creditInfo)
+                    .arg(result.sceneType)
+                    .arg(result.timeText)
+                    .arg(result.locationText)
+                    .arg(result.targetRequirement)
+                    .arg(result.tags.join(QStringLiteral(", ")))
+                    .arg(result.ownPost ? QStringLiteral("\n(自己的发布)") : QString()));
+
+            contactButton_->setEnabled(!result.ownPost);
+            if (result.ownPost) {
+                contactButton_->setText(QStringLiteral("不能联系自己的发布"));
+            } else {
+                contactButton_->setText(QStringLiteral("发起联系"));
+            }
+        } else {
+            detailLabel_->setText(QStringLiteral("详情加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            contactButton_->setEnabled(false);
+        }
+    });
 }
 
 void PlazaWidget::onContactRequest()

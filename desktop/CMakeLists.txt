@@ -47,6 +47,8 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/MyPostsWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PlazaWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PlazaWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ConversationsWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ConversationsWidget.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})

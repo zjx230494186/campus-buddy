@@ -18,8 +18,8 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
 
     sceneTypeCombo_ = new QComboBox(this);
     sceneTypeCombo_->setObjectName(QStringLiteral("sceneTypeCombo"));
-    sceneTypeCombo_->addItems({QStringLiteral("STUDY"), QStringLiteral("SPORT"), QStringLiteral("TRAVEL"),
-                               QStringLiteral("FOOD"), QStringLiteral("OTHER")});
+    sceneTypeCombo_->addItems({QStringLiteral("MEAL"), QStringLiteral("STUDY"), QStringLiteral("SPORT"),
+                               QStringLiteral("COURSE_TEAM"), QStringLiteral("INNOVATION_PROJECT")});
     form->addRow(QStringLiteral("场景类型"), sceneTypeCombo_);
 
     titleEdit_ = new QLineEdit(this);
