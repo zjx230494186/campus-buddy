@@ -12,6 +12,8 @@ public interface ConversationMessageRepository extends JpaRepository<Conversatio
 
     Page<ConversationMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId, Pageable pageable);
 
+    Page<ConversationMessage> findByConversationIdAndIdGreaterThanOrderByIdAsc(Long conversationId, Long afterMessageId, Pageable pageable);
+
     List<ConversationMessage> findByConversationIdAndIdGreaterThanOrderByIdAsc(Long conversationId, Long afterMessageId);
 
     List<ConversationMessage> findTop1ByConversationIdOrderByCreatedAtDesc(Long conversationId);

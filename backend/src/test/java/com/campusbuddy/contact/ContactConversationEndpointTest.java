@@ -324,6 +324,96 @@ class ContactConversationEndpointTest {
         org.junit.jupiter.api.Assertions.assertTrue(contactContextService.isValidConversation(convId));
     }
 
+    @Test
+    void conversationListSortedByUpdatedAtDesc() throws Exception {
+        String requesterToken = registerVerifiedAndLogin("cc-sortreq@campus.edu.cn", "Str0ngPassword!", "CCSortReq");
+        UUID requesterId = getUserId("cc-sortreq@campus.edu.cn");
+
+        UUID pubA = createVerifiedUser("cc-sortpuba@campus.edu.cn", "Str0ngPassword!", "CCSortPubA");
+        PartnerPost postA = createPublishedPost(pubA, "Sort Post A");
+        UUID pubB = createVerifiedUser("cc-sortpubb@campus.edu.cn", "Str0ngPassword!", "CCSortPubB");
+        PartnerPost postB = createPublishedPost(pubB, "Sort Post B");
+        UUID pubC = createVerifiedUser("cc-sortpubc@campus.edu.cn", "Str0ngPassword!", "CCSortPubC");
+        PartnerPost postC = createPublishedPost(pubC, "Sort Post C");
+
+        mockMvc.perform(post("/api/partner-posts/" + postA.getId() + "/contact-requests")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"msg to A\"}"))
+                .andExpect(status().isOk());
+
+        Thread.sleep(100);
+
+        mockMvc.perform(post("/api/partner-posts/" + postB.getId() + "/contact-requests")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"msg to B\"}"))
+                .andExpect(status().isOk());
+
+        Thread.sleep(100);
+
+        mockMvc.perform(post("/api/partner-posts/" + postC.getId() + "/contact-requests")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"msg to C\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/me/conversations")
+                        .header("Authorization", "Bearer " + requesterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(3)))
+                .andExpect(jsonPath("$.items[0].otherParticipantDisplayName").value("CCSortPubC"))
+                .andExpect(jsonPath("$.items[1].otherParticipantDisplayName").value("CCSortPubB"))
+                .andExpect(jsonPath("$.items[2].otherParticipantDisplayName").value("CCSortPubA"));
+    }
+
+    @Test
+    void messagesAfterMessageIdRespectsSizeLimit() throws Exception {
+        Long convId = setupConversationWithMessage("cc-sizelim");
+
+        UUID requesterId = getUserId("cc-sizelimreq@campus.edu.cn");
+        String requesterToken = login("cc-sizelimreq@campus.edu.cn", "Str0ngPassword!");
+        UUID publisherId = getUserId("cc-sizelimpub@campus.edu.cn");
+
+        ConversationMessage msg2 = conversationMessageRepository.save(
+                new ConversationMessage(convId, publisherId, "USER_TEXT", "extra 1", Instant.now()));
+        conversationMessageRepository.save(
+                new ConversationMessage(convId, publisherId, "USER_TEXT", "extra 2", Instant.now().plusSeconds(1)));
+        conversationMessageRepository.save(
+                new ConversationMessage(convId, publisherId, "USER_TEXT", "extra 3", Instant.now().plusSeconds(2)));
+
+        mockMvc.perform(get("/api/me/conversations/" + convId + "/messages")
+                        .param("afterMessageId", String.valueOf(msg2.getId()))
+                        .param("size", "2")
+                        .header("Authorization", "Bearer " + requesterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(2)))
+                .andExpect(jsonPath("$.items[0].content").value("extra 2"))
+                .andExpect(jsonPath("$.items[1].content").value("extra 3"));
+    }
+
+    @Test
+    void messagesAfterMessageIdCapsSizeAtMaxPageSize() throws Exception {
+        Long convId = setupConversationWithMessage("cc-maxpage");
+
+        UUID publisherId = getUserId("cc-maxpagepub@campus.edu.cn");
+        String requesterToken = login("cc-maxpagereq@campus.edu.cn", "Str0ngPassword!");
+
+        ConversationMessage baseMsg = conversationMessageRepository.save(
+                new ConversationMessage(convId, publisherId, "USER_TEXT", "base", Instant.now()));
+        for (int i = 0; i < 55; i++) {
+            conversationMessageRepository.save(
+                    new ConversationMessage(convId, publisherId, "USER_TEXT", "msg" + i, Instant.now().plusSeconds(100 + i)));
+        }
+
+        mockMvc.perform(get("/api/me/conversations/" + convId + "/messages")
+                        .param("afterMessageId", String.valueOf(baseMsg.getId()))
+                        .param("size", "999")
+                        .header("Authorization", "Bearer " + requesterToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(org.hamcrest.Matchers.lessThanOrEqualTo(50)));
+    }
+
     @Autowired private org.springframework.context.ApplicationContext applicationContext;
 
     private PartnerPost createPublishedPost(UUID publisherId, String title) {

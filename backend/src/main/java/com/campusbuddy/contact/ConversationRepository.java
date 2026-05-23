@@ -15,6 +15,9 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
 
     Page<Conversation> findByParticipant1IdOrParticipant2Id(UUID participant1Id, UUID participant2Id, Pageable pageable);
 
+    @Query("SELECT c FROM Conversation c WHERE c.participant1Id = :userId OR c.participant2Id = :userId ORDER BY c.updatedAt DESC")
+    Page<Conversation> findByParticipantOrderByUpdatedAtDesc(@Param("userId") UUID userId, Pageable pageable);
+
     @Query("SELECT c FROM Conversation c WHERE c.status = 'ACTIVE' AND " +
             "((c.participant1Id = :userA AND c.participant2Id = :userB) OR " +
             "(c.participant1Id = :userB AND c.participant2Id = :userA))")

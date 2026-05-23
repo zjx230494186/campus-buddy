@@ -116,15 +116,11 @@ public class ContactConversationService {
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(page, safeSize);
 
-        Page<Conversation> convPage = conversationRepository.findByParticipant1IdOrParticipant2Id(
-                currentUserId, currentUserId, pageable);
+        Page<Conversation> convPage = conversationRepository.findByParticipantOrderByUpdatedAtDesc(
+                currentUserId, pageable);
 
         List<ConversationListItem> items = convPage.getContent().stream()
                 .map(conv -> toListItem(conv, currentUserId))
-                .toList();
-
-        items.stream()
-                .sorted(Comparator.comparing(ConversationListItem::updatedAt).reversed())
                 .toList();
 
         return new ConversationListResponse(items, convPage.getNumber(), convPage.getSize(),
@@ -143,12 +139,14 @@ public class ContactConversationService {
                     "You are not a participant of this conversation", null);
         }
 
-        List<ConversationMessage> messages;
         if (afterMessageId != null && afterMessageId > 0) {
-            messages = conversationMessageRepository
-                    .findByConversationIdAndIdGreaterThanOrderByIdAsc(conversationId, afterMessageId);
-            List<MessageItem> msgItems = messages.stream().map(this::toMessageItem).toList();
-            return new MessageListResponse(msgItems, 0, msgItems.size(), msgItems.size(), 1);
+            int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+            PageRequest pageable = PageRequest.of(0, safeSize);
+            Page<ConversationMessage> msgPage = conversationMessageRepository
+                    .findByConversationIdAndIdGreaterThanOrderByIdAsc(conversationId, afterMessageId, pageable);
+            List<MessageItem> msgItems = msgPage.getContent().stream().map(this::toMessageItem).toList();
+            return new MessageListResponse(msgItems, msgPage.getNumber(), msgPage.getSize(),
+                    msgPage.getTotalElements(), msgPage.getTotalPages());
         }
 
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
