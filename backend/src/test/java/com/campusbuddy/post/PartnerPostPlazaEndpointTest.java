@@ -268,6 +268,66 @@ class PartnerPostPlazaEndpointTest {
                 .andExpect(jsonPath("$.ownPost").value(false));
     }
 
+    @Test
+    void plazaListItemIncludesPublisherAuthenticationStatus() throws Exception {
+        String token = registerVerifiedAndLogin("pl-authst@campus.edu.cn", "Str0ngPassword!", "PLAuthst");
+        java.util.UUID userId = getUserId("pl-authst@campus.edu.cn");
+
+        PartnerPost post = new PartnerPost(userId, "PUBLISHED", Instant.now());
+        post.setTitle("Auth Status Test");
+        post.setSceneType("STUDY");
+        post.setPublishedAt(Instant.now());
+        partnerPostRepository.save(post);
+
+        mockMvc.perform(get("/api/partner-posts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherAuthenticationStatus").value(hasItem("VERIFIED")));
+    }
+
+    @Test
+    void plazaListItemIncludesPublisherCreditSummary() throws Exception {
+        String token = registerVerifiedAndLogin("pl-credits@campus.edu.cn", "Str0ngPassword!", "PLCredits");
+        java.util.UUID userId = getUserId("pl-credits@campus.edu.cn");
+
+        PartnerPost post = new PartnerPost(userId, "PUBLISHED", Instant.now());
+        post.setTitle("Credit Summary Test");
+        post.setSceneType("STUDY");
+        post.setPublishedAt(Instant.now());
+        partnerPostRepository.save(post);
+
+        mockMvc.perform(get("/api/partner-posts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherCreditSummary.averageRating").exists())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherCreditSummary.ratingSampleCount").exists())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherCreditSummary.realConversationCount").exists())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherCreditSummary.topTags").exists())
+                .andExpect(jsonPath("$.items[?(@.postId=='" + post.getId() + "')].publisherCreditSummary.updatedAt").exists());
+    }
+
+    @Test
+    void plazaListItemCreditSummaryExcludesDisputedCount() throws Exception {
+        String token = registerVerifiedAndLogin("pl-nodis@campus.edu.cn", "Str0ngPassword!", "PLNoDis");
+        java.util.UUID userId = getUserId("pl-nodis@campus.edu.cn");
+
+        PartnerPost post = new PartnerPost(userId, "PUBLISHED", Instant.now());
+        post.setTitle("No Disputed Test");
+        post.setSceneType("STUDY");
+        post.setPublishedAt(Instant.now());
+        partnerPostRepository.save(post);
+
+        String response = mockMvc.perform(get("/api/partner-posts")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        org.junit.jupiter.api.Assertions.assertFalse(
+                response.contains("disputedReviewCount"),
+                "List must not contain disputedReviewCount"
+        );
+    }
+
     private java.util.UUID getUserId(String email) {
         return userAccountRepository.findByCampusEmail(email).map(UserAccount::getUserId).orElseThrow();
     }

@@ -101,12 +101,24 @@ public class PartnerPostPlazaService {
     private PlazaListItem toListItem(PartnerPost post, UUID currentUserId) {
         UserAccount publisher = userAccountRepository.findById(post.getPublisherId()).orElse(null);
         String publisherDisplayName = publisher != null ? publisher.getDisplayName() : null;
+        String publisherAuthenticationStatus = publisher != null ? publisher.getAuthenticationStatus() : null;
         boolean ownPost = post.getPublisherId().equals(currentUserId);
+
+        CreditSummaryService.PublicCreditSummaryResponse creditSummary = null;
+        if (publisher != null) {
+            try {
+                CreditSummaryService.CreditSummaryResponse fullSummary = creditSummaryService.getCreditSummary(publisher.getUserId(), false);
+                creditSummary = creditSummaryService.toPublicResponse(fullSummary);
+            } catch (Exception ignored) {
+            }
+        }
 
         return new PlazaListItem(
                 post.getId().toString(),
                 post.getPublisherId().toString(),
                 publisherDisplayName,
+                publisherAuthenticationStatus,
+                creditSummary,
                 post.getSceneType(),
                 post.getStatus(),
                 post.getTitle(),
@@ -123,6 +135,8 @@ public class PartnerPostPlazaService {
 
     public record PlazaListItem(
             String postId, String publisherId, String publisherDisplayName,
+            String publisherAuthenticationStatus,
+            CreditSummaryService.PublicCreditSummaryResponse publisherCreditSummary,
             String sceneType, String status, String title, String description,
             List<String> tags, String timeText, String locationText,
             Map<String, Object> scenePayload, String publishedAt, String updatedAt,
