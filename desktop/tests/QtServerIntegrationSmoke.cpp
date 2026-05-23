@@ -9,6 +9,8 @@
 #include <QTimer>
 
 #include "api/CampusApiClient.h"
+#include "api/PartnerPostApiService.h"
+#include "api/ContactConversationApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "auth/AuthApiService.h"
 #include "domain/ApiClientConfig.h"
@@ -249,6 +251,142 @@ int main(int argc, char *argv[])
         }
     } else {
         out << "SKIP: no attachment to delete" << Qt::endl;
+    }
+
+    InMemorySessionTokenStore plazaTokenStore;
+    plazaTokenStore.setAccessToken(accessToken);
+    PartnerPostApiService plazaService(client, plazaTokenStore);
+    ContactConversationApiService contactService(client, plazaTokenStore);
+
+    out << Qt::endl << "--- 6. GET /partner-posts (plaza list) ---" << Qt::endl;
+    QString firstPublishedPostId;
+    if (!accessToken.isEmpty()) {
+        QEventLoop loop6;
+        QTimer timeout6;
+        timeout6.setSingleShot(true);
+        PlazaListResult plazaResult;
+        QObject::connect(&timeout6, &QTimer::timeout, &loop6, &QEventLoop::quit);
+        plazaService.listPosts(0, 20, [&](const PlazaListResult &r) {
+            plazaResult = r;
+            loop6.quit();
+        });
+        timeout6.start(10000);
+        loop6.exec();
+
+        if (plazaResult.success && !plazaResult.items.isEmpty()) {
+            firstPublishedPostId = plazaResult.items[0].postId;
+            out << "PASS: items=" << plazaResult.items.size()
+                << " firstPostId length=" << firstPublishedPostId.length() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << plazaResult.success << " items=" << plazaResult.items.size()
+                << " errorCode=" << plazaResult.errorCode << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no token for plaza" << Qt::endl;
+        failures++;
+    }
+
+    out << Qt::endl << "--- 7. POST /partner-posts/{id}/contact-requests ---" << Qt::endl;
+    long long smokeConvId = 0;
+    if (!firstPublishedPostId.isEmpty()) {
+        QEventLoop loop7;
+        QTimer timeout7;
+        timeout7.setSingleShot(true);
+        ContactRequestResult contactResult;
+        QObject::connect(&timeout7, &QTimer::timeout, &loop7, &QEventLoop::quit);
+        contactService.requestContact(firstPublishedPostId, QStringLiteral("smoke test contact"), [&](const ContactRequestResult &r) {
+            contactResult = r;
+            loop7.quit();
+        });
+        timeout7.start(10000);
+        loop7.exec();
+
+        if (contactResult.success) {
+            smokeConvId = contactResult.conversationId;
+            out << "PASS: conversationId=" << smokeConvId << Qt::endl;
+        } else {
+            out << "FAIL: success=" << contactResult.success << " errorCode=" << contactResult.errorCode
+                << " errorMessage=" << contactResult.errorMessage << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no published post to contact" << Qt::endl;
+        failures++;
+    }
+
+    out << Qt::endl << "--- 8. GET /me/conversations (conversation list) ---" << Qt::endl;
+    if (!accessToken.isEmpty()) {
+        QEventLoop loop8;
+        QTimer timeout8;
+        timeout8.setSingleShot(true);
+        ConversationListResult convListResult;
+        QObject::connect(&timeout8, &QTimer::timeout, &loop8, &QEventLoop::quit);
+        contactService.listConversations(0, 20, [&](const ConversationListResult &r) {
+            convListResult = r;
+            loop8.quit();
+        });
+        timeout8.start(10000);
+        loop8.exec();
+
+        if (convListResult.success) {
+            out << "PASS: items=" << convListResult.items.size() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << convListResult.success << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no token for conversation list" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 9. POST /me/conversations/{id}/messages (send message) ---" << Qt::endl;
+    long long smokeMsgId = 0;
+    if (smokeConvId > 0) {
+        QEventLoop loop9;
+        QTimer timeout9;
+        timeout9.setSingleShot(true);
+        SendMessageResult sendResult;
+        QObject::connect(&timeout9, &QTimer::timeout, &loop9, &QEventLoop::quit);
+        contactService.sendMessage(smokeConvId, QStringLiteral("smoke follow up"), [&](const SendMessageResult &r) {
+            sendResult = r;
+            loop9.quit();
+        });
+        timeout9.start(10000);
+        loop9.exec();
+
+        if (sendResult.success) {
+            smokeMsgId = sendResult.messageId;
+            out << "PASS: messageId=" << smokeMsgId << Qt::endl;
+        } else {
+            out << "FAIL: success=" << sendResult.success << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no conversation for send message" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 10. GET /me/conversations/{id}/messages?afterMessageId=X&size=1 ---" << Qt::endl;
+    if (smokeConvId > 0 && smokeMsgId > 0) {
+        QEventLoop loop10;
+        QTimer timeout10;
+        timeout10.setSingleShot(true);
+        MessageListResult msgResult;
+        QObject::connect(&timeout10, &QTimer::timeout, &loop10, &QEventLoop::quit);
+        contactService.queryMessages(smokeConvId, smokeMsgId, 1, [&](const MessageListResult &r) {
+            msgResult = r;
+            loop10.quit();
+        });
+        timeout10.start(10000);
+        loop10.exec();
+
+        if (msgResult.success && msgResult.items.size() <= 1) {
+            out << "PASS: items=" << msgResult.items.size() << " (<=1)" << Qt::endl;
+        } else {
+            out << "FAIL: success=" << msgResult.success << " items=" << msgResult.items.size() << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no conversation/message for afterMessageId test" << Qt::endl;
     }
 
     out << Qt::endl;

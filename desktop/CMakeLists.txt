@@ -32,6 +32,12 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/IdentityVerificationWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/IdentityVerificationWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/PartnerPostModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ContactConversationModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})
@@ -100,11 +106,21 @@ qt_add_executable(qt_server_integration_smoke
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/QtServerIntegrationSmoke.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/AuthApiService.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/PartnerPostModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ContactConversationModels.h
 )
 
 target_link_libraries(qt_server_integration_smoke PRIVATE Qt6::Core Qt6::Network)
@@ -128,3 +144,47 @@ target_compile_definitions(server_smoke_security_test PRIVATE
 )
 
 add_test(NAME server_smoke_security_test COMMAND server_smoke_security_test)
+
+qt_add_executable(partner_post_api_service_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/PartnerPostApiServiceTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/PartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/PartnerPostModels.h
+)
+
+target_link_libraries(partner_post_api_service_test PRIVATE Qt6::Test Qt6::Network)
+
+target_include_directories(partner_post_api_service_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME partner_post_api_service_test COMMAND partner_post_api_service_test)
+
+qt_add_executable(contact_conversation_api_service_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/ContactConversationApiServiceTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ContactConversationApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ContactConversationModels.h
+)
+
+target_link_libraries(contact_conversation_api_service_test PRIVATE Qt6::Test Qt6::Network)
+
+target_include_directories(contact_conversation_api_service_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME contact_conversation_api_service_test COMMAND contact_conversation_api_service_test)
