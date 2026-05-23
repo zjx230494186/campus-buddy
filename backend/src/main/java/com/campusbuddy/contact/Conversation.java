@@ -29,6 +29,9 @@ public class Conversation {
 
     private Long relatedPostId;
 
+    @Column(name = "related_post_uuid")
+    private UUID relatedPostUuid;
+
     @Column(nullable = false)
     private Instant createdAt;
 
@@ -54,8 +57,12 @@ public class Conversation {
     public UUID getParticipant2Id() { return participant2Id; }
     public String getStatus() { return status; }
     public Long getRelatedPostId() { return relatedPostId; }
+    public UUID getRelatedPostUuid() { return relatedPostUuid; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public void setRelatedPostUuid(UUID relatedPostUuid) { this.relatedPostUuid = relatedPostUuid; }
+    public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
 
     public boolean isParticipant(UUID userId) {
         return participant1Id.equals(userId) || participant2Id.equals(userId);

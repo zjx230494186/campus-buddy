@@ -41,6 +41,8 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/me/reviews/**").authenticated()
                         .requestMatchers("/api/partner-posts/**").authenticated()
                         .requestMatchers("/api/me/partner-posts/**").authenticated()
+                        .requestMatchers("/api/me/conversations/**").authenticated()
+                        .requestMatchers("/api/me/conversation").authenticated()
                         .requestMatchers("/api/me/credit-summary").authenticated()
                         .requestMatchers("/api/users/*/credit-summary").authenticated()
                         .requestMatchers("/api/health", "/api/system/info").permitAll()

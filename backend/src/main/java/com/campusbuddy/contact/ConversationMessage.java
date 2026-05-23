@@ -35,9 +35,14 @@ public class ConversationMessage {
     }
 
     public ConversationMessage(Long conversationId, UUID senderId, String messageType, Instant createdAt) {
+        this(conversationId, senderId, messageType, null, createdAt);
+    }
+
+    public ConversationMessage(Long conversationId, UUID senderId, String messageType, String content, Instant createdAt) {
         this.conversationId = conversationId;
         this.senderId = senderId;
         this.messageType = messageType;
+        this.content = content;
         this.createdAt = createdAt;
     }
 
@@ -47,4 +52,6 @@ public class ConversationMessage {
     public String getMessageType() { return messageType; }
     public String getContent() { return content; }
     public Instant getCreatedAt() { return createdAt; }
+
+    public void setContent(String content) { this.content = content; }
 }
