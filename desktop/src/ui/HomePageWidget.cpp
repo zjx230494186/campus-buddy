@@ -6,6 +6,7 @@ HomePageWidget::HomePageWidget(AuthApiService &authService,
                                MyPartnerPostApiService &myPostService,
                                PartnerPostApiService &plazaService,
                                ContactConversationApiService &contactService,
+                               ReviewCreditApiService &reviewService,
                                QWidget *parent)
     : QWidget(parent),
       authService_(authService)
@@ -51,6 +52,9 @@ HomePageWidget::HomePageWidget(AuthApiService &authService,
 
     conversationsWidget_ = new ConversationsWidget(contactService, tabWidget_);
     tabWidget_->addTab(conversationsWidget_, QStringLiteral("会话"));
+
+    reviewCreditWidget_ = new ReviewCreditWidget(reviewService, tabWidget_);
+    tabWidget_->addTab(reviewCreditWidget_, QStringLiteral("评价信用"));
 
     layout->addWidget(tabWidget_);
 

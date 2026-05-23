@@ -41,6 +41,9 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/MyPartnerPostModels.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ReviewCreditModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/MyPostsWidget.cpp
@@ -49,6 +52,8 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PlazaWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ConversationsWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ConversationsWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ReviewCreditWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ReviewCreditWidget.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})
@@ -135,6 +140,9 @@ qt_add_executable(qt_server_integration_smoke
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/MyPartnerPostModels.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ReviewCreditModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.h
 )
 
 target_link_libraries(qt_server_integration_smoke PRIVATE Qt6::Core Qt6::Network)
@@ -240,3 +248,25 @@ target_compile_definitions(student_post_plaza_widget_test PRIVATE
 )
 
 add_test(NAME student_post_plaza_widget_test COMMAND student_post_plaza_widget_test)
+
+qt_add_executable(review_credit_api_service_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/ReviewCreditApiServiceTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ReviewCreditModels.h
+)
+
+target_link_libraries(review_credit_api_service_test PRIVATE Qt6::Test Qt6::Network)
+
+target_include_directories(review_credit_api_service_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME review_credit_api_service_test COMMAND review_credit_api_service_test)
