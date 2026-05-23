@@ -594,7 +594,41 @@ int main(int argc, char *argv[])
 
     ReviewCreditApiService reviewService(client, plazaTokenStore);
 
-    out << Qt::endl << "--- 17. Ensure conversation has 2+ messages each side ---" << Qt::endl;
+    QString smokeOtherParticipantId;
+
+    out << Qt::endl << "--- 17. Find otherParticipantId from conversation list ---" << Qt::endl;
+    if (smokeConvId > 0 && !accessToken.isEmpty()) {
+        QEventLoop loop17;
+        QTimer timeout17;
+        timeout17.setSingleShot(true);
+        ConversationListResult convList17;
+        QObject::connect(&timeout17, &QTimer::timeout, &loop17, &QEventLoop::quit);
+        contactService.listConversations(0, 50, [&](const ConversationListResult &r) {
+            convList17 = r;
+            loop17.quit();
+        });
+        timeout17.start(10000);
+        loop17.exec();
+
+        if (convList17.success) {
+            for (const auto &c : convList17.items) {
+                if (c.conversationId == smokeConvId) {
+                    smokeOtherParticipantId = c.otherParticipantId;
+                    break;
+                }
+            }
+        }
+        if (!smokeOtherParticipantId.isEmpty()) {
+            out << "PASS: otherParticipantId found (length=" << smokeOtherParticipantId.length() << ")" << Qt::endl;
+        } else {
+            out << "FAIL: could not find otherParticipantId for conversationId=" << smokeConvId << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no conversation/token for finding participant" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 18. Ensure conversation has 2+ USER_TEXT each side ---" << Qt::endl;
     if (smokeConvId > 0 && !adminEmail.isEmpty()) {
         InMemorySessionTokenStore adminTokenStore2;
         QJsonObject adminLoginBody;
@@ -606,40 +640,61 @@ int main(int argc, char *argv[])
         }
 
         ContactConversationApiService adminContact2(client, adminTokenStore2);
-        QEventLoop loop17;
-        QTimer timeout17;
-        timeout17.setSingleShot(true);
-        SendMessageResult adminMsgResult;
-        QObject::connect(&timeout17, &QTimer::timeout, &loop17, &QEventLoop::quit);
-        adminContact2.sendMessage(smokeConvId, QStringLiteral("admin second message for review eligibility"), [&](const SendMessageResult &r) {
-            adminMsgResult = r;
-            loop17.quit();
-        });
-        timeout17.start(10000);
-        loop17.exec();
 
-        if (adminMsgResult.success) {
-            out << "PASS: admin sent second message" << Qt::endl;
+        int adminSendOk = 0;
+        for (int i = 0; i < 2; ++i) {
+            QEventLoop loopA;
+            QTimer timeoutA;
+            timeoutA.setSingleShot(true);
+            SendMessageResult adminMsgResult;
+            QObject::connect(&timeoutA, &QTimer::timeout, &loopA, &QEventLoop::quit);
+            adminContact2.sendMessage(smokeConvId, QStringLiteral("hi"), [&](const SendMessageResult &r) {
+                adminMsgResult = r;
+                loopA.quit();
+            });
+            timeoutA.start(10000);
+            loopA.exec();
+            if (adminMsgResult.success) adminSendOk++;
+        }
+
+        int smokeSendOk = 0;
+        for (int i = 0; i < 2; ++i) {
+            QEventLoop loopS;
+            QTimer timeoutS;
+            timeoutS.setSingleShot(true);
+            SendMessageResult smokeMsgResult;
+            QObject::connect(&timeoutS, &QTimer::timeout, &loopS, &QEventLoop::quit);
+            contactService.sendMessage(smokeConvId, QStringLiteral("hi"), [&](const SendMessageResult &r) {
+                smokeMsgResult = r;
+                loopS.quit();
+            });
+            timeoutS.start(10000);
+            loopS.exec();
+            if (smokeMsgResult.success) smokeSendOk++;
+        }
+
+        if (adminSendOk >= 2 && smokeSendOk >= 2) {
+            out << "PASS: admin sent " << adminSendOk << " smoke sent " << smokeSendOk << Qt::endl;
         } else {
-            out << "NOTE: admin second message result=" << adminMsgResult.success << " errorCode=" << adminMsgResult.errorCode << Qt::endl;
+            out << "NOTE: admin sent " << adminSendOk << " smoke sent " << smokeSendOk << " (may affect review eligibility)" << Qt::endl;
         }
     } else {
         out << "SKIP: no conversation or admin creds for message padding" << Qt::endl;
     }
 
-    out << Qt::endl << "--- 18. GET /me/credit-summary ---" << Qt::endl;
+    out << Qt::endl << "--- 19. GET /me/credit-summary ---" << Qt::endl;
     {
-        QEventLoop loop18;
-        QTimer timeout18;
-        timeout18.setSingleShot(true);
+        QEventLoop loop19;
+        QTimer timeout19;
+        timeout19.setSingleShot(true);
         MyCreditSummaryResult creditResult;
-        QObject::connect(&timeout18, &QTimer::timeout, &loop18, &QEventLoop::quit);
+        QObject::connect(&timeout19, &QTimer::timeout, &loop19, &QEventLoop::quit);
         reviewService.getMyCreditSummary([&](const MyCreditSummaryResult &r) {
             creditResult = r;
-            loop18.quit();
+            loop19.quit();
         });
-        timeout18.start(10000);
-        loop18.exec();
+        timeout19.start(10000);
+        loop19.exec();
 
         if (creditResult.success) {
             out << "PASS: avgRating=" << creditResult.averageRating << " sampleCount=" << creditResult.ratingSampleCount
@@ -650,73 +705,76 @@ int main(int argc, char *argv[])
         }
     }
 
-    out << Qt::endl << "--- 19. POST /me/reviews (create review) ---" << Qt::endl;
+    out << Qt::endl << "--- 20. POST /me/reviews (create review) ---" << Qt::endl;
     long long smokeReviewId = 0;
-    if (smokeConvId > 0 && !accessToken.isEmpty()) {
+    if (smokeConvId > 0 && !smokeOtherParticipantId.isEmpty() && !accessToken.isEmpty()) {
         CreateReviewRequest reviewReq;
         reviewReq.conversationId = smokeConvId;
-        reviewReq.revieweeId = QStringLiteral("a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11");
+        reviewReq.revieweeId = smokeOtherParticipantId;
         reviewReq.rating = 5;
-        reviewReq.reviewTags = QStringList{QStringLiteral("friendly")};
+        reviewReq.reviewTags = QStringList{QStringLiteral("守时")};
 
-        QEventLoop loop19;
-        QTimer timeout19;
-        timeout19.setSingleShot(true);
-        ReviewResult reviewResult;
-        QObject::connect(&timeout19, &QTimer::timeout, &loop19, &QEventLoop::quit);
-        reviewService.createReview(reviewReq, [&](const ReviewResult &r) {
-            reviewResult = r;
-            loop19.quit();
-        });
-        timeout19.start(10000);
-        loop19.exec();
-
-        if (reviewResult.success) {
-            smokeReviewId = reviewResult.review.id;
-            out << "PASS: reviewId=" << smokeReviewId << " status=" << reviewResult.review.status << Qt::endl;
-        } else {
-            out << "NOTE: success=" << reviewResult.success << " errorCode=" << reviewResult.errorCode
-                << " errorMessage=" << reviewResult.errorMessage << Qt::endl;
-        }
-    } else {
-        out << "SKIP: no conversation/token for review" << Qt::endl;
-    }
-
-    out << Qt::endl << "--- 20. GET /me/reviews/given ---" << Qt::endl;
-    {
         QEventLoop loop20;
         QTimer timeout20;
         timeout20.setSingleShot(true);
-        ReviewListResult givenResult;
+        ReviewResult reviewResult;
         QObject::connect(&timeout20, &QTimer::timeout, &loop20, &QEventLoop::quit);
-        reviewService.listGivenReviews(0, 20, [&](const ReviewListResult &r) {
-            givenResult = r;
+        reviewService.createReview(reviewReq, [&](const ReviewResult &r) {
+            reviewResult = r;
             loop20.quit();
         });
         timeout20.start(10000);
         loop20.exec();
 
-        if (givenResult.success) {
+        if (reviewResult.success) {
+            smokeReviewId = reviewResult.review.id;
+            out << "PASS: reviewId=" << smokeReviewId << " status=" << reviewResult.review.status << Qt::endl;
+        } else {
+            out << "FAIL: errorCode=" << reviewResult.errorCode << " errorMessage=" << reviewResult.errorMessage << Qt::endl;
+            failures++;
+        }
+    } else {
+        out << "SKIP: no conversation/participant/token for review" << Qt::endl;
+        failures++;
+    }
+
+    out << Qt::endl << "--- 21. GET /me/reviews/given ---" << Qt::endl;
+    {
+        QEventLoop loop21;
+        QTimer timeout21;
+        timeout21.setSingleShot(true);
+        ReviewListResult givenResult;
+        QObject::connect(&timeout21, &QTimer::timeout, &loop21, &QEventLoop::quit);
+        reviewService.listGivenReviews(0, 20, [&](const ReviewListResult &r) {
+            givenResult = r;
+            loop21.quit();
+        });
+        timeout21.start(10000);
+        loop21.exec();
+
+        if (givenResult.success && givenResult.items.size() >= 1) {
             out << "PASS: items=" << givenResult.items.size() << Qt::endl;
+        } else if (givenResult.success) {
+            out << "NOTE: items=0 (review may not have been created)" << Qt::endl;
         } else {
             out << "FAIL: success=" << givenResult.success << " errorCode=" << givenResult.errorCode << Qt::endl;
             failures++;
         }
     }
 
-    out << Qt::endl << "--- 21. GET /me/reviews/received ---" << Qt::endl;
+    out << Qt::endl << "--- 22. GET /me/reviews/received ---" << Qt::endl;
     {
-        QEventLoop loop21;
-        QTimer timeout21;
-        timeout21.setSingleShot(true);
+        QEventLoop loop22;
+        QTimer timeout22;
+        timeout22.setSingleShot(true);
         ReviewListResult receivedResult;
-        QObject::connect(&timeout21, &QTimer::timeout, &loop21, &QEventLoop::quit);
+        QObject::connect(&timeout22, &QTimer::timeout, &loop22, &QEventLoop::quit);
         reviewService.listReceivedReviews(0, 20, [&](const ReviewListResult &r) {
             receivedResult = r;
-            loop21.quit();
+            loop22.quit();
         });
-        timeout21.start(10000);
-        loop21.exec();
+        timeout22.start(10000);
+        loop22.exec();
 
         if (receivedResult.success) {
             out << "PASS: items=" << receivedResult.items.size() << Qt::endl;

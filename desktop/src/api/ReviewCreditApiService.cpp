@@ -142,7 +142,10 @@ void ReviewCreditApiService::getMyCreditSummary(MyCreditSummaryCallback callback
                 for (const QJsonValue &t : tags) {
                     const QJsonObject tagObj = t.toObject();
                     CreditSummaryTagItem tagItem;
-                    tagItem.tag = tagObj.value(QStringLiteral("tag")).toString();
+                    tagItem.tag = tagObj.value(QStringLiteral("tagName")).toString();
+                    if (tagItem.tag.isEmpty()) {
+                        tagItem.tag = tagObj.value(QStringLiteral("tag")).toString();
+                    }
                     tagItem.count = tagObj.value(QStringLiteral("count")).toInt();
                     result.topTags.append(tagItem);
                 }
@@ -174,7 +177,10 @@ void ReviewCreditApiService::getPublicCreditSummary(const QString &userId, Publi
                 for (const QJsonValue &t : tags) {
                     const QJsonObject tagObj = t.toObject();
                     CreditSummaryTagItem tagItem;
-                    tagItem.tag = tagObj.value(QStringLiteral("tag")).toString();
+                    tagItem.tag = tagObj.value(QStringLiteral("tagName")).toString();
+                    if (tagItem.tag.isEmpty()) {
+                        tagItem.tag = tagObj.value(QStringLiteral("tag")).toString();
+                    }
                     tagItem.count = tagObj.value(QStringLiteral("count")).toInt();
                     result.topTags.append(tagItem);
                 }

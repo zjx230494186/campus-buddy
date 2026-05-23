@@ -90,7 +90,7 @@ QByteArray ReviewCreditApiServiceTest::extractHeader(const RawRequest &captured,
     return {};
 }
 
-static const char *REVIEW_RESPONSE = R"({"id":1,"conversationId":2,"reviewerId":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","revieweeId":"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22","rating":5,"reviewTags":["friendly"],"status":"ACTIVE","modifiedOnce":false,"createdAt":"2026-05-24T00:00:00Z","updatedAt":"2026-05-24T00:00:00Z"})";
+static const char *REVIEW_RESPONSE = R"({"id":1,"conversationId":2,"reviewerId":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","revieweeId":"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22","rating":5,"reviewTags":["守时"],"status":"ACTIVE","modifiedOnce":false,"createdAt":"2026-05-24T00:00:00Z","updatedAt":"2026-05-24T00:00:00Z"})";
 
 void ReviewCreditApiServiceTest::createReviewUsesPostAndCorrectPath()
 {
@@ -105,7 +105,7 @@ void ReviewCreditApiServiceTest::createReviewUsesPostAndCorrectPath()
     req.conversationId = 2;
     req.revieweeId = QStringLiteral("b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22");
     req.rating = 5;
-    req.reviewTags = QStringList{QStringLiteral("friendly")};
+    req.reviewTags = QStringList{QStringLiteral("守时")};
 
     QEventLoop loop; QTimer timeout; timeout.setSingleShot(true);
     ReviewResult result;
@@ -192,7 +192,7 @@ void ReviewCreditApiServiceTest::getMyCreditSummaryParsesDisputedReviewCount()
 {
     RawRequest captured;
     const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
-        R"({"userId":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","averageRating":4.5,"realConversationCount":3,"ratingSampleCount":5,"topTags":[{"tag":"friendly","count":3}],"disputedReviewCount":1,"updatedAt":"2026-05-24T00:00:00Z"})");
+        R"({"userId":"a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11","averageRating":4.5,"realConversationCount":3,"ratingSampleCount":5,"topTags":[{"tagName":"守时","count":3}],"disputedReviewCount":1,"updatedAt":"2026-05-24T00:00:00Z"})");
     CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
     InMemorySessionTokenStore tokenStore;
     tokenStore.setAccessToken(QStringLiteral("test-token"));
@@ -210,13 +210,15 @@ void ReviewCreditApiServiceTest::getMyCreditSummaryParsesDisputedReviewCount()
     QCOMPARE(result.averageRating, 4.5);
     QCOMPARE(result.disputedReviewCount, 1);
     QCOMPARE(result.topTags.size(), 1);
+    QCOMPARE(result.topTags[0].tag, QString("守时"));
+    QCOMPARE(result.topTags[0].count, 3);
 }
 
 void ReviewCreditApiServiceTest::getPublicCreditSummaryUsesCorrectPath()
 {
     RawRequest captured;
     const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
-        R"({"userId":"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22","averageRating":3.0,"realConversationCount":1,"ratingSampleCount":2,"topTags":[],"updatedAt":"2026-05-24T00:00:00Z"})");
+        R"({"userId":"b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22","averageRating":3.0,"realConversationCount":1,"ratingSampleCount":2,"topTags":[{"tagName":"沟通顺畅","count":2}],"updatedAt":"2026-05-24T00:00:00Z"})");
     CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
     InMemorySessionTokenStore tokenStore;
     tokenStore.setAccessToken(QStringLiteral("test-token"));
@@ -230,7 +232,11 @@ void ReviewCreditApiServiceTest::getPublicCreditSummaryUsesCorrectPath()
 
     QVERIFY(result.success);
     QCOMPARE(extractPath(captured), QByteArray("/api/users/b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22/credit-summary"));
-    QVERIFY2(!result.success || true, "Public summary does not contain disputedReviewCount");
+    QCOMPARE(result.userId, QString("b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22"));
+    QCOMPARE(result.averageRating, 3.0);
+    QCOMPARE(result.topTags.size(), 1);
+    QCOMPARE(result.topTags[0].tag, QString("沟通顺畅"));
+    QCOMPARE(result.topTags[0].count, 2);
 }
 
 void ReviewCreditApiServiceTest::errorResponseConvertsToServiceResult()
