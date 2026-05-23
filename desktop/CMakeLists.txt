@@ -41,6 +41,12 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/MyPartnerPostModels.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/MyPostsWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/MyPostsWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PlazaWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PlazaWidget.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})
@@ -216,3 +222,19 @@ target_include_directories(my_partner_post_api_service_test PRIVATE
 )
 
 add_test(NAME my_partner_post_api_service_test COMMAND my_partner_post_api_service_test)
+
+qt_add_executable(student_post_plaza_widget_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/StudentPostPlazaWidgetTest.cpp
+)
+
+target_link_libraries(student_post_plaza_widget_test PRIVATE Qt6::Test)
+
+target_include_directories(student_post_plaza_widget_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(student_post_plaza_widget_test PRIVATE
+    CAMPUS_BUDDY_DESKTOP_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+add_test(NAME student_post_plaza_widget_test COMMAND student_post_plaza_widget_test)

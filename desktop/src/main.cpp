@@ -5,6 +5,9 @@
 #include <QTimer>
 
 #include "api/CampusApiClient.h"
+#include "api/MyPartnerPostApiService.h"
+#include "api/PartnerPostApiService.h"
+#include "api/ContactConversationApiService.h"
 #include "auth/AuthApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "domain/ApiClientConfig.h"
@@ -22,12 +25,15 @@ int main(int argc, char *argv[])
     CampusApiClient apiClient(config);
     AuthTokenStore tokenStore;
     AuthApiService authService(apiClient, tokenStore);
+    MyPartnerPostApiService myPostService(apiClient, tokenStore);
+    PartnerPostApiService plazaService(apiClient, tokenStore);
+    ContactConversationApiService contactService(apiClient, tokenStore);
 
     QStackedWidget navigator;
 
     auto *loginPage = new LoginWidget(authService, &navigator);
     auto *registerPage = new RegisterWidget(authService, &navigator);
-    auto *homePage = new HomePageWidget(authService, &navigator);
+    auto *homePage = new HomePageWidget(authService, myPostService, plazaService, contactService, &navigator);
 
     navigator.addWidget(loginPage);
     navigator.addWidget(registerPage);
@@ -53,7 +59,7 @@ int main(int argc, char *argv[])
     });
 
     navigator.setWindowTitle(QStringLiteral("校园搭子平台"));
-    navigator.resize(420, 480);
+    navigator.resize(960, 720);
     navigator.show();
 
     if (QCoreApplication::arguments().contains("--smoke-test")) {
