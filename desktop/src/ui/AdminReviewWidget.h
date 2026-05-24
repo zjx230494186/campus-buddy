@@ -49,5 +49,5 @@ private:
     QLabel *statusLabel_;
 
     QString selectedPostId_;
-    long long selectedSubmissionId_ = 0;
+    QString selectedSubmissionId_;
 };

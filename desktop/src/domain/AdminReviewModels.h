@@ -80,7 +80,7 @@ struct PartnerPostReviewResult
 
 struct PendingIdentityVerificationItem
 {
-    long long submissionId = 0;
+    QString submissionId;
     QString userId;
     QString realName;
     QString studentNumber;

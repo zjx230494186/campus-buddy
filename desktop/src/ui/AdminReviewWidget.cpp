@@ -183,8 +183,10 @@ void AdminReviewWidget::onRefreshIdentityQueue()
             identityQueueList_->clear();
             for (const auto &item : result.items) {
                 identityQueueList_->addItem(
-                    QStringLiteral("[%1] %2 — %3")
-                        .arg(item.reviewStatus, item.college, item.major));
+                    QStringLiteral("%1 %2 [%3] %4 %5 %6 — %7")
+                        .arg(item.realName, item.studentNumber, item.reviewStatus,
+                             item.college, item.major, item.grade,
+                             item.materialContentType));
             }
             statusLabel_->setText(QStringLiteral("认证审核队列: %1 条").arg(result.items.size()));
         } else {
@@ -195,7 +197,7 @@ void AdminReviewWidget::onRefreshIdentityQueue()
 
 void AdminReviewWidget::onApproveIdentity()
 {
-    if (selectedSubmissionId_ <= 0) {
+    if (selectedSubmissionId_.isEmpty()) {
         statusLabel_->setText(QStringLiteral("请先选择一条认证申请"));
         return;
     }
@@ -204,7 +206,7 @@ void AdminReviewWidget::onApproveIdentity()
     adminService_.reviewIdentityVerification(selectedSubmissionId_, req, [this](const IdentityVerificationReviewResult &r) {
         if (r.success) {
             statusLabel_->setText(QStringLiteral("认证通过! reviewStatus=%1 authStatus=%2").arg(r.reviewStatus).arg(r.authenticationStatus));
-            selectedSubmissionId_ = 0;
+            selectedSubmissionId_.clear();
         } else {
             statusLabel_->setText(QStringLiteral("认证审核失败: %1 - %2").arg(r.errorCode).arg(r.errorMessage));
         }
@@ -213,7 +215,7 @@ void AdminReviewWidget::onApproveIdentity()
 
 void AdminReviewWidget::onRejectIdentity()
 {
-    if (selectedSubmissionId_ <= 0) {
+    if (selectedSubmissionId_.isEmpty()) {
         statusLabel_->setText(QStringLiteral("请先选择一条认证申请"));
         return;
     }
@@ -227,7 +229,7 @@ void AdminReviewWidget::onRejectIdentity()
     adminService_.reviewIdentityVerification(selectedSubmissionId_, req, [this](const IdentityVerificationReviewResult &r) {
         if (r.success) {
             statusLabel_->setText(QStringLiteral("已驳回! reviewStatus=%1").arg(r.reviewStatus));
-            selectedSubmissionId_ = 0;
+            selectedSubmissionId_.clear();
         } else {
             statusLabel_->setText(QStringLiteral("驳回失败: %1 - %2").arg(r.errorCode).arg(r.errorMessage));
         }

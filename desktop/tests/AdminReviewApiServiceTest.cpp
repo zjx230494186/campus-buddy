@@ -101,7 +101,7 @@ static const char *QUEUE_RESPONSE = R"({"items":[{"postId":"p1","publisherId":"u
 
 static const char *DETAIL_RESPONSE = R"({"postId":"p1","publisherId":"u1","publisherDisplayName":"test","publisherAuthenticationStatus":"VERIFIED","sceneType":"MEAL","status":"PENDING_REVIEW","title":"test post","description":"desc","timeMode":"EXACT_TIME","timeText":"12:00","startAt":null,"endAt":null,"locationText":"loc","participantCount":2,"targetRequirement":"req","tags":["tag1"],"scenePayload":"{}","rejectReason":null,"reviewedBy":null,"reviewedAt":null,"publishedAt":null,"createdAt":"2026-05-24T00:00:00Z","updatedAt":"2026-05-24T00:00:00Z"})";
 
-static const char *PENDING_IV_RESPONSE = R"({"items":[{"submissionId":1,"userId":"u1","realName":"张三","studentNumber":"2024001","college":"计算机学院","major":"软件工程","grade":"2024","reviewStatus":"PENDING_REVIEW","submittedAt":"2026-05-24T00:00:00Z","materialAttachmentId":"mat1","materialContentType":"application/pdf","materialSizeBytes":1024}],"page":0,"size":20,"totalElements":1,"totalPages":1})";
+static const char *PENDING_IV_RESPONSE = R"({"items":[{"submissionId":"11111111-1111-1111-1111-111111111111","userId":"u1","realName":"测试张三","studentNumber":"2024001","college":"计算机学院","major":"软件工程","grade":"2024","reviewStatus":"PENDING_REVIEW","submittedAt":"2026-05-24T00:00:00Z","materialAttachmentId":"mat1","materialContentType":"application/pdf","materialSizeBytes":1024}],"page":0,"size":20,"totalElements":1,"totalPages":1})";
 
 void AdminReviewApiServiceTest::listPartnerPostReviewQueueUsesCorrectPathAndQuery()
 {
@@ -229,7 +229,8 @@ void AdminReviewApiServiceTest::listPendingIdentityVerificationsUsesCorrectPathA
     QVERIFY2(path.startsWith("/api/admin/identity-verifications?"), "Path must start with /api/admin/identity-verifications?");
     QVERIFY2(path.contains("status=PENDING_REVIEW"), "Must contain status=PENDING_REVIEW");
     QCOMPARE(result.items.size(), 1);
-    QCOMPARE(result.items[0].submissionId, 1);
+    QCOMPARE(result.items[0].submissionId, QString("11111111-1111-1111-1111-111111111111"));
+    QCOMPARE(result.items[0].realName, QString("测试张三"));
     QCOMPARE(result.items[0].materialContentType, QString("application/pdf"));
     QCOMPARE(result.items[0].materialSizeBytes, 1024);
 }
@@ -250,12 +251,12 @@ void AdminReviewApiServiceTest::reviewIdentityVerificationApprovedSendsCorrectBo
     QEventLoop loop; QTimer timeout; timeout.setSingleShot(true);
     IdentityVerificationReviewResult result;
     QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    service.reviewIdentityVerification(1, req, [&](const IdentityVerificationReviewResult &r) { result = r; loop.quit(); });
+    service.reviewIdentityVerification(QStringLiteral("11111111-1111-1111-1111-111111111111"), req, [&](const IdentityVerificationReviewResult &r) { result = r; loop.quit(); });
     timeout.start(3000); loop.exec();
 
     QVERIFY(result.success);
     QCOMPARE(extractMethod(captured), QByteArray("POST"));
-    QCOMPARE(extractPath(captured), QByteArray("/api/admin/identity-verifications/1/reviews"));
+    QCOMPARE(extractPath(captured), QByteArray("/api/admin/identity-verifications/11111111-1111-1111-1111-111111111111/reviews"));
     const QJsonObject body = extractBodyJson(captured);
     QCOMPARE(body.value("decision").toString(), QString("APPROVED"));
     QCOMPARE(result.reviewStatus, QString("APPROVED"));
@@ -279,10 +280,11 @@ void AdminReviewApiServiceTest::reviewIdentityVerificationRejectedSendsRejectRea
     QEventLoop loop; QTimer timeout; timeout.setSingleShot(true);
     IdentityVerificationReviewResult result;
     QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
-    service.reviewIdentityVerification(1, req, [&](const IdentityVerificationReviewResult &r) { result = r; loop.quit(); });
+    service.reviewIdentityVerification(QStringLiteral("11111111-1111-1111-1111-111111111111"), req, [&](const IdentityVerificationReviewResult &r) { result = r; loop.quit(); });
     timeout.start(3000); loop.exec();
 
     QVERIFY(result.success);
+    QCOMPARE(extractPath(captured), QByteArray("/api/admin/identity-verifications/11111111-1111-1111-1111-111111111111/reviews"));
     const QJsonObject body = extractBodyJson(captured);
     QCOMPARE(body.value("decision").toString(), QString("REJECTED"));
     QCOMPARE(body.value("rejectReason").toString(), QString("unclear photo"));

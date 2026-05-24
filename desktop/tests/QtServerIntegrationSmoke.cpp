@@ -829,10 +829,43 @@ int main(int argc, char *argv[])
         }
     }
 
-    out << Qt::endl << "--- 25. Smoke submit post for admin review ---" << Qt::endl;
+    out << Qt::endl << "--- 25. Withdraw pending posts + create + submit for admin review ---" << Qt::endl;
     QString smokePostForAdminReview;
     if (!accessToken.isEmpty()) {
         MyPartnerPostApiService smokeMyPostService(client, plazaTokenStore);
+
+        {
+            QEventLoop loopW;
+            QTimer timeoutW;
+            timeoutW.setSingleShot(true);
+            MyPostListResult myPostsW;
+            QObject::connect(&timeoutW, &QTimer::timeout, &loopW, &QEventLoop::quit);
+            smokeMyPostService.listMyPosts(0, 50, [&](const MyPostListResult &r) {
+                myPostsW = r;
+                loopW.quit();
+            });
+            timeoutW.start(10000);
+            loopW.exec();
+
+            if (myPostsW.success) {
+                for (const auto &p : myPostsW.items) {
+                    if (p.status == QStringLiteral("PENDING_REVIEW")) {
+                        QEventLoop loopW2;
+                        QTimer timeoutW2;
+                        timeoutW2.setSingleShot(true);
+                        PostActionResult withdrawW;
+                        QObject::connect(&timeoutW2, &QTimer::timeout, &loopW2, &QEventLoop::quit);
+                        smokeMyPostService.withdrawReview(p.postId, [&](const PostActionResult &r) {
+                            withdrawW = r;
+                            loopW2.quit();
+                        });
+                        timeoutW2.start(10000);
+                        loopW2.exec();
+                    }
+                }
+            }
+        }
+
         MyPostDraftRequest draftReq;
         draftReq.sceneType = QStringLiteral("STUDY");
         draftReq.title = QStringLiteral("smoke admin review test");
@@ -843,6 +876,7 @@ int main(int argc, char *argv[])
         draftReq.participantCount = 2;
         draftReq.targetRequirement = QStringLiteral("study together");
         draftReq.contactPreference = QStringLiteral("WeChat");
+        draftReq.scenePayload[QStringLiteral("studyGoal")] = QStringLiteral("pass exam");
 
         QEventLoop loop25a;
         QTimer timeout25a;
@@ -871,16 +905,19 @@ int main(int argc, char *argv[])
             timeout25b.start(10000);
             loop25b.exec();
 
-            if (submitResult.success) {
+            if (submitResult.success && submitResult.post.status == QStringLiteral("PENDING_REVIEW")) {
                 out << "PASS: postId length=" << smokePostForAdminReview.length() << " status=" << submitResult.post.status << Qt::endl;
             } else {
-                out << "NOTE: submit-review failed errorCode=" << submitResult.errorCode << Qt::endl;
+                out << "FAIL: submit-review failed errorCode=" << submitResult.errorCode << " errorMessage=" << submitResult.errorMessage << Qt::endl;
+                failures++;
             }
         } else {
-            out << "NOTE: draft creation failed" << Qt::endl;
+            out << "FAIL: draft creation failed" << Qt::endl;
+            failures++;
         }
     } else {
         out << "SKIP: no token for smoke post creation" << Qt::endl;
+        failures++;
     }
 
     out << Qt::endl << "--- 26. Admin detail + REJECT smoke post ---" << Qt::endl;
@@ -897,39 +934,37 @@ int main(int argc, char *argv[])
         timeout26a.start(10000);
         loop26a.exec();
 
-        if (detailResult.success) {
-            out << "PASS: detail loaded, title=" << detailResult.detail.title.left(20) << Qt::endl;
+        if (detailResult.success && detailResult.detail.status == QStringLiteral("PENDING_REVIEW")) {
+            PartnerPostReviewRequest rejectReq;
+            rejectReq.decision = QStringLiteral("REJECT");
+            rejectReq.reason = QStringLiteral("smoke validation reject");
+            QEventLoop loop26b;
+            QTimer timeout26b;
+            timeout26b.setSingleShot(true);
+            PartnerPostReviewResult rejectResult;
+            QObject::connect(&timeout26b, &QTimer::timeout, &loop26b, &QEventLoop::quit);
+            adminReviewService.reviewPartnerPost(smokePostForAdminReview, rejectReq, [&](const PartnerPostReviewResult &r) {
+                rejectResult = r;
+                loop26b.quit();
+            });
+            timeout26b.start(10000);
+            loop26b.exec();
 
-            if (detailResult.detail.status == QStringLiteral("PENDING_REVIEW")) {
-                PartnerPostReviewRequest rejectReq;
-                rejectReq.decision = QStringLiteral("REJECT");
-                rejectReq.reason = QStringLiteral("smoke validation reject");
-                QEventLoop loop26b;
-                QTimer timeout26b;
-                timeout26b.setSingleShot(true);
-                PartnerPostReviewResult rejectResult;
-                QObject::connect(&timeout26b, &QTimer::timeout, &loop26b, &QEventLoop::quit);
-                adminReviewService.reviewPartnerPost(smokePostForAdminReview, rejectReq, [&](const PartnerPostReviewResult &r) {
-                    rejectResult = r;
-                    loop26b.quit();
-                });
-                timeout26b.start(10000);
-                loop26b.exec();
-
-                if (rejectResult.success) {
-                    out << "PASS: status=" << rejectResult.detail.status << " reviewedAt=" << (!rejectResult.detail.reviewedAt.isEmpty() ? "yes" : "no") << Qt::endl;
-                } else {
-                    out << "FAIL: reject failed errorCode=" << rejectResult.errorCode << " errorMessage=" << rejectResult.errorMessage << Qt::endl;
-                    failures++;
-                }
+            if (rejectResult.success && rejectResult.detail.status == QStringLiteral("REJECTED") && !rejectResult.detail.reviewedAt.isEmpty()) {
+                out << "PASS: status=" << rejectResult.detail.status << " reviewedAt=yes" << Qt::endl;
             } else {
-                out << "NOTE: post status=" << detailResult.detail.status << " (not PENDING_REVIEW, skip reject)" << Qt::endl;
+                out << "FAIL: reject success=" << rejectResult.success << " status=" << rejectResult.detail.status
+                    << " reviewedAt=" << (!rejectResult.detail.reviewedAt.isEmpty() ? "yes" : "no")
+                    << " errorCode=" << rejectResult.errorCode << Qt::endl;
+                failures++;
             }
         } else {
-            out << "NOTE: detail failed errorCode=" << detailResult.errorCode << Qt::endl;
+            out << "FAIL: detail not PENDING_REVIEW status=" << (detailResult.success ? detailResult.detail.status : QStringLiteral("error")) << Qt::endl;
+            failures++;
         }
     } else {
         out << "SKIP: no post or admin token for admin review" << Qt::endl;
+        failures++;
     }
 
     out << Qt::endl << "--- 27. GET /admin/identity-verifications?status=PENDING_REVIEW ---" << Qt::endl;

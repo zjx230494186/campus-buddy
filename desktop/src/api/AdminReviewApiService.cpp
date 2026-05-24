@@ -113,7 +113,7 @@ void AdminReviewApiService::listPendingIdentityVerifications(int page, int size,
         });
 }
 
-void AdminReviewApiService::reviewIdentityVerification(long long submissionId, const IdentityVerificationReviewRequest &request, IdentityReviewCallback callback)
+void AdminReviewApiService::reviewIdentityVerification(const QString &submissionId, const IdentityVerificationReviewRequest &request, IdentityReviewCallback callback)
 {
     QString path = QStringLiteral("/admin/identity-verifications/%1/reviews").arg(submissionId);
 
@@ -193,7 +193,7 @@ PartnerPostAdminDetail AdminReviewApiService::parseAdminDetail(const QJsonObject
 PendingIdentityVerificationItem AdminReviewApiService::parsePendingItem(const QJsonObject &obj)
 {
     PendingIdentityVerificationItem item;
-    item.submissionId = obj.value(QStringLiteral("submissionId")).toInteger();
+    item.submissionId = obj.value(QStringLiteral("submissionId")).toString();
     item.userId = obj.value(QStringLiteral("userId")).toString();
     item.realName = obj.value(QStringLiteral("realName")).toString();
     item.studentNumber = obj.value(QStringLiteral("studentNumber")).toString();
