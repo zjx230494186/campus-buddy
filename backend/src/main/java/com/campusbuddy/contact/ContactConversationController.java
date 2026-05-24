@@ -11,9 +11,12 @@ import java.util.UUID;
 public class ContactConversationController {
 
     private final ContactConversationService contactConversationService;
+    private final ContactUnlockService contactUnlockService;
 
-    ContactConversationController(ContactConversationService contactConversationService) {
+    ContactConversationController(ContactConversationService contactConversationService,
+                                  ContactUnlockService contactUnlockService) {
         this.contactConversationService = contactConversationService;
+        this.contactUnlockService = contactUnlockService;
     }
 
     @PostMapping(
@@ -98,4 +101,31 @@ public class ContactConversationController {
     public record ContactRequestRequest(String message) {}
 
     public record SendMessageRequest(String message) {}
+
+    @GetMapping(value = "/api/me/conversations/{conversationId}/contact-unlock", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ContactUnlockService.ContactUnlockStatusResponse> getContactUnlockStatus(
+            Authentication authentication,
+            @PathVariable Long conversationId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(contactUnlockService.getUnlockStatus(userId, conversationId));
+    }
+
+    @PostMapping(value = "/api/me/conversations/{conversationId}/contact-unlock/confirm", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ContactUnlockService.ContactUnlockStatusResponse> confirmContactUnlock(
+            Authentication authentication,
+            @PathVariable Long conversationId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(contactUnlockService.confirmUnlock(userId, conversationId));
+    }
+
+    @GetMapping(value = "/api/me/conversations/{conversationId}/peer-contact-card", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ContactUnlockService.PeerContactCardResponse> getPeerContactCard(
+            Authentication authentication,
+            @PathVariable Long conversationId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        return ResponseEntity.ok(contactUnlockService.getPeerContactCard(userId, conversationId));
+    }
 }
