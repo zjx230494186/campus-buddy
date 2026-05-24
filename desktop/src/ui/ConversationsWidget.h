@@ -7,6 +7,7 @@
 #include <QWidget>
 
 #include "api/ContactConversationApiService.h"
+#include "domain/ContactConversationModels.h"
 
 class ConversationsWidget : public QWidget
 {
@@ -21,9 +22,14 @@ private slots:
     void onSendMessage();
     void onMarkRead();
     void onCloseConversation();
+    void onSaveContactCard();
+    void onRefreshUnlockStatus();
+    void onConfirmUnlock();
+    void onViewPeerContactCard();
 
 private:
     void updateSendButtonState();
+    void updateUnlockUi(const ContactUnlockStatusResult &result);
 
     ContactConversationApiService &contactService_;
 
@@ -36,6 +42,17 @@ private:
     QPushButton *markReadButton_;
     QPushButton *closeConversationButton_;
     QLabel *statusLabel_;
+
+    QLineEdit *wechatEdit_;
+    QLineEdit *phoneEdit_;
+    QLineEdit *qqEdit_;
+    QPushButton *saveContactCardButton_;
+    QLabel *contactCardStatusLabel_;
+
+    QLabel *unlockStatusLabel_;
+    QPushButton *confirmUnlockButton_;
+    QPushButton *viewPeerCardButton_;
+    QLabel *peerCardLabel_;
 
     QList<ConversationListItem> conversations_;
     long long currentConversationId_ = 0;

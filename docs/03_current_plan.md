@@ -10,9 +10,47 @@
 
 ## 当前阶段主题
 
-- 阶段：详细设计深化 + 后续实现准备。
-- 当前线程：详细设计深化：P1 支撑能力模块。
-- 当前目标：P0 主链路详细设计已具备阶段性基线，P0-2 需求发布与审核已完成字段、状态、接口、DTO、异常、测试入口和追踪矩阵细化；下一步按软件工程过程模型进入 P1 文档工作，优先从“评价与信用摘要”开始，不写代码、不调用 CodeArts、不生成实现 prompt。
+- 阶段：CodeArts 代码实现复核 + 服务器部署闭环治理。
+- 当前线程：CodeArts P1 开发 prompt 设计、结果复核与项目文档兜底。
+- 当前目标：CodeArts 继续承担老师要求的代码实现主体；Codex 负责复核 CodeArts 的 Git 变更、测试、validation、敏感信息风险，并把多轮技术结果整理为可交接的稳定项目文档。
+- 当前推进策略：在 Codex 严格质量控制下，允许 CodeArts 的实现批次适度放大，以尽可能提升推进速度；但不得放宽测试、构建、server smoke、敏感信息检查、Git 边界和 validation 留档门禁。
+
+## 2026-05-21 当前部署状态
+
+- P0 联系最小依赖、P1-1 评价与信用摘要、评价列表 API 已完成后端实现。
+- Ubuntu 24.04.4 服务器 smoke test 已通过，公网 Nginx health check 返回 `200 UP`。
+- deploy profile 已接入真实华为云 OBS，服务器侧 PUT / GET / SHA-256 / DELETE smoke test 已通过。
+- 私有配置入口为服务器 `/etc/campus-buddy/backend.env`，权限要求 `600`、`root:root`；仓库和文档只记录变量名，不记录真实值。
+- 后端已完成 systemd 服务化：`campus-buddy-backend` 为 active + enabled，开机自启；进程命令行不暴露 DB/JWT/OBS secret。
+- Qt 已具备运行时 API base URL 配置；服务器 smoke 已覆盖 health、login、credit-summary 和身份认证材料上传。
+- Round 26 已移除 Qt server smoke 中的硬编码测试邮箱/密码，改为 `CAMPUS_BUDDY_SMOKE_EMAIL` / `CAMPUS_BUDDY_SMOKE_PASSWORD` 私有环境变量。
+- Round 27 已补齐本人未引用认证材料删除接口；Qt server smoke 上传材料后会调用 DELETE 清理，API 层面返回 204。
+- Round 28 已补齐 `PartnerPost` 学生侧草稿地基：Flyway V8、草稿创建、更新、列表、详情；后端 163/163 通过，服务器 smoke 5/5 通过。
+- Round 29 已补齐 `PartnerPost` 学生侧提交审核、撤回审核、主动下架和提交审核强校验；后端 177/177 通过，服务器提交/撤回 smoke 通过。
+- Round 30 已补齐 `PartnerPost` 管理员审核队列、审核详情、通过/驳回裁定；后端 190/190 通过，服务器审核队列、详情和审核通过 smoke 通过。
+- Round 31 已补齐 `PartnerPost` 广场列表、筛选、搜索、详情和详情页发布者公开信用摘要；后端 202/202 通过，服务器列表/详情 smoke 通过。
+- Round 32 已补齐 `PartnerPost` 广场列表项发布者认证状态和公开信用摘要；后端 205/205 通过，服务器列表公开摘要 smoke 通过。
+- Round 33 已补齐低压力联系基础会话后端：发起联系、创建/复用会话、初始邀约消息、普通短文本消息、会话列表和消息查询；新增 V9 additive migration；后端 222/222 通过，服务器 smoke 通过。
+- Round 34 已补齐低压力联系查询合同：会话列表严格 `updatedAt DESC`，`afterMessageId` 增量拉取受 size/MAX_PAGE_SIZE 限制；后端 225/225 通过，服务器 smoke 通过。
+- Round 35 已提交 Qt 广场与基础会话 API service/model，但 Qt 构建、Qt 测试和 Qt server smoke 因当轮 shell 未找到 cmake/Qt6 工具链而未形成完整绿灯闭环；当前只能视为“代码提交已完成，验证待收口”。
+- Qt 工具链实际仍在本机：`G:\Qt\6.10.3\mingw_64`，CMake 为 `G:\Qt\Tools\CMake_64\bin\cmake.exe`，Ninja 为 `G:\Qt\Tools\Ninja\ninja.exe`，MinGW 为 `G:\Qt\Tools\mingw1310_64\bin`。
+- Round 36 已收口 Qt API client 构建验证与合同修正：提交 `cc40539`，Qt `ctest` 6/6 通过，Qt server integration smoke 10/10 通过，修复 `CampusApiClient::buildUrl` query string 处理、Qt API service URL encoding、`queryMessages(page,size)` 忽略 page 等问题。
+- Round 37 已补齐 Qt 学生侧“我的发布”API client：提交 `be9077c`，Qt `ctest` 7/7 通过，Qt server integration smoke 16/16 通过；但复核发现 `MyPartnerPostApiServiceTest` 多个用例名称声称校验 path/header/body，实际 mock server 未捕获原始请求，合同测试需要补强。
+- Round 38 已补强 Qt 我的发布 API client 合同测试：提交 `098902c`，只重写 `MyPartnerPostApiServiceTest` 和 validation，Qt `ctest` 7/7 通过，server smoke 16/16 保持通过。
+- Round 39 已完成 Qt 学生侧发布/广场/联系入口 UI 一期：提交 `f45e352`，新增 `PostEditorWidget`、`MyPostsWidget`、`PlazaWidget`，Qt `ctest` 8/8 通过，`campus_buddy_desktop --smoke-test` 通过，server smoke 16/16 通过；残余风险为 Widget 交互未自动化、广场详情未调用单独 GET、场景筛选枚举需修正。
+- Round 40 已完成 Qt 低压力联系会话 UI 与广场合同小修：提交 `f4b6555`，新增 `ConversationsWidget`，修正广场/发布场景枚举，广场详情接入 GET；Qt `ctest` 8/8、`campus_buddy_desktop --smoke-test` 和 server smoke 16/16 均通过。
+- Round 41 已完成 Qt 评价与信用摘要 API client + UI：提交 `d6519b3`，Qt build、`ctest` 9/9 和 server smoke 21/21 通过；但复核发现评价提交 smoke 实际返回 `CONVERSATION_NOT_REVIEWABLE`（NOTE 而非真实 PASS），且信用摘要 topTags 应解析后端 `tagName` 字段，需要 Round 42 收口。
+- Round 42 已完成 Qt 评价信用合同与 smoke 补强：提交 `f0145a9`，修复 topTags `tagName` 解析、删除公开摘要永真断言，Qt `ctest` 9/9 通过，server smoke 22/22 通过，评价提交真实创建成功。
+- Round 43 已完成 Qt 管理员审核 UI 主体：提交 `de4f9f5`，新增 `AdminReviewWidget`、`AdminReviewApiService` 和 10/10 Qt 测试；但复核发现身份认证 `submissionId` 被错误建模为数字而后端实际为 UUID，且发布审核驳回 server smoke 未真实通过，需要 Round 44 收口。
+- Round 44 已完成 Qt 管理员审核合同与 smoke 收口：提交 `fa7346e`，修复身份认证 `submissionId` UUID 字符串合同、认证审核 UI 字段显示和 STUDY `scenePayload.studyGoal` smoke 数据；Qt `ctest` 10/10、`campus_buddy_desktop --smoke-test` 和 server smoke 27/27 通过。
+- Round 45 已完成低压力联系后端会话状态与未读数：提交 `ffa1d71`，新增 V10 迁移，补会话关闭、CLOSED 发送阻断、重新发起恢复 ACTIVE、unreadCount 和标记已读；后端 236/236 通过，服务器 V1-V10 validated，close/read/recontact smoke 通过。
+- Round 46 已完成 Qt 桌面端适配会话状态与未读数：提交 `39cfac3`，新增 unreadCount 解析、closeConversation/markConversationRead API 方法、ConversationsWidget UI 适配（未读数显示、标记已读/关闭按钮、CLOSED 禁用发送、CONVERSATION_CLOSED 错误处理）；Qt ctest 10/10、server smoke 33/33 全部通过。
+- Round 47 已完成后端联系方式卡片与双方解锁：提交 `62cd1a3`，新增 V11 迁移（contact_card + contact_unlock_confirm），ContactCard CRUD、单方确认→WAITING_FOR_PEER、双方确认+有卡片→UNLOCKED、查看对方联系方式、CLOSED 阻断、6 星评价解锁；后端 249/249 通过，服务器 smoke 9/10 PASS。
+- Round 48 已完成 Qt 联系方式卡片与解锁 UI 适配：5 个 API 方法实现、5 个合同测试、ConversationsWidget 联系方式编辑区+解锁状态+确认交换+查看对方卡片、smoke 步骤 34-38；Qt ctest 10/10、server smoke 38/38 全部通过。
+- 当前残余风险：OBS 物理对象删除尚未独立复核；公网仍为 HTTP。
+- 当前最大功能缺口：投诉申诉/治理/通知仍未实现。
+- 后续收敛路线见 `docs/26_remaining_function_completion_roadmap_v1.md`。
+- 下一步优先级：Git 提交 Round 48 → 课程演示准备 → 项目收尾。
 
 ## Git 提交历史
 
@@ -35,6 +73,17 @@
 - `bb8b4a7` docs(codearts): record round09 validation and update handoff
 
 ## 已完成事项
+
+### P0 低压力联系最小后端依赖规格（2026-05-20）
+
+- 新增 `docs/24_p0_contact_min_dependency_spec_v1.md`。
+- 明确该切片只服务于解除 P1-1 评价与信用摘要阻断，不扩展为完整 IM。
+- 定义 `Conversation`、`ConversationMessage`、`ContactUnlockRecord` 的最小字段、状态、枚举和值域。
+- 明确用户消息与系统消息的区分：有效对话只统计用户消息，系统消息必须排除。
+- 明确有效对话规则：同一会话双方各自至少 2 条用户消息。
+- 明确联系方式解锁判定：只通过 `ContactUnlockRecord` 判断解锁事实，不保存外部联系方式明文。
+- 明确 Repository / Service 查询能力、测试先行入口、红灯/绿灯/留档要求、服务器 smoke test 门禁和 Git 提交边界。
+- 明确与 P1-1 阻断项的追溯关系，供下一轮 CodeArts 实现 prompt 直接引用。
 
 ### Qt 认证资料提交 UI（提交 `c59a138`）
 - `CampusApiClient` 新增 multipart 上传能力。
@@ -116,48 +165,52 @@
 
 ## 推荐下一步
 
-1. `详细设计全局视图补齐`
+1. `CodeArts P0 低压力联系最小依赖实现 prompt 设计`
    - 优先级：最高。
-   - 目标：P1-1 评价与信用摘要、P1-2 投诉申诉与案件、P1-3 管理端治理、P1-4 通知与留痕均已阶段性收束并补充追踪矩阵；后续实现环境门禁也已更新为本地测试 + Ubuntu 24 服务器 smoke test。第 5-9 章全局设计视图已阶段性补齐：第 5 章用例视图、第 6 章类图前说明、第 7 章状态图前说明、第 8 章活动图前说明、第 9 章 8 条关键顺序图前说明。下一步建议提交当前纯文档留档，再进入服务器实战部署准备清单。
+   - 目标：下一线程切回 CodeArts prompt 设计与复核线程，基于 `docs/24_p0_contact_min_dependency_spec_v1.md` 生成实现提示词，先让 CodeArts 补 `Conversation`、`ConversationMessage`、`ContactUnlockRecord` 及最小查询能力；线程本身不直接写业务代码、不调用 CodeArts。
 
-2. `提交当前纯文档留档`
+2. `P1-1 评价与信用摘要 Batch 1 后端核心`
    - 优先级：高。
-   - 目标：全局设计视图形成阶段性闭环后，提交当前纯文档改动，避免后续实现准备混入设计尾巴。
+   - 目标：只有在 P0 低压力联系最小依赖实现、测试和留档通过后，才重新激活 P1-1 后端核心实现。
 
-3. `服务器实战部署准备清单`
+3. `提交当前纯文档留档`
    - 优先级：高。
-   - 目标：围绕 Ubuntu 24 服务器、后端服务、数据库、对象存储、Nginx/公网 IP、私有配置和 smoke test 留档，形成后续实现前的部署准备清单。
+   - 目标：CodeArts prompt 设计交接确认后，提交当前纯文档改动，避免后续真实服务器复核或实现准备混入设计尾巴。
 
-4. `P1 投诉申诉与案件模块小修`
+4. `服务器基线复核`
+   - 优先级：高。
+   - 目标：按 `docs/23_server_smoke_test_readiness_checklist_v1.md` 逐项确认 Ubuntu 24、SSH、安全组、Nginx、公网 IP、PostgreSQL、OBS 和私有配置。
+
+5. `P1 投诉申诉与案件模块小修`
    - 优先级：高。
    - 目标：仅限发现字段、编号或表述小问题时处理。
 
-5. `P1 评价与信用摘要模块小修`
+6. `P1 评价与信用摘要模块小修`
    - 优先级：高。
    - 目标：仅限发现字段、编号或表述小问题时处理。
 
-6. `P1 管理端治理模块小修`
+7. `P1 管理端治理模块小修`
    - 优先级：中。
    - 目标：仅限发现字段、编号或表述小问题时处理；P1-3 主体已阶段性收束。
 
-7. `Windows Credential Manager 适配器`
+8. `Windows Credential Manager 适配器`
    - 优先级：高。
    - 目标：替换当前内存 token store，使 token 可跨进程安全保存。
 
-8. `真实 OBS SDK 适配器`
+9. `真实 OBS SDK 适配器`
    - 优先级：中。
    - 目标：实现 HuaweiOBSObjectStorageService 替换 InMemoryObjectStorageService。
    - 需要华为云 OBS 凭据。
 
-9. `替换 no-op 邮件发送`
+10. `替换 no-op 邮件发送`
    - 优先级：中。
    - 目标：接入 SMTP 或华为云邮件服务发送校园邮箱验证码。
 
-10. `Testcontainers 集成测试`
+11. `Testcontainers 集成测试`
    - 优先级：低。
    - 目标：在 Docker 可用环境运行完整集成测试。
 
-11. `完整 RBAC 权限矩阵`
+12. `完整 RBAC 权限矩阵`
    - 优先级：低。
    - 目标：STUDENT / ADMIN / SUPER_ADMIN 角色权限细化。
 

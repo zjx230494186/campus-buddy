@@ -28,6 +28,11 @@ private slots:
     void closeConversationUsesCorrectPathAndMethod();
     void markConversationReadUsesCorrectPathAndHandlesEmptyBody();
     void sendMessageClosedErrorConvertsToResult();
+    void getMyContactCardParsesHasCardTrue();
+    void getMyContactCardParsesHasCardFalse();
+    void upsertMyContactCardSendsPutWithBody();
+    void getContactUnlockStatusParsesLockedStatus();
+    void confirmContactUnlockSendsPostAndParsesUnlocked();
 
 private:
     struct RawRequest {
@@ -417,6 +422,179 @@ void ContactConversationApiServiceTest::sendMessageClosedErrorConvertsToResult()
 
     QVERIFY2(!result.success, "must not succeed for CLOSED conversation");
     QCOMPARE(result.errorCode, QString("CONVERSATION_CLOSED"));
+}
+
+void ContactConversationApiServiceTest::getMyContactCardParsesHasCardTrue()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 200 OK",
+        R"({"hasCard":true,"wechatId":"wx123","phoneNumber":"13800000000","qqNumber":"qq456","updatedAt":"2026-05-24T00:00:00Z"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ContactCardResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.getMyContactCard([&](const ContactCardResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QVERIFY(result.hasCard);
+    QCOMPARE(result.wechatId, QString("wx123"));
+    QCOMPARE(result.phoneNumber, QString("13800000000"));
+    QCOMPARE(result.qqNumber, QString("qq456"));
+    QVERIFY2(!result.updatedAt.isEmpty(), "updatedAt must be present");
+}
+
+void ContactConversationApiServiceTest::getMyContactCardParsesHasCardFalse()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 200 OK",
+        R"({"hasCard":false})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ContactCardResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.getMyContactCard([&](const ContactCardResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QVERIFY2(!result.hasCard, "hasCard must be false");
+    QVERIFY2(result.wechatId.isEmpty(), "wechatId must be empty when hasCard is false");
+}
+
+void ContactConversationApiServiceTest::upsertMyContactCardSendsPutWithBody()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
+        R"({"hasCard":true,"wechatId":"wx_new","phoneNumber":"13900000000","qqNumber":"qq_new","updatedAt":"2026-05-24T01:00:00Z"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ContactCardResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.upsertMyContactCard(QStringLiteral("wx_new"), QStringLiteral("13900000000"), QStringLiteral("qq_new"), [&](const ContactCardResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QVERIFY(result.hasCard);
+    QCOMPARE(result.wechatId, QString("wx_new"));
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("/me/contact-card"), "path must be /me/contact-card");
+    QVERIFY2(headerStr.contains("PUT"), "method must be PUT");
+    QVERIFY2(headerStr.contains("Authorization: Bearer test-token"), "must use Bearer token");
+
+    const QJsonDocument doc = QJsonDocument::fromJson(captured.body, nullptr);
+    QVERIFY(doc.isObject());
+    QCOMPARE(doc.object().value("wechatId").toString(), QString("wx_new"));
+    QCOMPARE(doc.object().value("phoneNumber").toString(), QString("13900000000"));
+    QCOMPARE(doc.object().value("qqNumber").toString(), QString("qq_new"));
+}
+
+void ContactConversationApiServiceTest::getContactUnlockStatusParsesLockedStatus()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 200 OK",
+        R"({"conversationId":42,"status":"LOCKED","currentUserConfirmed":false,"peerConfirmed":false,"currentUserHasContactCard":true,"peerHasContactCard":true,"unlockedAt":null})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ContactUnlockStatusResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.getContactUnlockStatus(42, [&](const ContactUnlockStatusResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QCOMPARE(result.conversationId, 42);
+    QCOMPARE(result.status, QString("LOCKED"));
+    QVERIFY2(!result.currentUserConfirmed, "currentUserConfirmed must be false");
+    QVERIFY2(!result.peerConfirmed, "peerConfirmed must be false");
+    QVERIFY(result.currentUserHasContactCard);
+    QVERIFY(result.peerHasContactCard);
+}
+
+void ContactConversationApiServiceTest::confirmContactUnlockSendsPostAndParsesUnlocked()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
+        R"({"conversationId":42,"status":"UNLOCKED","currentUserConfirmed":true,"peerConfirmed":true,"currentUserHasContactCard":true,"peerHasContactCard":true,"unlockedAt":"2026-05-24T02:00:00Z"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ContactUnlockStatusResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.confirmContactUnlock(42, [&](const ContactUnlockStatusResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QCOMPARE(result.conversationId, 42);
+    QCOMPARE(result.status, QString("UNLOCKED"));
+    QVERIFY(result.currentUserConfirmed);
+    QVERIFY(result.peerConfirmed);
+    QVERIFY2(!result.unlockedAt.isEmpty(), "unlockedAt must be present");
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("/me/conversations/42/contact-unlock/confirm"), "path must include confirm");
+    QVERIFY2(headerStr.contains("POST"), "method must be POST");
+    QVERIFY2(headerStr.contains("Authorization: Bearer test-token"), "must use Bearer token");
 }
 
 QTEST_MAIN(ContactConversationApiServiceTest)

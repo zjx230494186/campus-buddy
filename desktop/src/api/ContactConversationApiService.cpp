@@ -214,3 +214,135 @@ void ContactConversationApiService::markConversationRead(long long conversationI
         }
     });
 }
+
+void ContactConversationApiService::getMyContactCard(ContactCardCallback callback)
+{
+    QString path = QStringLiteral("/me/contact-card");
+
+    client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        ContactCardResult result;
+        if (response.ok) {
+            result.success = true;
+            result.hasCard = response.json.value(QStringLiteral("hasCard")).toBool();
+            if (result.hasCard) {
+                result.wechatId = response.json.value(QStringLiteral("wechatId")).toString();
+                result.phoneNumber = response.json.value(QStringLiteral("phoneNumber")).toString();
+                result.qqNumber = response.json.value(QStringLiteral("qqNumber")).toString();
+                result.updatedAt = response.json.value(QStringLiteral("updatedAt")).toString();
+            }
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::upsertMyContactCard(const QString &wechatId, const QString &phoneNumber, const QString &qqNumber, ContactCardCallback callback)
+{
+    QString path = QStringLiteral("/me/contact-card");
+
+    QJsonObject body;
+    body[QStringLiteral("wechatId")] = wechatId;
+    body[QStringLiteral("phoneNumber")] = phoneNumber;
+    body[QStringLiteral("qqNumber")] = qqNumber;
+
+    client_.putJson(path, body, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        ContactCardResult result;
+        if (response.ok) {
+            result.success = true;
+            result.hasCard = response.json.value(QStringLiteral("hasCard")).toBool();
+            if (result.hasCard) {
+                result.wechatId = response.json.value(QStringLiteral("wechatId")).toString();
+                result.phoneNumber = response.json.value(QStringLiteral("phoneNumber")).toString();
+                result.qqNumber = response.json.value(QStringLiteral("qqNumber")).toString();
+                result.updatedAt = response.json.value(QStringLiteral("updatedAt")).toString();
+            }
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::getContactUnlockStatus(long long conversationId, ContactUnlockStatusCallback callback)
+{
+    QString path = QStringLiteral("/me/conversations/%1/contact-unlock").arg(conversationId);
+
+    client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        ContactUnlockStatusResult result;
+        if (response.ok) {
+            result.success = true;
+            result.conversationId = response.json.value(QStringLiteral("conversationId")).toInteger();
+            result.status = response.json.value(QStringLiteral("status")).toString();
+            result.currentUserConfirmed = response.json.value(QStringLiteral("currentUserConfirmed")).toBool();
+            result.peerConfirmed = response.json.value(QStringLiteral("peerConfirmed")).toBool();
+            result.currentUserHasContactCard = response.json.value(QStringLiteral("currentUserHasContactCard")).toBool();
+            result.peerHasContactCard = response.json.value(QStringLiteral("peerHasContactCard")).toBool();
+            result.unlockedAt = response.json.value(QStringLiteral("unlockedAt")).toString();
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::confirmContactUnlock(long long conversationId, ContactUnlockStatusCallback callback)
+{
+    QString path = QStringLiteral("/me/conversations/%1/contact-unlock/confirm").arg(conversationId);
+    QJsonObject body;
+
+    client_.postJson(path, body, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        ContactUnlockStatusResult result;
+        if (response.ok) {
+            result.success = true;
+            result.conversationId = response.json.value(QStringLiteral("conversationId")).toInteger();
+            result.status = response.json.value(QStringLiteral("status")).toString();
+            result.currentUserConfirmed = response.json.value(QStringLiteral("currentUserConfirmed")).toBool();
+            result.peerConfirmed = response.json.value(QStringLiteral("peerConfirmed")).toBool();
+            result.currentUserHasContactCard = response.json.value(QStringLiteral("currentUserHasContactCard")).toBool();
+            result.peerHasContactCard = response.json.value(QStringLiteral("peerHasContactCard")).toBool();
+            result.unlockedAt = response.json.value(QStringLiteral("unlockedAt")).toString();
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::getPeerContactCard(long long conversationId, PeerContactCardCallback callback)
+{
+    QString path = QStringLiteral("/me/conversations/%1/peer-contact-card").arg(conversationId);
+
+    client_.getJson(path, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        PeerContactCardResult result;
+        if (response.ok) {
+            result.success = true;
+            result.wechatId = response.json.value(QStringLiteral("wechatId")).toString();
+            result.phoneNumber = response.json.value(QStringLiteral("phoneNumber")).toString();
+            result.qqNumber = response.json.value(QStringLiteral("qqNumber")).toString();
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}

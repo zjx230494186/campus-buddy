@@ -60,6 +60,64 @@ ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactS
 
     layout->addLayout(actionLayout);
 
+    auto *cardHeader = new QLabel(QStringLiteral("我的联系方式"), this);
+    f.setPointSize(11);
+    f.setBold(true);
+    cardHeader->setFont(f);
+    layout->addWidget(cardHeader);
+
+    auto *cardFormLayout = new QHBoxLayout();
+    cardFormLayout->addWidget(new QLabel(QStringLiteral("微信:"), this));
+    wechatEdit_ = new QLineEdit(this);
+    wechatEdit_->setObjectName(QStringLiteral("wechatEdit"));
+    wechatEdit_->setPlaceholderText(QStringLiteral("微信号"));
+    cardFormLayout->addWidget(wechatEdit_);
+
+    cardFormLayout->addWidget(new QLabel(QStringLiteral("手机:"), this));
+    phoneEdit_ = new QLineEdit(this);
+    phoneEdit_->setObjectName(QStringLiteral("phoneEdit"));
+    phoneEdit_->setPlaceholderText(QStringLiteral("手机号"));
+    cardFormLayout->addWidget(phoneEdit_);
+
+    cardFormLayout->addWidget(new QLabel(QStringLiteral("QQ:"), this));
+    qqEdit_ = new QLineEdit(this);
+    qqEdit_->setObjectName(QStringLiteral("qqEdit"));
+    qqEdit_->setPlaceholderText(QStringLiteral("QQ号"));
+    cardFormLayout->addWidget(qqEdit_);
+    layout->addLayout(cardFormLayout);
+
+    saveContactCardButton_ = new QPushButton(QStringLiteral("保存联系方式"), this);
+    saveContactCardButton_->setObjectName(QStringLiteral("saveContactCardButton"));
+    layout->addWidget(saveContactCardButton_);
+
+    contactCardStatusLabel_ = new QLabel(this);
+    contactCardStatusLabel_->setObjectName(QStringLiteral("contactCardStatusLabel"));
+    layout->addWidget(contactCardStatusLabel_);
+
+    auto *unlockHeader = new QLabel(QStringLiteral("联系方式交换"), this);
+    unlockHeader->setFont(f);
+    layout->addWidget(unlockHeader);
+
+    unlockStatusLabel_ = new QLabel(this);
+    unlockStatusLabel_->setObjectName(QStringLiteral("unlockStatusLabel"));
+    layout->addWidget(unlockStatusLabel_);
+
+    auto *unlockActionLayout = new QHBoxLayout();
+    confirmUnlockButton_ = new QPushButton(QStringLiteral("确认交换联系方式"), this);
+    confirmUnlockButton_->setObjectName(QStringLiteral("confirmUnlockButton"));
+    confirmUnlockButton_->setEnabled(false);
+    unlockActionLayout->addWidget(confirmUnlockButton_);
+
+    viewPeerCardButton_ = new QPushButton(QStringLiteral("查看对方联系方式"), this);
+    viewPeerCardButton_->setObjectName(QStringLiteral("viewPeerCardButton"));
+    viewPeerCardButton_->setEnabled(false);
+    unlockActionLayout->addWidget(viewPeerCardButton_);
+    layout->addLayout(unlockActionLayout);
+
+    peerCardLabel_ = new QLabel(this);
+    peerCardLabel_->setObjectName(QStringLiteral("peerCardLabel"));
+    layout->addWidget(peerCardLabel_);
+
     statusLabel_ = new QLabel(this);
     layout->addWidget(statusLabel_);
 
@@ -68,11 +126,43 @@ ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactS
     connect(sendButton_, &QPushButton::clicked, this, &ConversationsWidget::onSendMessage);
     connect(markReadButton_, &QPushButton::clicked, this, &ConversationsWidget::onMarkRead);
     connect(closeConversationButton_, &QPushButton::clicked, this, &ConversationsWidget::onCloseConversation);
+    connect(saveContactCardButton_, &QPushButton::clicked, this, &ConversationsWidget::onSaveContactCard);
+    connect(confirmUnlockButton_, &QPushButton::clicked, this, &ConversationsWidget::onConfirmUnlock);
+    connect(viewPeerCardButton_, &QPushButton::clicked, this, &ConversationsWidget::onViewPeerContactCard);
+
+    contactService_.getMyContactCard([this](const ContactCardResult &result) {
+        if (result.success && result.hasCard) {
+            wechatEdit_->setText(result.wechatId);
+            phoneEdit_->setText(result.phoneNumber);
+            qqEdit_->setText(result.qqNumber);
+            contactCardStatusLabel_->setText(QStringLiteral("已加载联系方式"));
+        }
+    });
 }
 
 void ConversationsWidget::updateSendButtonState()
 {
     sendButton_->setEnabled(currentConversationId_ > 0 && currentConversationStatus_ == QStringLiteral("ACTIVE"));
+}
+
+void ConversationsWidget::updateUnlockUi(const ContactUnlockStatusResult &result)
+{
+    if (result.status == QStringLiteral("UNLOCKED")) {
+        unlockStatusLabel_->setText(QStringLiteral("状态: 已解锁 - 双方已确认交换"));
+        confirmUnlockButton_->setEnabled(false);
+        viewPeerCardButton_->setEnabled(true);
+    } else if (result.status == QStringLiteral("WAITING_FOR_PEER")) {
+        unlockStatusLabel_->setText(QStringLiteral("状态: 等待对方确认"));
+        confirmUnlockButton_->setEnabled(false);
+        viewPeerCardButton_->setEnabled(false);
+    } else {
+        unlockStatusLabel_->setText(QStringLiteral("状态: 未解锁"));
+        confirmUnlockButton_->setEnabled(currentConversationId_ > 0
+            && currentConversationStatus_ == QStringLiteral("ACTIVE")
+            && result.currentUserHasContactCard);
+        viewPeerCardButton_->setEnabled(false);
+    }
+    peerCardLabel_->clear();
 }
 
 void ConversationsWidget::onRefreshConversations()
@@ -110,6 +200,10 @@ void ConversationsWidget::onConversationSelected()
         markReadButton_->setEnabled(false);
         closeConversationButton_->setEnabled(false);
         conversationStatusLabel_->clear();
+        unlockStatusLabel_->clear();
+        confirmUnlockButton_->setEnabled(false);
+        viewPeerCardButton_->setEnabled(false);
+        peerCardLabel_->clear();
         return;
     }
 
@@ -140,6 +234,8 @@ void ConversationsWidget::onConversationSelected()
             statusLabel_->setText(QStringLiteral("消息加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
     });
+
+    onRefreshUnlockStatus();
 }
 
 void ConversationsWidget::onSendMessage()
@@ -196,6 +292,86 @@ void ConversationsWidget::onCloseConversation()
             onRefreshConversations();
         } else {
             statusLabel_->setText(QStringLiteral("关闭失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+        }
+    });
+}
+
+void ConversationsWidget::onSaveContactCard()
+{
+    contactCardStatusLabel_->setText(QStringLiteral("保存中..."));
+    contactService_.upsertMyContactCard(
+        wechatEdit_->text().trimmed(),
+        phoneEdit_->text().trimmed(),
+        qqEdit_->text().trimmed(),
+        [this](const ContactCardResult &result) {
+            if (result.success) {
+                contactCardStatusLabel_->setText(QStringLiteral("联系方式已保存"));
+            } else {
+                contactCardStatusLabel_->setText(QStringLiteral("保存失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            }
+        });
+}
+
+void ConversationsWidget::onRefreshUnlockStatus()
+{
+    if (currentConversationId_ <= 0) {
+        unlockStatusLabel_->clear();
+        confirmUnlockButton_->setEnabled(false);
+        viewPeerCardButton_->setEnabled(false);
+        return;
+    }
+
+    contactService_.getContactUnlockStatus(currentConversationId_, [this](const ContactUnlockStatusResult &result) {
+        if (result.success) {
+            updateUnlockUi(result);
+        } else {
+            unlockStatusLabel_->setText(QStringLiteral("查询解锁状态失败: %1").arg(result.errorCode));
+            confirmUnlockButton_->setEnabled(false);
+            viewPeerCardButton_->setEnabled(false);
+        }
+    });
+}
+
+void ConversationsWidget::onConfirmUnlock()
+{
+    if (currentConversationId_ <= 0) return;
+
+    confirmUnlockButton_->setEnabled(false);
+    statusLabel_->setText(QStringLiteral("确认交换..."));
+    contactService_.confirmContactUnlock(currentConversationId_, [this](const ContactUnlockStatusResult &result) {
+        if (result.success) {
+            updateUnlockUi(result);
+            if (result.status == QStringLiteral("UNLOCKED")) {
+                statusLabel_->setText(QStringLiteral("联系方式已解锁，可查看对方卡片"));
+            } else if (result.status == QStringLiteral("WAITING_FOR_PEER")) {
+                statusLabel_->setText(QStringLiteral("已确认，等待对方确认"));
+            }
+        } else {
+            statusLabel_->setText(QStringLiteral("确认失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            onRefreshUnlockStatus();
+        }
+    });
+}
+
+void ConversationsWidget::onViewPeerContactCard()
+{
+    if (currentConversationId_ <= 0) return;
+
+    viewPeerCardButton_->setEnabled(false);
+    statusLabel_->setText(QStringLiteral("获取对方联系方式..."));
+    contactService_.getPeerContactCard(currentConversationId_, [this](const PeerContactCardResult &result) {
+        if (result.success) {
+            QString info = QStringLiteral("微信: %1  手机: %2  QQ: %3")
+                .arg(result.wechatId.isEmpty() ? QStringLiteral("(未填)") : result.wechatId)
+                .arg(result.phoneNumber.isEmpty() ? QStringLiteral("(未填)") : result.phoneNumber)
+                .arg(result.qqNumber.isEmpty() ? QStringLiteral("(未填)") : result.qqNumber);
+            peerCardLabel_->setText(info);
+            statusLabel_->setText(QStringLiteral("已获取对方联系方式"));
+            viewPeerCardButton_->setEnabled(true);
+        } else {
+            peerCardLabel_->clear();
+            statusLabel_->setText(QStringLiteral("获取失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            viewPeerCardButton_->setEnabled(true);
         }
     });
 }

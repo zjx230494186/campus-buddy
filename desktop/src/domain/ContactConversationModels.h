@@ -81,3 +81,39 @@ struct MarkReadResult
     QString errorCode;
     QString errorMessage;
 };
+
+struct ContactCardResult
+{
+    bool success = false;
+    bool hasCard = false;
+    QString wechatId;
+    QString phoneNumber;
+    QString qqNumber;
+    QString updatedAt;
+    QString errorCode;
+    QString errorMessage;
+};
+
+struct ContactUnlockStatusResult
+{
+    bool success = false;
+    long long conversationId = 0;
+    QString status;
+    bool currentUserConfirmed = false;
+    bool peerConfirmed = false;
+    bool currentUserHasContactCard = false;
+    bool peerHasContactCard = false;
+    QString unlockedAt;
+    QString errorCode;
+    QString errorMessage;
+};
+
+struct PeerContactCardResult
+{
+    bool success = false;
+    QString wechatId;
+    QString phoneNumber;
+    QString qqNumber;
+    QString errorCode;
+    QString errorMessage;
+};

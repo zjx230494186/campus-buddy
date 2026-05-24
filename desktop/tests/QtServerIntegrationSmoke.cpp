@@ -1194,6 +1194,193 @@ int main(int argc, char *argv[])
         }
     }
 
+    out << Qt::endl << "--- 34. GET /me/contact-card (smoke user) ---" << Qt::endl;
+    {
+        QEventLoop loop34;
+        QTimer timeout34;
+        timeout34.setSingleShot(true);
+        ContactCardResult cardResult;
+        QObject::connect(&timeout34, &QTimer::timeout, &loop34, &QEventLoop::quit);
+        contactService.getMyContactCard([&](const ContactCardResult &r) {
+            cardResult = r;
+            loop34.quit();
+        });
+        timeout34.start(10000);
+        loop34.exec();
+
+        if (cardResult.success) {
+            out << "PASS: hasCard=" << cardResult.hasCard << Qt::endl;
+        } else {
+            out << "FAIL: success=" << cardResult.success << " errorCode=" << cardResult.errorCode << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 35. PUT /me/contact-card (upsert) ---" << Qt::endl;
+    {
+        QEventLoop loop35;
+        QTimer timeout35;
+        timeout35.setSingleShot(true);
+        ContactCardResult upsertResult;
+        QObject::connect(&timeout35, &QTimer::timeout, &loop35, &QEventLoop::quit);
+        contactService.upsertMyContactCard(
+            QStringLiteral("smoke_wx"), QStringLiteral("13800001111"), QStringLiteral("smoke_qq"),
+            [&](const ContactCardResult &r) {
+                upsertResult = r;
+                loop35.quit();
+            });
+        timeout35.start(10000);
+        loop35.exec();
+
+        if (upsertResult.success && upsertResult.hasCard) {
+            out << "PASS: hasCard=" << upsertResult.hasCard
+                << " wechatId=" << upsertResult.wechatId << Qt::endl;
+        } else {
+            out << "FAIL: success=" << upsertResult.success << " errorCode=" << upsertResult.errorCode << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 36. GET contact-unlock (smoke conversation) ---" << Qt::endl;
+    {
+        if (smokeConvId > 0) {
+            QEventLoop loop36;
+            QTimer timeout36;
+            timeout36.setSingleShot(true);
+            ContactUnlockStatusResult unlockResult;
+            QObject::connect(&timeout36, &QTimer::timeout, &loop36, &QEventLoop::quit);
+            contactService.getContactUnlockStatus(smokeConvId, [&](const ContactUnlockStatusResult &r) {
+                unlockResult = r;
+                loop36.quit();
+            });
+            timeout36.start(10000);
+            loop36.exec();
+
+            if (unlockResult.success) {
+                out << "PASS: status=" << unlockResult.status
+                    << " currentUserConfirmed=" << unlockResult.currentUserConfirmed
+                    << " peerConfirmed=" << unlockResult.peerConfirmed << Qt::endl;
+            } else {
+                out << "FAIL: success=" << unlockResult.success << " errorCode=" << unlockResult.errorCode << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation for unlock status" << Qt::endl;
+        }
+    }
+
+    out << Qt::endl << "--- 37. POST contact-unlock/confirm (smoke user) ---" << Qt::endl;
+    {
+        if (smokeConvId > 0) {
+            QEventLoop loop37;
+            QTimer timeout37;
+            timeout37.setSingleShot(true);
+            ContactUnlockStatusResult confirmResult;
+            QObject::connect(&timeout37, &QTimer::timeout, &loop37, &QEventLoop::quit);
+            contactService.confirmContactUnlock(smokeConvId, [&](const ContactUnlockStatusResult &r) {
+                confirmResult = r;
+                loop37.quit();
+            });
+            timeout37.start(10000);
+            loop37.exec();
+
+            if (confirmResult.success) {
+                out << "PASS: status=" << confirmResult.status
+                    << " currentUserConfirmed=" << confirmResult.currentUserConfirmed << Qt::endl;
+            } else {
+                out << "FAIL: success=" << confirmResult.success << " errorCode=" << confirmResult.errorCode << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation for confirm unlock" << Qt::endl;
+        }
+    }
+
+    out << Qt::endl << "--- 38. Admin upsert contact-card + confirm unlock + peer-contact-card ---" << Qt::endl;
+    {
+        if (smokeConvId > 0 && !adminEmail.isEmpty()) {
+            InMemorySessionTokenStore adminTokenStore38;
+            QJsonObject adminLoginBody38;
+            adminLoginBody38["campusEmail"] = adminEmail;
+            adminLoginBody38["password"] = adminPassword;
+            ApiClientResponse adminLogin38 = blockingPost(client, "/auth/login", adminLoginBody38);
+            if (adminLogin38.ok) {
+                adminTokenStore38.setAccessToken(adminLogin38.json.value("accessToken").toString());
+            }
+            ContactConversationApiService adminContact38(client, adminTokenStore38);
+
+            QEventLoop loop38a;
+            QTimer timeout38a;
+            timeout38a.setSingleShot(true);
+            ContactCardResult adminCardResult;
+            QObject::connect(&timeout38a, &QTimer::timeout, &loop38a, &QEventLoop::quit);
+            adminContact38.upsertMyContactCard(
+                QStringLiteral("admin_wx"), QStringLiteral("13900002222"), QStringLiteral("admin_qq"),
+                [&](const ContactCardResult &r) {
+                    adminCardResult = r;
+                    loop38a.quit();
+                });
+            timeout38a.start(10000);
+            loop38a.exec();
+
+            bool adminCardOk = adminCardResult.success && adminCardResult.hasCard;
+
+            QEventLoop loop38b;
+            QTimer timeout38b;
+            timeout38b.setSingleShot(true);
+            ContactUnlockStatusResult adminConfirmResult;
+            QObject::connect(&timeout38b, &QTimer::timeout, &loop38b, &QEventLoop::quit);
+            adminContact38.confirmContactUnlock(smokeConvId, [&](const ContactUnlockStatusResult &r) {
+                adminConfirmResult = r;
+                loop38b.quit();
+            });
+            timeout38b.start(10000);
+            loop38b.exec();
+
+            bool adminConfirmOk = adminConfirmResult.success && adminConfirmResult.status == QStringLiteral("UNLOCKED");
+
+            bool peerCardOk = false;
+            if (adminConfirmOk) {
+                QEventLoop loop38c;
+                QTimer timeout38c;
+                timeout38c.setSingleShot(true);
+                PeerContactCardResult peerResult;
+                QObject::connect(&timeout38c, &QTimer::timeout, &loop38c, &QEventLoop::quit);
+                contactService.getPeerContactCard(smokeConvId, [&](const PeerContactCardResult &r) {
+                    peerResult = r;
+                    loop38c.quit();
+                });
+                timeout38c.start(10000);
+                loop38c.exec();
+
+                peerCardOk = peerResult.success;
+                if (peerCardOk) {
+                    out << "PASS: peerCard wechatId=" << peerResult.wechatId
+                        << " phone=" << peerResult.phoneNumber << Qt::endl;
+                } else {
+                    out << "FAIL: peerCard errorCode=" << peerResult.errorCode << Qt::endl;
+                    failures++;
+                }
+            }
+
+            if (adminCardOk && adminConfirmOk && peerCardOk) {
+                out << "PASS: full unlock flow completed" << Qt::endl;
+            } else {
+                if (!adminCardOk) {
+                    out << "FAIL: admin card upsert failed" << Qt::endl;
+                    failures++;
+                }
+                if (!adminConfirmOk) {
+                    out << "FAIL: admin confirm unlock status=" << adminConfirmResult.status << Qt::endl;
+                    failures++;
+                }
+            }
+        } else {
+            out << "SKIP: no conversation or admin creds for full unlock flow" << Qt::endl;
+            failures++;
+        }
+    }
+
     out << Qt::endl;
     if (failures == 0) {
         out << "=== ALL INTEGRATION SMOKE TESTS PASSED ===" << Qt::endl;
