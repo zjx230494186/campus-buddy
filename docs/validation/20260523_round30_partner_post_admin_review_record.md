@@ -102,7 +102,7 @@ BUILD SUCCESS (01:55 min)
 - Health: `{"status":"UP"}`
 
 ### 管理员账号
-通过 SQL 插入 smoke admin 账号（复用 smoketest 密码 hash），account_role=ADMIN
+通过 SQL 临时创建/提升 smoke admin 账号（复用既有测试账号密码哈希，未记录哈希值），account_role=ADMIN。
 
 ---
 
@@ -150,6 +150,7 @@ BUILD SUCCESS (01:55 min)
 - 审核队列排序仅按默认 JPA 排序（updatedAt DESC 需 @SortDefault 或显式 Sort）
 - 管理员对 PUBLISHED/REJECTED 状态帖子的详情可查看，但审核裁定只允许 PENDING_REVIEW
 - 审核通知/审计日志未实现（本轮明确排除）
+- 服务器 smoke 中使用 SQL 临时创建/提升管理员测试账号；未泄露密码或哈希值，但后续应提供受控管理员初始化/清理方案，避免长期依赖手工 SQL 操作。
 
 ---
 

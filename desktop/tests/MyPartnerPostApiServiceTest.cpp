@@ -31,6 +31,9 @@ private slots:
     void withdrawReviewUsesCorrectPath();
     void unpublishUsesCorrectPath();
     void errorResponseConvertsToServiceResult();
+    void submitReviewValidationFailedPreservesDetails();
+    void submitReviewPostStatusConflictPreservesDetails();
+    void createDraftErrorPreservesHttpStatusAndDetails();
 
 private:
     struct RawRequest {
@@ -538,6 +541,102 @@ void MyPartnerPostApiServiceTest::errorResponseConvertsToServiceResult()
     QVERIFY(!result.success);
     QCOMPARE(result.errorCode, QString("VALIDATION_FAILED"));
     QCOMPARE(result.errorMessage, QString("Validation failed"));
+}
+
+void MyPartnerPostApiServiceTest::submitReviewValidationFailedPreservesDetails()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 400 Bad Request",
+        R"({"code":"VALIDATION_FAILED","message":"Validation failed","details":{"title":"is required","scenePayload.studyGoal":"is required for scene STUDY"}})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    MyPartnerPostApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    PostActionResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.submitReview(QStringLiteral("post-1"), [&](const PostActionResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(!result.success);
+    QCOMPARE(result.errorCode, QString("VALIDATION_FAILED"));
+    QCOMPARE(result.httpStatus, 400);
+    QCOMPARE(result.errorDetails.value("title").toString(), QString("is required"));
+    QCOMPARE(result.errorDetails.value("scenePayload.studyGoal").toString(), QString("is required for scene STUDY"));
+}
+
+void MyPartnerPostApiServiceTest::submitReviewPostStatusConflictPreservesDetails()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 409 Conflict",
+        R"({"code":"POST_STATUS_CONFLICT","message":"Post is not in DRAFT status"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    MyPartnerPostApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    PostActionResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.submitReview(QStringLiteral("post-1"), [&](const PostActionResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(!result.success);
+    QCOMPARE(result.errorCode, QString("POST_STATUS_CONFLICT"));
+    QCOMPARE(result.httpStatus, 409);
+}
+
+void MyPartnerPostApiServiceTest::createDraftErrorPreservesHttpStatusAndDetails()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 403 Forbidden",
+        R"({"code":"IDENTITY_NOT_VERIFIED","message":"User must be verified to create posts","details":{"authenticationStatus":"UNVERIFIED"}})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    MyPartnerPostApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    MyPostResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    MyPostDraftRequest req;
+    req.sceneType = QStringLiteral("STUDY");
+    req.title = QStringLiteral("test");
+    service.createDraft(req, [&](const MyPostResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(!result.success);
+    QCOMPARE(result.errorCode, QString("IDENTITY_NOT_VERIFIED"));
+    QCOMPARE(result.httpStatus, 403);
+    QCOMPARE(result.errorDetails.value("authenticationStatus").toString(), QString("UNVERIFIED"));
 }
 
 QTEST_MAIN(MyPartnerPostApiServiceTest)

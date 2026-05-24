@@ -429,7 +429,40 @@
 - 已完成。Round 48 validation 敏感留档已修正；课程演示与交付清单已新增（`docs/27_course_demo_and_delivery_checklist_v1.md`）；状态文档已更新。
 - 无业务代码变更；文档级敏感信息搜索通过。
 
-### Round 50：P1 投诉申诉与案件后端最小闭环
+### Round 50：答辩演示彩排与最终验收证据包
+
+目标：
+
+- 按 `docs/27_course_demo_and_delivery_checklist_v1.md` 做答辩前彩排。
+- 复核后端 health / systemd、Qt build / ctest、`campus_buddy_desktop --smoke-test` 和 `qt_server_integration_smoke`。
+- 新增最终验收报告：`docs/28_final_acceptance_report_v1.md`。
+- 不改后端、不改 Qt、不改 Flyway、不改 deploy。
+
+状态：
+
+- 已完成（人工试用彩排）。发现 Qt 发帖 VALIDATION_FAILED 模糊提示、场景字段缺失、防重复提交缺失等问题，进入 Round 51 修复。
+
+### Round 51：用户行为负向测试矩阵与错误处理修复
+
+目标：
+
+- 系统性补齐负向用户行为测试矩阵文档。
+- 修复 Qt 发帖提交审核返回 VALIDATION_FAILED 时 UI 只显示模糊错误。
+- 添加字段级错误详情展示。
+- 添加场景字段动态 UI。
+- 添加提交审核防重复提交。
+- 新增 Qt 错误解析和错误 details 传递测试。
+
+状态：
+
+- 已完成。
+- 新增 `docs/29_negative_user_behavior_test_matrix_v1.md`（200+ 测试案例）。
+- MyPartnerPostModels.h 新增 errorDetails + httpStatus；MyPartnerPostApiService.cpp 传递 details/httpStatus。
+- PostEditorWidget 场景字段动态 UI + formatErrorDetails + 防重复提交 + 分类错误提示。
+- 新增 8 个自动化测试；Qt ctest 10/10、server smoke 38/38 通过。
+- 残余风险：负向测试矩阵尚未全部转化为自动化测试；Qt 默认 API base URL 仍为 localhost。
+
+### Round 52：P1 投诉申诉与案件后端最小闭环
 
 目标：
 
@@ -437,14 +470,14 @@
 - 补充说明和证据。
 - 管理员查看、要求补充、裁定。
 
-### Round 51：P1 管理端治理与通知留痕
+### Round 53：P1 管理端治理与通知留痕
 
 目标：
 
 - 治理动作、轻度账号处置、系统事件留痕。
 - 站内通知列表、未读数、标记已读。
 
-### Round 52：生产化与答辩收尾
+### Round 54：生产化与答辩收尾
 
 目标：
 
@@ -456,10 +489,10 @@
 
 ## 3. 当前下一步
 
-立即进入 Round 49：`课程演示准备、交付清单与敏感留档修正`。
+Round 51 已完成。下一步为答辩现场演示或按需做 Round 52 投诉申诉/生产化收口。
 
 原因：
 
-- Round 48 已把 Qt 联系方式卡片与解锁 UI 接入完成。
-- “广场发起联系 → 会话消息 → 双方解锁联系方式 → 评价与信用摘要”的课程演示主链路已闭合。
-- 继续开投诉申诉、治理或通知会扩大范围；当前更高收益是先修正敏感留档、形成演示脚本和交付清单，把已完成能力稳定交付。
+- Round 51 已完成负向测试矩阵与错误处理修复，Qt ctest 10/10、server smoke 38/38 通过。
+- 答辩主链路已闭合且错误处理体验已改善，可进入答辩现场演示。
+- 若答辩后需继续开发，按 Round 52→53→54 顺序推进。

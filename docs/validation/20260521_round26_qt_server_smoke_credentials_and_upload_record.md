@@ -17,7 +17,7 @@
 
 ## 2. 红灯测试
 
-重构前 `QtServerIntegrationSmoke.cpp` 第99-100行包含硬编码 `"smoketest@campus.edu.cn"` 和 `"SmokeTest123!"`。`ServerSmokeSecurityTest` 对旧代码会红灯（包含硬编码邮箱和密码模式）。
+重构前 `QtServerIntegrationSmoke.cpp` 第99-100行包含硬编码测试邮箱和测试密码字面量（具体值已在复核中脱敏）。`ServerSmokeSecurityTest` 对旧代码会红灯（包含硬编码邮箱和密码模式）。
 
 ## 3. 绿灯测试
 

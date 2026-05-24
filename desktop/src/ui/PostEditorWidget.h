@@ -28,10 +28,14 @@ private slots:
     void onSaveDraft();
     void onUpdateDraft();
     void onSubmitReview();
+    void onSceneTypeChanged();
 
 private:
     MyPostDraftRequest buildDraftRequest() const;
     void setStatusMessage(const QString &msg);
+    static QString formatErrorDetails(const QJsonObject &details);
+    static QString sceneFieldKey(const QString &sceneType);
+    static QString sceneFieldLabel(const QString &sceneType);
 
     MyPartnerPostApiService &myPostService_;
 
@@ -45,7 +49,8 @@ private:
     QLineEdit *targetRequirementEdit_;
     QLineEdit *contactPreferenceEdit_;
     QLineEdit *tagsEdit_;
-    QLineEdit *studyGoalEdit_;
+    QLineEdit *sceneFieldEdit_;
+    QLabel *sceneFieldLabel_;
 
     QPushButton *saveDraftButton_;
     QPushButton *updateDraftButton_;
@@ -54,4 +59,5 @@ private:
     QLabel *postIdLabel_;
 
     QString currentPostId_;
+    bool submitting_ = false;
 };

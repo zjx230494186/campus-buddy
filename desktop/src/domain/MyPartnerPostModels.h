@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QJsonObject>
 #include <QMap>
 #include <QString>
 #include <QStringList>
@@ -55,6 +56,8 @@ struct MyPostResult
     MyPostItem post;
     QString errorCode;
     QString errorMessage;
+    QJsonObject errorDetails;
+    int httpStatus = 0;
 };
 
 struct MyPostListResult
@@ -67,6 +70,8 @@ struct MyPostListResult
     int totalPages = 0;
     QString errorCode;
     QString errorMessage;
+    QJsonObject errorDetails;
+    int httpStatus = 0;
 };
 
 struct PostActionResult
@@ -75,4 +80,6 @@ struct PostActionResult
     MyPostItem post;
     QString errorCode;
     QString errorMessage;
+    QJsonObject errorDetails;
+    int httpStatus = 0;
 };

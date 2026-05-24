@@ -18,7 +18,7 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
 
     sceneTypeCombo_ = new QComboBox(this);
     sceneTypeCombo_->setObjectName(QStringLiteral("sceneTypeCombo"));
-    sceneTypeCombo_->addItems({QStringLiteral("MEAL"), QStringLiteral("STUDY"), QStringLiteral("SPORT"),
+    sceneTypeCombo_->addItems({QStringLiteral("STUDY"), QStringLiteral("MEAL"), QStringLiteral("SPORT"),
                                QStringLiteral("COURSE_TEAM"), QStringLiteral("INNOVATION_PROJECT")});
     form->addRow(QStringLiteral("场景类型"), sceneTypeCombo_);
 
@@ -65,9 +65,11 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     tagsEdit_->setPlaceholderText(QStringLiteral("逗号分隔，如 math,physics"));
     form->addRow(QStringLiteral("标签"), tagsEdit_);
 
-    studyGoalEdit_ = new QLineEdit(this);
-    studyGoalEdit_->setObjectName(QStringLiteral("studyGoalEdit"));
-    form->addRow(QStringLiteral("学习目标"), studyGoalEdit_);
+    sceneFieldLabel_ = new QLabel(QStringLiteral("学习目标"), this);
+    sceneFieldEdit_ = new QLineEdit(this);
+    sceneFieldEdit_->setObjectName(QStringLiteral("sceneFieldEdit"));
+    sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 通过考试"));
+    form->addRow(sceneFieldLabel_, sceneFieldEdit_);
 
     layout->addLayout(form);
 
@@ -92,6 +94,68 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     connect(saveDraftButton_, &QPushButton::clicked, this, &PostEditorWidget::onSaveDraft);
     connect(updateDraftButton_, &QPushButton::clicked, this, &PostEditorWidget::onUpdateDraft);
     connect(submitReviewButton_, &QPushButton::clicked, this, &PostEditorWidget::onSubmitReview);
+    connect(sceneTypeCombo_, &QComboBox::currentTextChanged, this, &PostEditorWidget::onSceneTypeChanged);
+
+    onSceneTypeChanged();
+}
+
+QString PostEditorWidget::sceneFieldKey(const QString &sceneType)
+{
+    if (sceneType == QStringLiteral("MEAL")) return QStringLiteral("canteen");
+    if (sceneType == QStringLiteral("STUDY")) return QStringLiteral("studyGoal");
+    if (sceneType == QStringLiteral("SPORT")) return QStringLiteral("sportType");
+    if (sceneType == QStringLiteral("COURSE_TEAM")) return QStringLiteral("courseName");
+    if (sceneType == QStringLiteral("INNOVATION_PROJECT")) return QStringLiteral("projectDirection");
+    return QString();
+}
+
+QString PostEditorWidget::sceneFieldLabel(const QString &sceneType)
+{
+    if (sceneType == QStringLiteral("MEAL")) return QStringLiteral("食堂");
+    if (sceneType == QStringLiteral("STUDY")) return QStringLiteral("学习目标");
+    if (sceneType == QStringLiteral("SPORT")) return QStringLiteral("运动类型");
+    if (sceneType == QStringLiteral("COURSE_TEAM")) return QStringLiteral("课程名称");
+    if (sceneType == QStringLiteral("INNOVATION_PROJECT")) return QStringLiteral("项目方向");
+    return QStringLiteral("场景字段");
+}
+
+void PostEditorWidget::onSceneTypeChanged()
+{
+    const QString sceneType = sceneTypeCombo_->currentText();
+    sceneFieldLabel_->setText(sceneFieldLabel(sceneType));
+    const QString key = sceneFieldKey(sceneType);
+    if (key == QStringLiteral("canteen")) {
+        sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 一食堂"));
+    } else if (key == QStringLiteral("studyGoal")) {
+        sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 通过考试"));
+    } else if (key == QStringLiteral("sportType")) {
+        sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 篮球"));
+    } else if (key == QStringLiteral("courseName")) {
+        sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 高等数学"));
+    } else if (key == QStringLiteral("projectDirection")) {
+        sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: AI应用"));
+    }
+}
+
+QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
+{
+    if (details.isEmpty()) return QString();
+    QStringList parts;
+    for (auto it = details.constBegin(); it != details.constEnd(); ++it) {
+        QString key = it.key();
+        if (key.startsWith(QStringLiteral("scenePayload."))) {
+            key = key.mid(QStringLiteral("scenePayload.").length());
+        }
+        QString val;
+        if (it.value().isString()) {
+            val = it.value().toString();
+        } else {
+            val = QString::fromUtf8(QJsonDocument(it.value().toObject()).toJson(QJsonDocument::Compact));
+        }
+        if (val.isEmpty()) val = QStringLiteral("不合法");
+        parts.append(QStringLiteral("%1: %2").arg(key, val));
+    }
+    return parts.join(QStringLiteral("; "));
 }
 
 void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
@@ -109,8 +173,12 @@ void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
     targetRequirementEdit_->setText(item.targetRequirement);
     contactPreferenceEdit_->setText(item.contactPreference);
     tagsEdit_->setText(item.tags.join(QStringLiteral(",")));
-    if (item.scenePayload.contains(QStringLiteral("studyGoal"))) {
-        studyGoalEdit_->setText(item.scenePayload.value(QStringLiteral("studyGoal")).toString());
+
+    const QString key = sceneFieldKey(item.sceneType);
+    if (!key.isEmpty() && item.scenePayload.contains(key)) {
+        sceneFieldEdit_->setText(item.scenePayload.value(key).toString());
+    } else {
+        sceneFieldEdit_->clear();
     }
 
     updateDraftButton_->setEnabled(item.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
@@ -129,7 +197,7 @@ void PostEditorWidget::clearForm()
     targetRequirementEdit_->clear();
     contactPreferenceEdit_->clear();
     tagsEdit_->clear();
-    studyGoalEdit_->clear();
+    sceneFieldEdit_->clear();
     statusLabel_->clear();
     saveDraftButton_->setEnabled(true);
     updateDraftButton_->setEnabled(false);
@@ -149,8 +217,10 @@ MyPostDraftRequest PostEditorWidget::buildDraftRequest() const
     req.targetRequirement = targetRequirementEdit_->text();
     req.contactPreference = contactPreferenceEdit_->text();
     req.tags = tagsEdit_->text().split(QStringLiteral(","), Qt::SkipEmptyParts);
-    if (!studyGoalEdit_->text().isEmpty()) {
-        req.scenePayload.insert(QStringLiteral("studyGoal"), studyGoalEdit_->text());
+
+    const QString key = sceneFieldKey(req.sceneType);
+    if (!key.isEmpty() && !sceneFieldEdit_->text().isEmpty()) {
+        req.scenePayload.insert(key, sceneFieldEdit_->text());
     }
     return req;
 }
@@ -169,7 +239,10 @@ void PostEditorWidget::onSaveDraft()
             setStatusMessage(QStringLiteral("草稿已保存"));
             emit postSaved();
         } else {
-            setStatusMessage(QStringLiteral("保存失败: %1").arg(result.errorMessage));
+            QString msg = QStringLiteral("保存失败: %1 - %2").arg(result.errorCode, result.errorMessage);
+            QString details = formatErrorDetails(result.errorDetails);
+            if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
+            setStatusMessage(msg);
         }
     });
 }
@@ -187,7 +260,10 @@ void PostEditorWidget::onUpdateDraft()
             setStatusMessage(QStringLiteral("草稿已更新"));
             emit postSaved();
         } else {
-            setStatusMessage(QStringLiteral("更新失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            QString msg = QStringLiteral("更新失败: %1 - %2").arg(result.errorCode, result.errorMessage);
+            QString details = formatErrorDetails(result.errorDetails);
+            if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
+            setStatusMessage(msg);
         }
     });
 }
@@ -195,8 +271,12 @@ void PostEditorWidget::onUpdateDraft()
 void PostEditorWidget::onSubmitReview()
 {
     if (currentPostId_.isEmpty()) return;
+    if (submitting_) return;
+    submitting_ = true;
+    submitReviewButton_->setEnabled(false);
     setStatusMessage(QStringLiteral("提交审核中..."));
     myPostService_.submitReview(currentPostId_, [this](const PostActionResult &result) {
+        submitting_ = false;
         if (result.success) {
             postIdLabel_->setText(QStringLiteral("Post ID: %1  Status: %2").arg(currentPostId_.left(8) + QStringLiteral("...")).arg(result.post.status));
             updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
@@ -204,7 +284,30 @@ void PostEditorWidget::onSubmitReview()
             setStatusMessage(QStringLiteral("已提交审核"));
             emit postSubmitted();
         } else {
-            setStatusMessage(QStringLiteral("提交失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+            QString msg;
+            if (result.errorCode == QStringLiteral("VALIDATION_FAILED")) {
+                msg = QStringLiteral("校验失败");
+                QString details = formatErrorDetails(result.errorDetails);
+                if (!details.isEmpty()) {
+                    msg += QStringLiteral(": %1").arg(details);
+                } else if (!result.errorMessage.isEmpty()) {
+                    msg += QStringLiteral(": %1").arg(result.errorMessage);
+                }
+            } else if (result.errorCode == QStringLiteral("POST_STATUS_CONFLICT")) {
+                msg = QStringLiteral("状态冲突: %1").arg(result.errorMessage);
+            } else if (result.httpStatus == 401) {
+                msg = QStringLiteral("登录已过期，请重新登录");
+            } else if (result.httpStatus == 403) {
+                msg = QStringLiteral("权限不足: %1").arg(result.errorMessage);
+            } else if (result.httpStatus == 0) {
+                msg = QStringLiteral("网络连接失败，请检查服务器地址");
+            } else {
+                msg = QStringLiteral("提交失败: %1 - %2").arg(result.errorCode, result.errorMessage);
+                QString details = formatErrorDetails(result.errorDetails);
+                if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
+            }
+            setStatusMessage(msg);
+            submitReviewButton_->setEnabled(true);
         }
     });
 }

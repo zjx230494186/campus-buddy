@@ -63,7 +63,7 @@ CAMPUS_BUDDY_API_BASE_URL=http://114.116.203.78/api \
 - [x] `ApiClientConfig.cpp` 不含硬编码 IP/密码/密钥，仅含默认 localhost URL
 - [x] `QtServerIntegrationSmoke.cpp` 不打印 access token 内容，仅记录长度
 - [x] `AuthTokenStoreTest.tokenIsNotPersistedToQSettings` 仍通过
-- [x] 集成 smoke 使用测试账号 `smoketest@campus.edu.cn`，不记录真实用户隐私
+- [x] 集成 smoke 使用测试账号邮箱（已脱敏），不记录真实用户隐私
 - [x] API base URL 通过环境变量/命令行参数传入，不在深层业务逻辑或 UI 组件中散落
 
 ## 7. fromRuntime 优先级规则

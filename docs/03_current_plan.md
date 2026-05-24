@@ -47,11 +47,14 @@
 - Round 46 已完成 Qt 桌面端适配会话状态与未读数：提交 `39cfac3`，新增 unreadCount 解析、closeConversation/markConversationRead API 方法、ConversationsWidget UI 适配（未读数显示、标记已读/关闭按钮、CLOSED 禁用发送、CONVERSATION_CLOSED 错误处理）；Qt ctest 10/10、server smoke 33/33 全部通过。
 - Round 47 已完成后端联系方式卡片与双方解锁：提交 `62cd1a3`，新增 V11 迁移（contact_card + contact_unlock_confirm），ContactCard CRUD、单方确认→WAITING_FOR_PEER、双方确认+有卡片→UNLOCKED、查看对方联系方式、CLOSED 阻断、6 星评价解锁；后端 249/249 通过，服务器 smoke 9/10 PASS。
 - Round 48 已完成 Qt 联系方式卡片与解锁 UI 适配：提交 `309fa94`，5 个 API 方法实现、5 个合同测试、ConversationsWidget 联系方式编辑区+解锁状态+确认交换+查看对方卡片、smoke 步骤 34-38；Qt ctest 10/10、server smoke 38/38 全部通过。
+- Round 49 已完成课程演示准备、交付清单与敏感留档修正：提交 `4087f5d`，修正 Round 48 validation 中联系方式测试值，新增 `docs/27_course_demo_and_delivery_checklist_v1.md`，明确 14 步演示主线和交付清单。
 - 当前残余风险：OBS 物理对象删除尚未独立复核；公网仍为 HTTP。
 - 当前最大功能缺口：投诉申诉/治理/通知仍未实现，但不建议在课程演示收尾前继续扩大业务范围。
 - 后续收敛路线见 `docs/26_remaining_function_completion_roadmap_v1.md`。
 - 课程演示与交付清单见 `docs/27_course_demo_and_delivery_checklist_v1.md`。
-- 下一步优先级：项目收尾 / 答辩演示。
+- Round 50 已完成答辩演示彩排与最终验收证据包（人工试用），发现 VALIDATION_FAILED 模糊提示、场景字段缺失、防重复提交缺失等问题。
+- Round 51 已完成用户行为负向测试矩阵与错误处理修复：新增 200+ 负向测试案例文档、修复 Qt VALIDATION_FAILED 字段级错误展示、场景字段动态 UI、防重复提交、8 个新自动化测试；Qt ctest 10/10、server smoke 38/38 通过。
+- 下一步优先级：进入答辩现场演示或按需做 Round 52 生产化收口。
 
 ## Git 提交历史
 

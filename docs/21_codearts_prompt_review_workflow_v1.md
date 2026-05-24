@@ -14,6 +14,26 @@
 
 本线程不直接承担大范围业务代码实现；如需我修复小问题，应先明确是否由本线程处理，避免和 CodeArts 的开发职责混杂。
 
+## 1.1 CodeArts 与 Codex 的文档分工
+
+CodeArts 仍必须承担与其代码改动直接相关的一手技术留档，因为代码由它生成，最清楚本轮实现细节、测试命令、服务器操作和失败修复过程。
+
+CodeArts 每轮应负责：
+
+- 在 `docs/validation/` 写入本轮验证记录。
+- 记录实际修改文件、测试先行红灯、绿灯命令、回归结果、服务器 smoke test、敏感信息检查和未覆盖风险。
+- 对涉及部署、数据库迁移、对象存储、Nginx、公网访问或脚本变更的批次，记录实际操作摘要、验证入口和回滚/残余风险。
+- 只记录变量名、路径、状态码、测试对象 key、哈希和非敏感配置；不得记录真实 secret。
+
+Codex 本线程负责：
+
+- 复核 CodeArts 的 Git 变更、测试结果、validation 留档和敏感信息风险。
+- 纠正 CodeArts 文档中的越界、遗漏、错误结论或不可交接表述。
+- 将多轮 validation 中的稳定方法抽象为长期项目文档、runbook、handoff 或 current plan。
+- 设计下一轮 CodeArts prompt，并明确本轮代码、测试、文档和提交边界。
+
+简言之：CodeArts 写“本轮一手技术记录”，Codex 负责“复核、兜底、整理成项目长期知识”。
+
 ## 2. 每轮标准输入
 
 用户每次告知 CodeArts 已做工作时，建议至少提供：
@@ -207,6 +227,19 @@ cd D:\big_homework\backend
 - 剩余风险：Windows Credential Manager 适配器未实现，当前 token 为内存会话存储，进程退出会丢失。
 - 下一轮建议：为优先形成可演示学生端闭环，先做 Qt 认证资料提交 UI；Windows Credential Manager 可作为随后安全增强单独实现。
 - 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_09_qt_identity_submission_ui.md`
+
+## 17. Round 09 复核：Qt 认证资料提交 UI
+
+- 日期：2026-05-19
+- CodeArts 本轮声称完成：Qt 学生侧认证资料提交 UI，包含材料上传、完整认证资料表单、认证状态回显和驳回原因显示。
+- Git 提交：
+  - `c59a138 feat(desktop): add identity verification submission UI`
+  - `bb8b4a7 docs(codearts): record round09 validation and update handoff`
+- 测试结果：Qt 3/3 通过；`campus_api_client_test` 11 个测试通过；后端未修改，56/56 状态不变。
+- 本线程复核结论：提交存在且范围符合 Round 09 目标；学生侧 P0 认证演示链路已覆盖注册、登录、材料上传、资料提交和状态回显。
+- 注意事项：`handoff/latest.md` 中“工作区：有文档待提交”与实际 `git status` 不一致，下一轮应修正为工作区干净。
+- 下一轮建议：进入 P1 需求发布与审核模块前，先做实现前详细设计与分批计划，不直接编码。
+- 下一轮 prompt：`D:\big_homework\docs\prompts\codearts\20260519_round_10_p1_partner_post_design_planning.md`
 
 ## 7. 当前初始状态
 

@@ -87,7 +87,7 @@ Flyway: validated 8 migrations, schema at v8
 
 ## 4. 服务器 Smoke Test
 
-使用 smoketest@campus.edu.cn 认证。
+使用 smoke 测试账号认证（账号标识已脱敏，真实值仅在私有 shell 中使用）。
 
 | # | 操作 | 方法 | 路径 | 状态码 | 验证点 |
 |---|------|------|------|--------|--------|

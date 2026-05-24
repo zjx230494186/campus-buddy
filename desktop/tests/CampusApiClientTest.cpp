@@ -27,6 +27,11 @@ private slots:
     void registerRequestBodyContainsVerificationTicketAndDisplayName();
     void submitIdentityVerificationRequestBodyContainsAllFields();
     void identityVerificationStatusResponseParsesAllFields();
+    void validationFailedWithDetailsParsesFieldErrors();
+    void unauthorizedResponseParsesCodeAndMessage();
+    void networkConnectionRefusedSetsNetworkError();
+    void emptyBody4xxResponseParsesHttpError();
+    void malformedJsonResponseSetsInvalidJsonError();
 
 private:
     struct RawRequest {
@@ -489,6 +494,90 @@ void CampusApiClientTest::identityVerificationStatusResponseParsesAllFields()
     QCOMPARE(response.json.value("rejectReason").toString(), QString("Material unclear"));
     QCOMPARE(response.json.value("allowedActions").toArray().size(), 1);
     QCOMPARE(response.json.value("allowedActions").toArray()[0].toString(), QString("SUBMIT"));
+}
+
+void CampusApiClientTest::validationFailedWithDetailsParsesFieldErrors()
+{
+    const QUrl baseUrl = serveSingleResponse(
+        "HTTP/1.1 400 Bad Request",
+        R"({"code":"VALIDATION_FAILED","message":"Validation failed","details":{"title":"is required","scenePayload.studyGoal":"is required for scene STUDY"}})");
+
+    QVERIFY(baseUrl.isValid());
+    const ApiClientResponse response = requestGet(baseUrl, "/test");
+
+    QVERIFY(!response.ok);
+    QCOMPARE(response.error.httpStatus, 400);
+    QCOMPARE(response.error.code, QString("VALIDATION_FAILED"));
+    QCOMPARE(response.error.message, QString("Validation failed"));
+    QCOMPARE(response.error.details.value("title").toString(), QString("is required"));
+    QCOMPARE(response.error.details.value("scenePayload.studyGoal").toString(), QString("is required for scene STUDY"));
+}
+
+void CampusApiClientTest::unauthorizedResponseParsesCodeAndMessage()
+{
+    const QUrl baseUrl = serveSingleResponse(
+        "HTTP/1.1 401 Unauthorized",
+        R"({"code":"AUTHENTICATION_REQUIRED","message":"Access token is missing or expired"})");
+
+    QVERIFY(baseUrl.isValid());
+    const ApiClientResponse response = requestGet(baseUrl, "/test");
+
+    QVERIFY(!response.ok);
+    QCOMPARE(response.error.httpStatus, 401);
+    QCOMPARE(response.error.code, QString("AUTHENTICATION_REQUIRED"));
+    QCOMPARE(response.error.message, QString("Access token is missing or expired"));
+}
+
+void CampusApiClientTest::networkConnectionRefusedSetsNetworkError()
+{
+    ApiClientConfig config(QStringLiteral("http://127.0.0.1:1/api"), 500, 500, true);
+    CampusApiClient client(config);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ApiClientResponse response;
+    bool completed = false;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    client.getJson(QStringLiteral("/test"), [&](const ApiClientResponse &r) {
+        response = r;
+        completed = true;
+        loop.quit();
+    });
+
+    timeout.start(5000);
+    loop.exec();
+
+    if (!completed) {
+        QSKIP("Network connection to port 1 timed out on this platform");
+    }
+    QVERIFY(!response.ok);
+    QCOMPARE(response.error.type, ApiClientError::NetworkError);
+}
+
+void CampusApiClientTest::emptyBody4xxResponseParsesHttpError()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 403 Forbidden", "");
+
+    QVERIFY(baseUrl.isValid());
+    const ApiClientResponse response = requestGet(baseUrl, "/test");
+
+    QVERIFY(!response.ok);
+    QCOMPARE(response.error.type, ApiClientError::InvalidJson);
+    QCOMPARE(response.error.httpStatus, 403);
+}
+
+void CampusApiClientTest::malformedJsonResponseSetsInvalidJsonError()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 500 Internal Server Error", "not json{{{");
+
+    QVERIFY(baseUrl.isValid());
+    const ApiClientResponse response = requestGet(baseUrl, "/test");
+
+    QVERIFY(!response.ok);
+    QCOMPARE(response.error.type, ApiClientError::InvalidJson);
+    QCOMPARE(response.error.httpStatus, 500);
 }
 
 QTEST_MAIN(CampusApiClientTest)

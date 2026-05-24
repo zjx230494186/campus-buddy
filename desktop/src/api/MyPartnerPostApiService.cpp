@@ -24,6 +24,8 @@ void MyPartnerPostApiService::createDraft(const MyPostDraftRequest &request, Cre
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -44,6 +46,8 @@ void MyPartnerPostApiService::updateDraft(const QString &postId, const MyPostDra
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -83,6 +87,8 @@ void MyPartnerPostApiService::listMyPosts(const QString &status, int page, int s
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -102,6 +108,8 @@ void MyPartnerPostApiService::getMyPostDetail(const QString &postId, MyPostDetai
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -121,6 +129,8 @@ void MyPartnerPostApiService::submitReview(const QString &postId, PostActionCall
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -140,6 +150,8 @@ void MyPartnerPostApiService::withdrawReview(const QString &postId, PostActionCa
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
@@ -159,6 +171,8 @@ void MyPartnerPostApiService::unpublish(const QString &postId, PostActionCallbac
                 result.success = false;
                 result.errorCode = response.error.code;
                 result.errorMessage = response.error.message;
+                result.errorDetails = response.error.details;
+                result.httpStatus = response.error.httpStatus;
             }
             if (callback) callback(result);
         });
