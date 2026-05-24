@@ -15,6 +15,7 @@
 #include "ui/PlazaWidget.h"
 #include "ui/ConversationsWidget.h"
 #include "ui/ReviewCreditWidget.h"
+#include "ui/AdminReviewWidget.h"
 
 class HomePageWidget : public QWidget
 {
@@ -26,6 +27,7 @@ public:
                             PartnerPostApiService &plazaService,
                             ContactConversationApiService &contactService,
                             ReviewCreditApiService &reviewService,
+                            AdminReviewApiService &adminService,
                             QWidget *parent = nullptr);
 
 signals:
@@ -46,6 +48,7 @@ private:
     PlazaWidget *plazaWidget_;
     ConversationsWidget *conversationsWidget_;
     ReviewCreditWidget *reviewCreditWidget_;
+    AdminReviewWidget *adminReviewWidget_;
 
     QPushButton *logoutButton_;
     QPushButton *checkStatusButton_;

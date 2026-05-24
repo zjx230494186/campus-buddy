@@ -54,6 +54,11 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ConversationsWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ReviewCreditWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/ReviewCreditWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/AdminReviewModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/AdminReviewWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/AdminReviewWidget.h
 )
 
 qt_add_executable(campus_buddy_desktop ${DESKTOP_SOURCES})
@@ -143,6 +148,9 @@ qt_add_executable(qt_server_integration_smoke
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ReviewCreditModels.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/api/ReviewCreditApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/AdminReviewModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.h
 )
 
 target_link_libraries(qt_server_integration_smoke PRIVATE Qt6::Core Qt6::Network)
@@ -270,3 +278,25 @@ target_include_directories(review_credit_api_service_test PRIVATE
 )
 
 add_test(NAME review_credit_api_service_test COMMAND review_credit_api_service_test)
+
+qt_add_executable(admin_review_api_service_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/AdminReviewApiServiceTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/AdminReviewApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/AdminReviewModels.h
+)
+
+target_link_libraries(admin_review_api_service_test PRIVATE Qt6::Test Qt6::Network)
+
+target_include_directories(admin_review_api_service_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME admin_review_api_service_test COMMAND admin_review_api_service_test)

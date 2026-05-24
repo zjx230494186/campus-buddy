@@ -1,5 +1,6 @@
 #include "api/CampusApiClient.h"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QNetworkReply>
@@ -179,7 +180,8 @@ ApiClientResponse CampusApiClient::parseReply(int httpStatus, QNetworkReply::Net
 
     QJsonParseError parseError;
     const QJsonDocument document = QJsonDocument::fromJson(body, &parseError);
-    const bool hasJsonObject = parseError.error == QJsonParseError::NoError && document.isObject();
+    const bool hasJson = parseError.error == QJsonParseError::NoError;
+    const bool hasJsonObject = hasJson && document.isObject();
 
     if (networkError != QNetworkReply::NoError && httpStatus == 0) {
         response.error.type = ApiClientError::NetworkError;
@@ -192,21 +194,26 @@ ApiClientResponse CampusApiClient::parseReply(int httpStatus, QNetworkReply::Net
         return response;
     }
 
-    if (!hasJsonObject) {
+    if (!hasJson) {
         response.error.type = ApiClientError::InvalidJson;
         response.error.httpStatus = httpStatus;
-        response.error.message = QStringLiteral("Response body is not a JSON object");
+        response.error.message = QStringLiteral("Response body is not valid JSON");
         return response;
     }
 
-    const QJsonObject object = document.object();
     if (httpStatus >= 200 && httpStatus < 300) {
         response.ok = true;
-        response.json = object;
+        if (document.isObject()) {
+            response.json = document.object();
+        } else if (document.isArray()) {
+            QJsonObject wrapper;
+            wrapper.insert(QStringLiteral("items"), document.array());
+            response.json = wrapper;
+        }
         return response;
     }
 
-    response.error = parseErrorObject(httpStatus, object);
+    response.error = parseErrorObject(httpStatus, document.object());
     return response;
 }
 

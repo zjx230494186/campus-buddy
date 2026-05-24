@@ -13,6 +13,7 @@
 #include "api/ContactConversationApiService.h"
 #include "api/MyPartnerPostApiService.h"
 #include "api/ReviewCreditApiService.h"
+#include "api/AdminReviewApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "auth/AuthApiService.h"
 #include "auth/InMemorySessionTokenStore.h"
@@ -729,6 +730,8 @@ int main(int argc, char *argv[])
         if (reviewResult.success) {
             smokeReviewId = reviewResult.review.id;
             out << "PASS: reviewId=" << smokeReviewId << " status=" << reviewResult.review.status << Qt::endl;
+        } else if (reviewResult.errorCode == QStringLiteral("REVIEW_ALREADY_EXISTS")) {
+            out << "NOTE: review already exists for this conversation (expected on repeat runs)" << Qt::endl;
         } else {
             out << "FAIL: errorCode=" << reviewResult.errorCode << " errorMessage=" << reviewResult.errorMessage << Qt::endl;
             failures++;
@@ -780,6 +783,173 @@ int main(int argc, char *argv[])
             out << "PASS: items=" << receivedResult.items.size() << Qt::endl;
         } else {
             out << "FAIL: success=" << receivedResult.success << " errorCode=" << receivedResult.errorCode << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 23. Admin login ---" << Qt::endl;
+    QString adminAccessToken;
+    {
+        QJsonObject adminLoginBody;
+        adminLoginBody["campusEmail"] = adminEmail;
+        adminLoginBody["password"] = adminPassword;
+        ApiClientResponse adminLoginResp = blockingPost(client, "/auth/login", adminLoginBody);
+        if (adminLoginResp.ok) {
+            adminAccessToken = adminLoginResp.json.value("accessToken").toString();
+            out << "PASS: admin token length=" << adminAccessToken.length() << Qt::endl;
+        } else {
+            out << "FAIL: admin login ok=" << adminLoginResp.ok << Qt::endl;
+            failures++;
+        }
+    }
+
+    InMemorySessionTokenStore adminTokenStoreForReview;
+    adminTokenStoreForReview.setAccessToken(adminAccessToken);
+    AdminReviewApiService adminReviewService(client, adminTokenStoreForReview);
+
+    out << Qt::endl << "--- 24. GET /admin/partner-posts/review-queue ---" << Qt::endl;
+    {
+        QEventLoop loop24;
+        QTimer timeout24;
+        timeout24.setSingleShot(true);
+        PartnerPostReviewQueueResult queueResult;
+        QObject::connect(&timeout24, &QTimer::timeout, &loop24, &QEventLoop::quit);
+        adminReviewService.listPartnerPostReviewQueue(0, 20, [&](const PartnerPostReviewQueueResult &r) {
+            queueResult = r;
+            loop24.quit();
+        });
+        timeout24.start(10000);
+        loop24.exec();
+
+        if (queueResult.success) {
+            out << "PASS: items=" << queueResult.items.size() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << queueResult.success << " errorCode=" << queueResult.errorCode << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 25. Smoke submit post for admin review ---" << Qt::endl;
+    QString smokePostForAdminReview;
+    if (!accessToken.isEmpty()) {
+        MyPartnerPostApiService smokeMyPostService(client, plazaTokenStore);
+        MyPostDraftRequest draftReq;
+        draftReq.sceneType = QStringLiteral("STUDY");
+        draftReq.title = QStringLiteral("smoke admin review test");
+        draftReq.description = QStringLiteral("smoke test for admin review");
+        draftReq.timeMode = QStringLiteral("TEXT_PREFERENCE");
+        draftReq.timeText = QStringLiteral("evening");
+        draftReq.locationText = QStringLiteral("library");
+        draftReq.participantCount = 2;
+        draftReq.targetRequirement = QStringLiteral("study together");
+        draftReq.contactPreference = QStringLiteral("WeChat");
+
+        QEventLoop loop25a;
+        QTimer timeout25a;
+        timeout25a.setSingleShot(true);
+        MyPostResult draftResult;
+        QObject::connect(&timeout25a, &QTimer::timeout, &loop25a, &QEventLoop::quit);
+        smokeMyPostService.createDraft(draftReq, [&](const MyPostResult &r) {
+            draftResult = r;
+            loop25a.quit();
+        });
+        timeout25a.start(10000);
+        loop25a.exec();
+
+        if (draftResult.success) {
+            smokePostForAdminReview = draftResult.post.postId;
+
+            QEventLoop loop25b;
+            QTimer timeout25b;
+            timeout25b.setSingleShot(true);
+            PostActionResult submitResult;
+            QObject::connect(&timeout25b, &QTimer::timeout, &loop25b, &QEventLoop::quit);
+            smokeMyPostService.submitReview(smokePostForAdminReview, [&](const PostActionResult &r) {
+                submitResult = r;
+                loop25b.quit();
+            });
+            timeout25b.start(10000);
+            loop25b.exec();
+
+            if (submitResult.success) {
+                out << "PASS: postId length=" << smokePostForAdminReview.length() << " status=" << submitResult.post.status << Qt::endl;
+            } else {
+                out << "NOTE: submit-review failed errorCode=" << submitResult.errorCode << Qt::endl;
+            }
+        } else {
+            out << "NOTE: draft creation failed" << Qt::endl;
+        }
+    } else {
+        out << "SKIP: no token for smoke post creation" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 26. Admin detail + REJECT smoke post ---" << Qt::endl;
+    if (!smokePostForAdminReview.isEmpty() && !adminAccessToken.isEmpty()) {
+        QEventLoop loop26a;
+        QTimer timeout26a;
+        timeout26a.setSingleShot(true);
+        AdminPostDetailResult detailResult;
+        QObject::connect(&timeout26a, &QTimer::timeout, &loop26a, &QEventLoop::quit);
+        adminReviewService.getPartnerPostAdminDetail(smokePostForAdminReview, [&](const AdminPostDetailResult &r) {
+            detailResult = r;
+            loop26a.quit();
+        });
+        timeout26a.start(10000);
+        loop26a.exec();
+
+        if (detailResult.success) {
+            out << "PASS: detail loaded, title=" << detailResult.detail.title.left(20) << Qt::endl;
+
+            if (detailResult.detail.status == QStringLiteral("PENDING_REVIEW")) {
+                PartnerPostReviewRequest rejectReq;
+                rejectReq.decision = QStringLiteral("REJECT");
+                rejectReq.reason = QStringLiteral("smoke validation reject");
+                QEventLoop loop26b;
+                QTimer timeout26b;
+                timeout26b.setSingleShot(true);
+                PartnerPostReviewResult rejectResult;
+                QObject::connect(&timeout26b, &QTimer::timeout, &loop26b, &QEventLoop::quit);
+                adminReviewService.reviewPartnerPost(smokePostForAdminReview, rejectReq, [&](const PartnerPostReviewResult &r) {
+                    rejectResult = r;
+                    loop26b.quit();
+                });
+                timeout26b.start(10000);
+                loop26b.exec();
+
+                if (rejectResult.success) {
+                    out << "PASS: status=" << rejectResult.detail.status << " reviewedAt=" << (!rejectResult.detail.reviewedAt.isEmpty() ? "yes" : "no") << Qt::endl;
+                } else {
+                    out << "FAIL: reject failed errorCode=" << rejectResult.errorCode << " errorMessage=" << rejectResult.errorMessage << Qt::endl;
+                    failures++;
+                }
+            } else {
+                out << "NOTE: post status=" << detailResult.detail.status << " (not PENDING_REVIEW, skip reject)" << Qt::endl;
+            }
+        } else {
+            out << "NOTE: detail failed errorCode=" << detailResult.errorCode << Qt::endl;
+        }
+    } else {
+        out << "SKIP: no post or admin token for admin review" << Qt::endl;
+    }
+
+    out << Qt::endl << "--- 27. GET /admin/identity-verifications?status=PENDING_REVIEW ---" << Qt::endl;
+    {
+        QEventLoop loop27;
+        QTimer timeout27;
+        timeout27.setSingleShot(true);
+        PendingIdentityVerificationListResult pendingResult;
+        QObject::connect(&timeout27, &QTimer::timeout, &loop27, &QEventLoop::quit);
+        adminReviewService.listPendingIdentityVerifications(0, 20, [&](const PendingIdentityVerificationListResult &r) {
+            pendingResult = r;
+            loop27.quit();
+        });
+        timeout27.start(10000);
+        loop27.exec();
+
+        if (pendingResult.success) {
+            out << "PASS: items=" << pendingResult.items.size() << Qt::endl;
+        } else {
+            out << "FAIL: success=" << pendingResult.success << " errorCode=" << pendingResult.errorCode << Qt::endl;
             failures++;
         }
     }

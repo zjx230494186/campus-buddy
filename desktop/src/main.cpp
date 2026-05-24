@@ -9,6 +9,7 @@
 #include "api/PartnerPostApiService.h"
 #include "api/ContactConversationApiService.h"
 #include "api/ReviewCreditApiService.h"
+#include "api/AdminReviewApiService.h"
 #include "auth/AuthApiService.h"
 #include "auth/AuthTokenStore.h"
 #include "domain/ApiClientConfig.h"
@@ -30,12 +31,13 @@ int main(int argc, char *argv[])
     PartnerPostApiService plazaService(apiClient, tokenStore);
     ContactConversationApiService contactService(apiClient, tokenStore);
     ReviewCreditApiService reviewService(apiClient, tokenStore);
+    AdminReviewApiService adminService(apiClient, tokenStore);
 
     QStackedWidget navigator;
 
     auto *loginPage = new LoginWidget(authService, &navigator);
     auto *registerPage = new RegisterWidget(authService, &navigator);
-    auto *homePage = new HomePageWidget(authService, myPostService, plazaService, contactService, reviewService, &navigator);
+    auto *homePage = new HomePageWidget(authService, myPostService, plazaService, contactService, reviewService, adminService, &navigator);
 
     navigator.addWidget(loginPage);
     navigator.addWidget(registerPage);
