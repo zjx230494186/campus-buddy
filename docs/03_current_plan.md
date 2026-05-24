@@ -46,11 +46,12 @@
 - Round 45 已完成低压力联系后端会话状态与未读数：提交 `ffa1d71`，新增 V10 迁移，补会话关闭、CLOSED 发送阻断、重新发起恢复 ACTIVE、unreadCount 和标记已读；后端 236/236 通过，服务器 V1-V10 validated，close/read/recontact smoke 通过。
 - Round 46 已完成 Qt 桌面端适配会话状态与未读数：提交 `39cfac3`，新增 unreadCount 解析、closeConversation/markConversationRead API 方法、ConversationsWidget UI 适配（未读数显示、标记已读/关闭按钮、CLOSED 禁用发送、CONVERSATION_CLOSED 错误处理）；Qt ctest 10/10、server smoke 33/33 全部通过。
 - Round 47 已完成后端联系方式卡片与双方解锁：提交 `62cd1a3`，新增 V11 迁移（contact_card + contact_unlock_confirm），ContactCard CRUD、单方确认→WAITING_FOR_PEER、双方确认+有卡片→UNLOCKED、查看对方联系方式、CLOSED 阻断、6 星评价解锁；后端 249/249 通过，服务器 smoke 9/10 PASS。
-- Round 48 已完成 Qt 联系方式卡片与解锁 UI 适配：5 个 API 方法实现、5 个合同测试、ConversationsWidget 联系方式编辑区+解锁状态+确认交换+查看对方卡片、smoke 步骤 34-38；Qt ctest 10/10、server smoke 38/38 全部通过。
+- Round 48 已完成 Qt 联系方式卡片与解锁 UI 适配：提交 `309fa94`，5 个 API 方法实现、5 个合同测试、ConversationsWidget 联系方式编辑区+解锁状态+确认交换+查看对方卡片、smoke 步骤 34-38；Qt ctest 10/10、server smoke 38/38 全部通过。
 - 当前残余风险：OBS 物理对象删除尚未独立复核；公网仍为 HTTP。
-- 当前最大功能缺口：投诉申诉/治理/通知仍未实现。
+- 当前最大功能缺口：投诉申诉/治理/通知仍未实现，但不建议在课程演示收尾前继续扩大业务范围。
 - 后续收敛路线见 `docs/26_remaining_function_completion_roadmap_v1.md`。
-- 下一步优先级：Git 提交 Round 48 → 课程演示准备 → 项目收尾。
+- 课程演示与交付清单见 `docs/27_course_demo_and_delivery_checklist_v1.md`。
+- 下一步优先级：项目收尾 / 答辩演示。
 
 ## Git 提交历史
 

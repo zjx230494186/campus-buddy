@@ -56,11 +56,11 @@
 ### Server Smoke: 38/38 PASS
 Steps 1-33: all PASS (unchanged from Round 46)
 Steps 34-38 (new):
-- Step 34: GET /me/contact-card → PASS (hasCard=1)
-- Step 35: PUT /me/contact-card → PASS (hasCard=1, wechatId=smoke_wx)
+- Step 34: GET /me/contact-card → PASS (hasCard=true)
+- Step 35: PUT /me/contact-card → PASS (hasCard=true, hasWechat=true)
 - Step 36: GET contact-unlock → PASS (status=UNLOCKED)
 - Step 37: POST contact-unlock/confirm → PASS (status=UNLOCKED)
-- Step 38: Admin full flow → PASS (peerCard wechatId=admin_wx, phone=13900002222)
+- Step 38: Admin full flow → PASS (peerCard fields present: hasWechat=true, hasPhone=true)
 
 ## Files Modified
 - `desktop/src/api/ContactConversationApiService.cpp` — 5 new methods
