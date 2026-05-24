@@ -1,5 +1,6 @@
 #include "ui/ConversationsWidget.h"
 
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 
 ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactService, QWidget *parent)
@@ -46,12 +47,32 @@ ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactS
     sendButton_->setEnabled(false);
     layout->addWidget(sendButton_);
 
+    auto *actionLayout = new QHBoxLayout();
+    markReadButton_ = new QPushButton(QStringLiteral("标记已读"), this);
+    markReadButton_->setObjectName(QStringLiteral("markReadButton"));
+    markReadButton_->setEnabled(false);
+    actionLayout->addWidget(markReadButton_);
+
+    closeConversationButton_ = new QPushButton(QStringLiteral("关闭会话"), this);
+    closeConversationButton_->setObjectName(QStringLiteral("closeConversationButton"));
+    closeConversationButton_->setEnabled(false);
+    actionLayout->addWidget(closeConversationButton_);
+
+    layout->addLayout(actionLayout);
+
     statusLabel_ = new QLabel(this);
     layout->addWidget(statusLabel_);
 
     connect(refreshButton_, &QPushButton::clicked, this, &ConversationsWidget::onRefreshConversations);
     connect(conversationListWidget_, &QListWidget::currentRowChanged, this, &ConversationsWidget::onConversationSelected);
     connect(sendButton_, &QPushButton::clicked, this, &ConversationsWidget::onSendMessage);
+    connect(markReadButton_, &QPushButton::clicked, this, &ConversationsWidget::onMarkRead);
+    connect(closeConversationButton_, &QPushButton::clicked, this, &ConversationsWidget::onCloseConversation);
+}
+
+void ConversationsWidget::updateSendButtonState()
+{
+    sendButton_->setEnabled(currentConversationId_ > 0 && currentConversationStatus_ == QStringLiteral("ACTIVE"));
 }
 
 void ConversationsWidget::onRefreshConversations()
@@ -63,6 +84,9 @@ void ConversationsWidget::onRefreshConversations()
             conversationListWidget_->clear();
             for (const auto &item : conversations_) {
                 QString display = QStringLiteral("[%1] %2 - %3").arg(item.status, item.otherParticipantDisplayName, item.relatedPostTitle);
+                if (item.unreadCount > 0) {
+                    display += QStringLiteral(" (%1未读)").arg(item.unreadCount);
+                }
                 if (!item.lastMessagePreview.isEmpty()) {
                     display += QStringLiteral(" | ") + item.lastMessagePreview.left(30);
                 }
@@ -80,17 +104,28 @@ void ConversationsWidget::onConversationSelected()
     int idx = conversationListWidget_->currentRow();
     if (idx < 0 || idx >= conversations_.size()) {
         currentConversationId_ = 0;
+        currentConversationStatus_.clear();
         messageListWidget_->clear();
         sendButton_->setEnabled(false);
+        markReadButton_->setEnabled(false);
+        closeConversationButton_->setEnabled(false);
         conversationStatusLabel_->clear();
         return;
     }
 
     const auto &conv = conversations_[idx];
     currentConversationId_ = conv.conversationId;
-    conversationStatusLabel_->setText(
-        QStringLiteral("会话 %1: %2 [%3]").arg(conv.conversationId).arg(conv.otherParticipantDisplayName).arg(conv.status));
-    sendButton_->setEnabled(true);
+    currentConversationStatus_ = conv.status;
+
+    QString statusText = QStringLiteral("会话 %1: %2 [%3]").arg(conv.conversationId).arg(conv.otherParticipantDisplayName).arg(conv.status);
+    if (conv.unreadCount > 0) {
+        statusText += QStringLiteral(" %1未读").arg(conv.unreadCount);
+    }
+    conversationStatusLabel_->setText(statusText);
+
+    updateSendButtonState();
+    markReadButton_->setEnabled(currentConversationId_ > 0 && conv.unreadCount > 0);
+    closeConversationButton_->setEnabled(currentConversationId_ > 0 && currentConversationStatus_ == QStringLiteral("ACTIVE"));
 
     statusLabel_->setText(QStringLiteral("加载消息..."));
     contactService_.queryMessages(currentConversationId_, 0, 50, [this](const MessageListResult &result) {
@@ -122,11 +157,45 @@ void ConversationsWidget::onSendMessage()
     contactService_.sendMessage(currentConversationId_, message, [this](const SendMessageResult &result) {
         if (result.success) {
             messageEdit_->clear();
-            sendButton_->setEnabled(true);
+            updateSendButtonState();
             onConversationSelected();
         } else {
+            if (result.errorCode == QStringLiteral("CONVERSATION_CLOSED")) {
+                currentConversationStatus_ = QStringLiteral("CLOSED");
+                updateSendButtonState();
+                closeConversationButton_->setEnabled(false);
+            }
             statusLabel_->setText(QStringLiteral("发送失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
-            sendButton_->setEnabled(true);
+        }
+    });
+}
+
+void ConversationsWidget::onMarkRead()
+{
+    if (currentConversationId_ <= 0) return;
+
+    statusLabel_->setText(QStringLiteral("标记已读..."));
+    contactService_.markConversationRead(currentConversationId_, [this](const MarkReadResult &result) {
+        if (result.success) {
+            statusLabel_->setText(QStringLiteral("已标记已读"));
+            onRefreshConversations();
+        } else {
+            statusLabel_->setText(QStringLiteral("标记已读失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
+        }
+    });
+}
+
+void ConversationsWidget::onCloseConversation()
+{
+    if (currentConversationId_ <= 0) return;
+
+    statusLabel_->setText(QStringLiteral("关闭会话..."));
+    contactService_.closeConversation(currentConversationId_, [this](const CloseConversationResult &result) {
+        if (result.success) {
+            statusLabel_->setText(QStringLiteral("会话已关闭"));
+            onRefreshConversations();
+        } else {
+            statusLabel_->setText(QStringLiteral("关闭失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
     });
 }

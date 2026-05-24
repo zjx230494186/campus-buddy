@@ -62,6 +62,7 @@ void ContactConversationApiService::listConversations(int page, int size, Conver
                 item.lastMessagePreview = v.toObject().value(QStringLiteral("lastMessagePreview")).toString();
                 item.lastMessageAt = v.toObject().value(QStringLiteral("lastMessageAt")).toString();
                 item.updatedAt = v.toObject().value(QStringLiteral("updatedAt")).toString();
+                item.unreadCount = v.toObject().value(QStringLiteral("unreadCount")).toInt();
                 result.items.append(item);
             }
         } else {
@@ -161,6 +162,48 @@ void ContactConversationApiService::queryMessages(long long conversationId, long
                 item.createdAt = v.toObject().value(QStringLiteral("createdAt")).toString();
                 result.items.append(item);
             }
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::closeConversation(long long conversationId, CloseConversationCallback callback)
+{
+    QString path = QStringLiteral("/me/conversations/%1/close").arg(conversationId);
+    QJsonObject body;
+
+    client_.postJson(path, body, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        CloseConversationResult result;
+        if (response.ok) {
+            result.success = true;
+            result.conversationId = response.json.value(QStringLiteral("conversationId")).toInteger();
+            result.status = response.json.value(QStringLiteral("status")).toString();
+        } else {
+            result.success = false;
+            result.errorCode = response.error.code;
+            result.errorMessage = response.error.message;
+        }
+        if (callback) {
+            callback(result);
+        }
+    });
+}
+
+void ContactConversationApiService::markConversationRead(long long conversationId, MarkReadCallback callback)
+{
+    QString path = QStringLiteral("/me/conversations/%1/read").arg(conversationId);
+    QJsonObject body;
+
+    client_.postJson(path, body, tokenStore_.accessToken(), [callback = std::move(callback)](const ApiClientResponse &response) {
+        MarkReadResult result;
+        if (response.ok) {
+            result.success = true;
         } else {
             result.success = false;
             result.errorCode = response.error.code;

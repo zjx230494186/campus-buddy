@@ -19,8 +19,12 @@ private slots:
     void onRefreshConversations();
     void onConversationSelected();
     void onSendMessage();
+    void onMarkRead();
+    void onCloseConversation();
 
 private:
+    void updateSendButtonState();
+
     ContactConversationApiService &contactService_;
 
     QListWidget *conversationListWidget_;
@@ -29,8 +33,11 @@ private:
     QLineEdit *messageEdit_;
     QPushButton *sendButton_;
     QPushButton *refreshButton_;
+    QPushButton *markReadButton_;
+    QPushButton *closeConversationButton_;
     QLabel *statusLabel_;
 
     QList<ConversationListItem> conversations_;
     long long currentConversationId_ = 0;
+    QString currentConversationStatus_;
 };

@@ -16,6 +16,8 @@ public:
     using ConversationListCallback = std::function<void(const ConversationListResult &)>;
     using SendMessageCallback = std::function<void(const SendMessageResult &)>;
     using MessageListCallback = std::function<void(const MessageListResult &)>;
+    using CloseConversationCallback = std::function<void(const CloseConversationResult &)>;
+    using MarkReadCallback = std::function<void(const MarkReadResult &)>;
 
     explicit ContactConversationApiService(CampusApiClient &client, SecureTokenStore &tokenStore, QObject *parent = nullptr);
 
@@ -24,6 +26,8 @@ public:
     void sendMessage(long long conversationId, const QString &message, SendMessageCallback callback);
     void queryMessages(long long conversationId, int page, int size, MessageListCallback callback);
     void queryMessages(long long conversationId, long long afterMessageId, int size, MessageListCallback callback);
+    void closeConversation(long long conversationId, CloseConversationCallback callback);
+    void markConversationRead(long long conversationId, MarkReadCallback callback);
 
 private:
     CampusApiClient &client_;

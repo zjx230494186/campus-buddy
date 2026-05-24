@@ -24,6 +24,10 @@ private slots:
     void queryMessagesSupportsAfterMessageIdAndSize();
     void conversationListParsesFields();
     void messageListParsesFields();
+    void listConversationsParsesUnreadCount();
+    void closeConversationUsesCorrectPathAndMethod();
+    void markConversationReadUsesCorrectPathAndHandlesEmptyBody();
+    void sendMessageClosedErrorConvertsToResult();
 
 private:
     struct RawRequest {
@@ -289,6 +293,130 @@ void ContactConversationApiServiceTest::messageListParsesFields()
     QCOMPARE(result.items[0].messageType, QString("USER_TEXT"));
     QCOMPARE(result.items[0].content, QString("test msg"));
     QVERIFY2(!result.items[0].createdAt.isEmpty(), "createdAt must be present");
+}
+
+void ContactConversationApiServiceTest::listConversationsParsesUnreadCount()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 200 OK",
+        R"({"items":[{"conversationId":1,"status":"ACTIVE","otherParticipantId":"uid-abc","otherParticipantDisplayName":"Alice","relatedPostUuid":"post-uuid","relatedPostTitle":"Study Group","lastMessagePreview":"hello","lastMessageAt":"2026-05-23T01:00:00Z","updatedAt":"2026-05-23T01:00:00Z","unreadCount":3}],"page":0,"size":20,"totalElements":1,"totalPages":1})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    ConversationListResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.listConversations(0, 20, [&](const ConversationListResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QCOMPARE(result.items.size(), 1);
+    QCOMPARE(result.items[0].unreadCount, 3);
+}
+
+void ContactConversationApiServiceTest::closeConversationUsesCorrectPathAndMethod()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
+        R"({"conversationId":123,"status":"CLOSED"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    CloseConversationResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.closeConversation(123, [&](const CloseConversationResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+    QCOMPARE(result.conversationId, 123);
+    QCOMPARE(result.status, QString("CLOSED"));
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("/me/conversations/123/close"), "path must include conversationId/close");
+    QVERIFY2(headerStr.contains("POST"), "method must be POST");
+    QVERIFY2(headerStr.contains("Authorization: Bearer test-token"), "must use Bearer token");
+}
+
+void ContactConversationApiServiceTest::markConversationReadUsesCorrectPathAndHandlesEmptyBody()
+{
+    RawRequest captured;
+    const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK", "");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    MarkReadResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.markConversationRead(123, [&](const MarkReadResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY(result.success);
+
+    const QString headerStr = QString::fromUtf8(captured.headers);
+    QVERIFY2(headerStr.contains("/me/conversations/123/read"), "path must include conversationId/read");
+    QVERIFY2(headerStr.contains("POST"), "method must be POST");
+    QVERIFY2(headerStr.contains("Authorization: Bearer test-token"), "must use Bearer token");
+}
+
+void ContactConversationApiServiceTest::sendMessageClosedErrorConvertsToResult()
+{
+    const QUrl baseUrl = serveSingleResponse("HTTP/1.1 403 Forbidden",
+        R"({"code":"CONVERSATION_CLOSED","message":"Conversation is closed"})");
+
+    CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
+    InMemorySessionTokenStore tokenStore;
+    tokenStore.setAccessToken(QStringLiteral("test-token"));
+    ContactConversationApiService service(client, tokenStore);
+
+    QEventLoop loop;
+    QTimer timeout;
+    timeout.setSingleShot(true);
+
+    SendMessageResult result;
+    QObject::connect(&timeout, &QTimer::timeout, &loop, &QEventLoop::quit);
+    service.sendMessage(42, QStringLiteral("test"), [&](const SendMessageResult &r) {
+        result = r;
+        loop.quit();
+    });
+
+    timeout.start(3000);
+    loop.exec();
+
+    QVERIFY2(!result.success, "must not succeed for CLOSED conversation");
+    QCOMPARE(result.errorCode, QString("CONVERSATION_CLOSED"));
 }
 
 QTEST_MAIN(ContactConversationApiServiceTest)

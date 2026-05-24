@@ -989,6 +989,211 @@ int main(int argc, char *argv[])
         }
     }
 
+    out << Qt::endl << "--- 28. Admin listConversations unreadCount >= 1 ---" << Qt::endl;
+    {
+        InMemorySessionTokenStore adminTokenStore28;
+        QJsonObject adminLoginBody28;
+        adminLoginBody28["campusEmail"] = adminEmail;
+        adminLoginBody28["password"] = adminPassword;
+        ApiClientResponse adminLogin28 = blockingPost(client, "/auth/login", adminLoginBody28);
+        if (adminLogin28.ok) {
+            adminTokenStore28.setAccessToken(adminLogin28.json.value("accessToken").toString());
+        }
+        ContactConversationApiService adminContact28(client, adminTokenStore28);
+
+        if (smokeConvId > 0 && adminLogin28.ok) {
+            QEventLoop loop28;
+            QTimer timeout28;
+            timeout28.setSingleShot(true);
+            ConversationListResult convList28;
+            QObject::connect(&timeout28, &QTimer::timeout, &loop28, &QEventLoop::quit);
+            adminContact28.listConversations(0, 50, [&](const ConversationListResult &r) {
+                convList28 = r;
+                loop28.quit();
+            });
+            timeout28.start(10000);
+            loop28.exec();
+
+            int foundUnreadCount = -1;
+            if (convList28.success) {
+                for (const auto &c : convList28.items) {
+                    if (c.conversationId == smokeConvId) {
+                        foundUnreadCount = c.unreadCount;
+                        break;
+                    }
+                }
+            }
+            if (foundUnreadCount >= 1) {
+                out << "PASS: unreadCount=" << foundUnreadCount << Qt::endl;
+            } else {
+                out << "FAIL: unreadCount=" << foundUnreadCount << " (expected >=1)" << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation or admin token for unreadCount test" << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 29. Admin markConversationRead ---" << Qt::endl;
+    {
+        InMemorySessionTokenStore adminTokenStore29;
+        QJsonObject adminLoginBody29;
+        adminLoginBody29["campusEmail"] = adminEmail;
+        adminLoginBody29["password"] = adminPassword;
+        ApiClientResponse adminLogin29 = blockingPost(client, "/auth/login", adminLoginBody29);
+        if (adminLogin29.ok) {
+            adminTokenStore29.setAccessToken(adminLogin29.json.value("accessToken").toString());
+        }
+        ContactConversationApiService adminContact29(client, adminTokenStore29);
+
+        if (smokeConvId > 0 && adminLogin29.ok) {
+            QEventLoop loop29;
+            QTimer timeout29;
+            timeout29.setSingleShot(true);
+            MarkReadResult markReadResult;
+            QObject::connect(&timeout29, &QTimer::timeout, &loop29, &QEventLoop::quit);
+            adminContact29.markConversationRead(smokeConvId, [&](const MarkReadResult &r) {
+                markReadResult = r;
+                loop29.quit();
+            });
+            timeout29.start(10000);
+            loop29.exec();
+
+            if (markReadResult.success) {
+                out << "PASS: markRead success" << Qt::endl;
+            } else {
+                out << "FAIL: markRead errorCode=" << markReadResult.errorCode << Qt::endl;
+                failures++;
+            }
+
+            out << Qt::endl << "--- 30. Admin unreadCount after markRead = 0 ---" << Qt::endl;
+            QEventLoop loop30;
+            QTimer timeout30;
+            timeout30.setSingleShot(true);
+            ConversationListResult convList30;
+            QObject::connect(&timeout30, &QTimer::timeout, &loop30, &QEventLoop::quit);
+            adminContact29.listConversations(0, 50, [&](const ConversationListResult &r) {
+                convList30 = r;
+                loop30.quit();
+            });
+            timeout30.start(10000);
+            loop30.exec();
+
+            int unreadAfter = -1;
+            if (convList30.success) {
+                for (const auto &c : convList30.items) {
+                    if (c.conversationId == smokeConvId) {
+                        unreadAfter = c.unreadCount;
+                        break;
+                    }
+                }
+            }
+            if (unreadAfter == 0) {
+                out << "PASS: unreadCount=" << unreadAfter << Qt::endl;
+            } else {
+                out << "FAIL: unreadCount=" << unreadAfter << " (expected 0)" << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation or admin token for markRead test" << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 31. Smoke user closeConversation ---" << Qt::endl;
+    {
+        if (smokeConvId > 0 && !accessToken.isEmpty()) {
+            QEventLoop loop31;
+            QTimer timeout31;
+            timeout31.setSingleShot(true);
+            CloseConversationResult closeResult;
+            QObject::connect(&timeout31, &QTimer::timeout, &loop31, &QEventLoop::quit);
+            contactService.closeConversation(smokeConvId, [&](const CloseConversationResult &r) {
+                closeResult = r;
+                loop31.quit();
+            });
+            timeout31.start(10000);
+            loop31.exec();
+
+            if (closeResult.success && closeResult.status == QStringLiteral("CLOSED")) {
+                out << "PASS: status=" << closeResult.status << Qt::endl;
+            } else {
+                out << "FAIL: success=" << closeResult.success << " status=" << closeResult.status
+                    << " errorCode=" << closeResult.errorCode << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation or token for close test" << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 32. Send message on CLOSED conversation -> CONVERSATION_CLOSED ---" << Qt::endl;
+    {
+        if (smokeConvId > 0 && !accessToken.isEmpty()) {
+            QEventLoop loop32;
+            QTimer timeout32;
+            timeout32.setSingleShot(true);
+            SendMessageResult sendClosedResult;
+            QObject::connect(&timeout32, &QTimer::timeout, &loop32, &QEventLoop::quit);
+            contactService.sendMessage(smokeConvId, QStringLiteral("closed test"), [&](const SendMessageResult &r) {
+                sendClosedResult = r;
+                loop32.quit();
+            });
+            timeout32.start(10000);
+            loop32.exec();
+
+            if (!sendClosedResult.success && sendClosedResult.errorCode == QStringLiteral("CONVERSATION_CLOSED")) {
+                out << "PASS: errorCode=" << sendClosedResult.errorCode << Qt::endl;
+            } else {
+                out << "FAIL: success=" << sendClosedResult.success << " errorCode=" << sendClosedResult.errorCode << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no conversation or token for closed-send test" << Qt::endl;
+            failures++;
+        }
+    }
+
+    out << Qt::endl << "--- 33. Re-contact reopens CLOSED conversation -> ACTIVE ---" << Qt::endl;
+    {
+        if (!firstPublishedPostId.isEmpty() && !adminEmail.isEmpty()) {
+            InMemorySessionTokenStore adminTokenStore33;
+            QJsonObject adminLoginBody33;
+            adminLoginBody33["campusEmail"] = adminEmail;
+            adminLoginBody33["password"] = adminPassword;
+            ApiClientResponse adminLogin33 = blockingPost(client, "/auth/login", adminLoginBody33);
+            if (adminLogin33.ok) {
+                adminTokenStore33.setAccessToken(adminLogin33.json.value("accessToken").toString());
+            }
+            ContactConversationApiService adminContact33(client, adminTokenStore33);
+
+            QEventLoop loop33;
+            QTimer timeout33;
+            timeout33.setSingleShot(true);
+            ContactRequestResult recontactResult;
+            QObject::connect(&timeout33, &QTimer::timeout, &loop33, &QEventLoop::quit);
+            adminContact33.requestContact(firstPublishedPostId, QStringLiteral("recontact after close"), [&](const ContactRequestResult &r) {
+                recontactResult = r;
+                loop33.quit();
+            });
+            timeout33.start(10000);
+            loop33.exec();
+
+            if (recontactResult.success && recontactResult.conversationId == smokeConvId && recontactResult.status == QStringLiteral("ACTIVE")) {
+                out << "PASS: conversationId=" << recontactResult.conversationId << " status=" << recontactResult.status << Qt::endl;
+            } else {
+                out << "FAIL: success=" << recontactResult.success << " conversationId=" << recontactResult.conversationId
+                    << " status=" << recontactResult.status << " errorCode=" << recontactResult.errorCode << Qt::endl;
+                failures++;
+            }
+        } else {
+            out << "SKIP: no post or admin creds for recontact test" << Qt::endl;
+            failures++;
+        }
+    }
+
     out << Qt::endl;
     if (failures == 0) {
         out << "=== ALL INTEGRATION SMOKE TESTS PASSED ===" << Qt::endl;

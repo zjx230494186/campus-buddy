@@ -13,6 +13,7 @@ struct ConversationListItem
     QString lastMessagePreview;
     QString lastMessageAt;
     QString updatedAt;
+    int unreadCount = 0;
 };
 
 struct ConversationListResult
@@ -61,6 +62,22 @@ struct SendMessageResult
 {
     bool success = false;
     long long messageId = 0;
+    QString errorCode;
+    QString errorMessage;
+};
+
+struct CloseConversationResult
+{
+    bool success = false;
+    long long conversationId = 0;
+    QString status;
+    QString errorCode;
+    QString errorMessage;
+};
+
+struct MarkReadResult
+{
+    bool success = false;
     QString errorCode;
     QString errorMessage;
 };
