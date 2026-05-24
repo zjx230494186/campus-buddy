@@ -74,6 +74,27 @@ public class ContactConversationController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping(value = "/api/me/conversations/{conversationId}/close", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<ContactConversationService.CloseConversationResponse> closeConversation(
+            Authentication authentication,
+            @PathVariable Long conversationId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        ContactConversationService.CloseConversationResponse response =
+                contactConversationService.closeConversation(userId, conversationId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/api/me/conversations/{conversationId}/read", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Void> markConversationRead(
+            Authentication authentication,
+            @PathVariable Long conversationId
+    ) {
+        UUID userId = UUID.fromString(authentication.getName());
+        contactConversationService.markConversationRead(userId, conversationId);
+        return ResponseEntity.ok().build();
+    }
+
     public record ContactRequestRequest(String message) {}
 
     public record SendMessageRequest(String message) {}

@@ -68,6 +68,14 @@ public class ContactConversationService {
 
         Conversation conversation = conversationRepository.findActiveByParticipants(currentUserId, publisherId)
                 .orElseGet(() -> {
+                    Optional<Conversation> closedConv = conversationRepository.findByParticipants(currentUserId, publisherId)
+                            .filter(c -> "CLOSED".equals(c.getStatus()));
+                    if (closedConv.isPresent()) {
+                        Conversation conv = closedConv.get();
+                        conv.setStatus("ACTIVE");
+                        conv.setUpdatedAt(Instant.now());
+                        return conversationRepository.save(conv);
+                    }
                     Conversation conv = new Conversation(currentUserId, publisherId, "ACTIVE", Instant.now());
                     return conversationRepository.save(conv);
                 });
@@ -97,8 +105,8 @@ public class ContactConversationService {
         }
 
         if (!"ACTIVE".equals(conversation.getStatus())) {
-            throw new ApiException(HttpStatus.FORBIDDEN, "CONVERSATION_NOT_ACTIVE",
-                    "Conversation is not active", null);
+            throw new ApiException(HttpStatus.FORBIDDEN, "CONVERSATION_CLOSED",
+                    "Conversation is closed", null);
         }
 
         ConversationMessage msg = new ConversationMessage(
@@ -125,6 +133,44 @@ public class ContactConversationService {
 
         return new ConversationListResponse(items, convPage.getNumber(), convPage.getSize(),
                 convPage.getTotalElements(), convPage.getTotalPages());
+    }
+
+    @Transactional
+    public CloseConversationResponse closeConversation(UUID currentUserId, Long conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND",
+                        "Conversation not found", null));
+
+        if (!conversation.isParticipant(currentUserId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT",
+                    "You are not a participant of this conversation", null);
+        }
+
+        if (!"CLOSED".equals(conversation.getStatus())) {
+            conversation.setStatus("CLOSED");
+            conversation.setUpdatedAt(Instant.now());
+            conversationRepository.save(conversation);
+        }
+
+        return new CloseConversationResponse(conversation.getId(), conversation.getStatus());
+    }
+
+    @Transactional
+    public void markConversationRead(UUID currentUserId, Long conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND",
+                        "Conversation not found", null));
+
+        if (!conversation.isParticipant(currentUserId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_PARTICIPANT",
+                    "You are not a participant of this conversation", null);
+        }
+
+        var lastMsg = conversationMessageRepository.findTop1ByConversationIdOrderByIdDesc(conversationId);
+        if (lastMsg.isPresent()) {
+            conversation.setLastReadMessageId(currentUserId, lastMsg.get().getId());
+            conversationRepository.save(conversation);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -200,6 +246,8 @@ public class ContactConversationService {
             lastMessageAt = lastMsg.getCreatedAt().toString();
         }
 
+        long unreadCount = computeUnreadCount(conv, currentUserId);
+
         return new ConversationListItem(
                 conv.getId(),
                 conv.getStatus(),
@@ -209,8 +257,17 @@ public class ContactConversationService {
                 relatedPostTitle,
                 lastMessagePreview,
                 lastMessageAt,
-                conv.getUpdatedAt().toString()
+                conv.getUpdatedAt().toString(),
+                unreadCount
         );
+    }
+
+    private long computeUnreadCount(Conversation conv, UUID currentUserId) {
+        Long lastReadId = conv.getLastReadMessageId(currentUserId);
+        if (lastReadId == null) {
+            return conversationMessageRepository.countAllFromOther(conv.getId(), currentUserId);
+        }
+        return conversationMessageRepository.countUnread(conv.getId(), currentUserId, lastReadId);
     }
 
     private MessageItem toMessageItem(ConversationMessage msg) {
@@ -227,12 +284,14 @@ public class ContactConversationService {
 
     public record SendMessageResponse(Long messageId) {}
 
+    public record CloseConversationResponse(Long conversationId, String status) {}
+
     public record ConversationListItem(
             Long conversationId, String status,
             String otherParticipantId, String otherParticipantDisplayName,
             String relatedPostUuid, String relatedPostTitle,
             String lastMessagePreview, String lastMessageAt,
-            String updatedAt
+            String updatedAt, long unreadCount
     ) {}
 
     public record ConversationListResponse(

@@ -38,6 +38,12 @@ public class Conversation {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "participant1_last_read_message_id")
+    private Long participant1LastReadMessageId;
+
+    @Column(name = "participant2_last_read_message_id")
+    private Long participant2LastReadMessageId;
+
     protected Conversation() {
     }
 
@@ -63,6 +69,23 @@ public class Conversation {
 
     public void setRelatedPostUuid(UUID relatedPostUuid) { this.relatedPostUuid = relatedPostUuid; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public void setStatus(String status) { this.status = status; }
+
+    public Long getParticipant1LastReadMessageId() { return participant1LastReadMessageId; }
+    public Long getParticipant2LastReadMessageId() { return participant2LastReadMessageId; }
+    public void setParticipant1LastReadMessageId(Long id) { this.participant1LastReadMessageId = id; }
+    public void setParticipant2LastReadMessageId(Long id) { this.participant2LastReadMessageId = id; }
+
+    public Long getLastReadMessageId(UUID userId) {
+        if (participant1Id.equals(userId)) return participant1LastReadMessageId;
+        if (participant2Id.equals(userId)) return participant2LastReadMessageId;
+        return null;
+    }
+
+    public void setLastReadMessageId(UUID userId, Long messageId) {
+        if (participant1Id.equals(userId)) this.participant1LastReadMessageId = messageId;
+        else if (participant2Id.equals(userId)) this.participant2LastReadMessageId = messageId;
+    }
 
     public boolean isParticipant(UUID userId) {
         return participant1Id.equals(userId) || participant2Id.equals(userId);
