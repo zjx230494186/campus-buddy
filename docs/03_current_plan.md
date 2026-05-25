@@ -59,7 +59,8 @@
 - Qt UI 视觉打磨第二批已完成：打磨认证资料、我的发布、管理员审核页面；补管理员认证审核队列选择处理；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - Qt UI 视觉打磨第三批已完成：统一主链路空状态、加载态和防重复点击；新增 `UiHelpers::setButtonBusy` / `emptyStateText` 并接入认证、我的发布、广场、会话、管理员审核；Qt build 通过，逐项 `ctest -R` 10/10 通过，desktop smoke 通过；同一 `ctest` 批量进程下出现 `0xc0000135` DLL 搜索异常，server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - Qt UI 视觉打磨第四批已完成：发布表单增加字段级错误标签，保存/更新/提交接入忙碌态；评价信用页改为滚动内容区，并补刷新、提交、修改、列表刷新忙碌态和评价列表空状态；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
-- 下一步优先级：进入答辩现场演示或按需做 Round 53 生产化收口。
+- 真实邮箱验证码发送能力已补齐：新增 SMTP delivery mode、JavaMailSender 配置、SMTP 验证码 sender 和测试；后端全量测试 251/251 通过；真实外部收信仍需在私有 env 中配置 SMTP 账号/授权码并做端到端 smoke。
+- 下一步优先级：配置私有 SMTP 环境变量并完成真实注册收信 smoke，然后进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史
 
@@ -161,7 +162,7 @@
 
 - 不实现 refresh token 轮换、logout、RBAC
 - 真实 OBS SDK 未适配（InMemoryObjectStorageService 是测试替身）
-- 真实邮件发送未替换（仍为 no-op）
+- 真实邮件发送已支持 SMTP 配置开关；未配置 SMTP 时默认 no-op，真实收信需私有环境变量
 - 不实现预签名 URL，不让 Qt 客户端直传
 
 ## 配置边界摘要
@@ -171,6 +172,7 @@
 
 不得进入项目文档、仓库、聊天或 Qt 客户端的敏感配置：
 - `JWT_SECRET`（deploy profile）、`OBJECT_STORAGE_ACCESS_KEY_ID`、`OBJECT_STORAGE_SECRET_ACCESS_KEY`、`DB_PASSWORD`
+- `CAMPUS_EMAIL_SMTP_USERNAME`、`CAMPUS_EMAIL_SMTP_PASSWORD`
 
 ## 推荐下一步
 

@@ -32,6 +32,8 @@ public class CampusBuddyProperties {
         private Set<String> allowedDomains = new HashSet<>(Set.of("campus.edu.cn"));
         private int codeExpiresInSeconds = 600;
         private int resendAfterSeconds = 60;
+        private String deliveryMode = "noop";
+        private Smtp smtp = new Smtp();
 
         public Set<String> getAllowedDomains() {
             return allowedDomains;
@@ -55,6 +57,133 @@ public class CampusBuddyProperties {
 
         public void setResendAfterSeconds(int resendAfterSeconds) {
             this.resendAfterSeconds = resendAfterSeconds;
+        }
+
+        public String getDeliveryMode() {
+            return deliveryMode;
+        }
+
+        public void setDeliveryMode(String deliveryMode) {
+            this.deliveryMode = deliveryMode;
+        }
+
+        public Smtp getSmtp() {
+            return smtp;
+        }
+
+        public void setSmtp(Smtp smtp) {
+            this.smtp = smtp;
+        }
+
+        public static class Smtp {
+            private String host;
+            private int port = 587;
+            private String username;
+            private String password;
+            private String from;
+            private String fromName = "校园搭子平台";
+            private boolean auth = true;
+            private boolean startTls = true;
+            private boolean ssl = false;
+            private int connectionTimeoutMillis = 5000;
+            private int timeoutMillis = 5000;
+            private int writeTimeoutMillis = 5000;
+
+            public String getHost() {
+                return host;
+            }
+
+            public void setHost(String host) {
+                this.host = host;
+            }
+
+            public int getPort() {
+                return port;
+            }
+
+            public void setPort(int port) {
+                this.port = port;
+            }
+
+            public String getUsername() {
+                return username;
+            }
+
+            public void setUsername(String username) {
+                this.username = username;
+            }
+
+            public String getPassword() {
+                return password;
+            }
+
+            public void setPassword(String password) {
+                this.password = password;
+            }
+
+            public String getFrom() {
+                return from;
+            }
+
+            public void setFrom(String from) {
+                this.from = from;
+            }
+
+            public String getFromName() {
+                return fromName;
+            }
+
+            public void setFromName(String fromName) {
+                this.fromName = fromName;
+            }
+
+            public boolean isAuth() {
+                return auth;
+            }
+
+            public void setAuth(boolean auth) {
+                this.auth = auth;
+            }
+
+            public boolean isStartTls() {
+                return startTls;
+            }
+
+            public void setStartTls(boolean startTls) {
+                this.startTls = startTls;
+            }
+
+            public boolean isSsl() {
+                return ssl;
+            }
+
+            public void setSsl(boolean ssl) {
+                this.ssl = ssl;
+            }
+
+            public int getConnectionTimeoutMillis() {
+                return connectionTimeoutMillis;
+            }
+
+            public void setConnectionTimeoutMillis(int connectionTimeoutMillis) {
+                this.connectionTimeoutMillis = connectionTimeoutMillis;
+            }
+
+            public int getTimeoutMillis() {
+                return timeoutMillis;
+            }
+
+            public void setTimeoutMillis(int timeoutMillis) {
+                this.timeoutMillis = timeoutMillis;
+            }
+
+            public int getWriteTimeoutMillis() {
+                return writeTimeoutMillis;
+            }
+
+            public void setWriteTimeoutMillis(int writeTimeoutMillis) {
+                this.writeTimeoutMillis = writeTimeoutMillis;
+            }
         }
     }
 
