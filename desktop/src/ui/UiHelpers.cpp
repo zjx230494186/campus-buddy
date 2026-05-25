@@ -77,6 +77,36 @@ QPushButton *markGhost(QPushButton *button)
     return markRole(button, "ghost");
 }
 
+void setButtonBusy(QPushButton *button, bool busy, const QString &busyText, const QString &idleText)
+{
+    if (!button) return;
+    button->setEnabled(!busy);
+    button->setText(busy ? busyText : idleText);
+}
+
+QString emptyStateText(const QString &context)
+{
+    if (context == QStringLiteral("myPosts")) {
+        return QStringLiteral("还没有发布记录。可以先到“发布草稿”创建第一条需求。");
+    }
+    if (context == QStringLiteral("plaza")) {
+        return QStringLiteral("暂时没有符合条件的需求。可以换个关键词或选择“全部”场景。");
+    }
+    if (context == QStringLiteral("conversations")) {
+        return QStringLiteral("还没有会话。可以先在“广场”里找到合适的需求并发起联系。");
+    }
+    if (context == QStringLiteral("messages")) {
+        return QStringLiteral("这段会话还没有消息，可以先发一句简短邀约。");
+    }
+    if (context == QStringLiteral("adminPosts")) {
+        return QStringLiteral("当前没有待审核发布。");
+    }
+    if (context == QStringLiteral("adminIdentity")) {
+        return QStringLiteral("当前没有待审核认证申请。");
+    }
+    return QStringLiteral("暂无数据。");
+}
+
 QString sceneDisplayName(const QString &sceneType)
 {
     if (sceneType == QStringLiteral("STUDY")) return QStringLiteral("学习自习");

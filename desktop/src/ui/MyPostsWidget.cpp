@@ -81,8 +81,10 @@ MyPostsWidget::MyPostsWidget(MyPartnerPostApiService &myPostService, QWidget *pa
 
 void MyPostsWidget::onRefresh()
 {
+    UiHelpers::setButtonBusy(refreshButton_, true, QStringLiteral("加载中..."), QStringLiteral("刷新列表"));
     statusLabel_->setText(QStringLiteral("加载中..."));
     myPostService_.listMyPosts(0, 50, [this](const MyPostListResult &result) {
+        UiHelpers::setButtonBusy(refreshButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新列表"));
         if (result.success) {
             items_ = result.items;
             listWidget_->clear();
@@ -94,7 +96,7 @@ void MyPostsWidget::onRefresh()
                 listWidget_->addItem(display);
             }
             statusLabel_->setText(items_.isEmpty()
-                ? QStringLiteral("还没有发布记录。可以先到“发布草稿”创建第一条需求。")
+                ? UiHelpers::emptyStateText(QStringLiteral("myPosts"))
                 : QStringLiteral("共 %1 条发布记录").arg(items_.size()));
         } else {
             statusLabel_->setText(QStringLiteral("加载失败: %1").arg(result.errorMessage));
@@ -140,8 +142,10 @@ void MyPostsWidget::onWithdrawReview()
 {
     if (selectedIndex_ < 0 || selectedIndex_ >= items_.size()) return;
     const QString postId = items_[selectedIndex_].postId;
+    UiHelpers::setButtonBusy(withdrawButton_, true, QStringLiteral("撤回中..."), QStringLiteral("撤回审核"));
     statusLabel_->setText(QStringLiteral("撤回中..."));
     myPostService_.withdrawReview(postId, [this](const PostActionResult &result) {
+        UiHelpers::setButtonBusy(withdrawButton_, false, QStringLiteral("撤回中..."), QStringLiteral("撤回审核"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("已撤回审核"));
             onRefresh();
@@ -155,8 +159,10 @@ void MyPostsWidget::onUnpublish()
 {
     if (selectedIndex_ < 0 || selectedIndex_ >= items_.size()) return;
     const QString postId = items_[selectedIndex_].postId;
+    UiHelpers::setButtonBusy(unpublishButton_, true, QStringLiteral("下架中..."), QStringLiteral("下架"));
     statusLabel_->setText(QStringLiteral("下架中..."));
     myPostService_.unpublish(postId, [this](const PostActionResult &result) {
+        UiHelpers::setButtonBusy(unpublishButton_, false, QStringLiteral("下架中..."), QStringLiteral("下架"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("已下架"));
             onRefresh();

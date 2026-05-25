@@ -148,11 +148,11 @@ void IdentityVerificationWidget::onUploadFileClicked()
         return;
     }
 
-    uploadFileButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(uploadFileButton_, true, QStringLiteral("上传中..."), QStringLiteral("上传材料"));
     statusLabel_->setText(QStringLiteral("上传中..."));
 
     authService_.uploadIdentityMaterial(selectedFileData_, selectedFileName_, selectedContentType_, [this](const AuthResult &result) {
-        uploadFileButton_->setEnabled(true);
+        UiHelpers::setButtonBusy(uploadFileButton_, false, QStringLiteral("上传中..."), QStringLiteral("上传材料"));
         if (result.success) {
             attachmentId_ = result.attachmentId;
             statusLabel_->setText(QStringLiteral("上传成功"));
@@ -182,11 +182,11 @@ void IdentityVerificationWidget::onSubmitClicked()
         return;
     }
 
-    submitButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(submitButton_, true, QStringLiteral("提交中..."), QStringLiteral("提交认证"));
     statusLabel_->setText(QStringLiteral("提交中..."));
 
     authService_.submitIdentityVerification(realName, studentNumber, college, major, grade, attachmentId_, [this](const AuthResult &result) {
-        submitButton_->setEnabled(true);
+        UiHelpers::setButtonBusy(submitButton_, false, QStringLiteral("提交中..."), QStringLiteral("提交认证"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("提交成功，等待审核"));
             attachmentId_.clear();

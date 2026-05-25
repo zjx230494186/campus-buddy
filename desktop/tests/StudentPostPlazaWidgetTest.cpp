@@ -15,6 +15,7 @@ private slots:
     void conversationsWidgetSourceDoesNotContainHardcodedCredentials();
     void coreDemoUiUsesSharedVisualHelpers();
     void secondBatchUiUsesSharedVisualHelpersAndIdentitySelection();
+    void thirdBatchUsesBusyAndEmptyStateHelpers();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -139,6 +140,44 @@ void StudentPostPlazaWidgetTest::secondBatchUiUsesSharedVisualHelpersAndIdentity
     const QString sourceContent = QString::fromUtf8(adminSource.readAll());
     QVERIFY2(sourceContent.contains("connect(identityQueueList_"),
              "AdminReviewWidget must connect identity queue clicks to selection handling");
+}
+
+void StudentPostPlazaWidgetTest::thirdBatchUsesBusyAndEmptyStateHelpers()
+{
+    QFile helpersHeader(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/UiHelpers.h"));
+    QVERIFY2(helpersHeader.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open UiHelpers.h");
+    const QString helpersHeaderContent = QString::fromUtf8(helpersHeader.readAll());
+    QVERIFY2(helpersHeaderContent.contains("setButtonBusy"),
+             "UiHelpers must expose a shared button busy-state helper");
+    QVERIFY2(helpersHeaderContent.contains("emptyStateText"),
+             "UiHelpers must expose a shared empty-state text helper");
+
+    const QStringList busyFiles = {
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/IdentityVerificationWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/MyPostsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PlazaWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AdminReviewWidget.cpp")
+    };
+    for (const QString &path : busyFiles) {
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(path));
+        const QString content = QString::fromUtf8(file.readAll());
+        QVERIFY2(content.contains("setButtonBusy"), qPrintable(path + " must use shared busy-state helper"));
+    }
+
+    const QStringList emptyStateFiles = {
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/MyPostsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PlazaWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AdminReviewWidget.cpp")
+    };
+    for (const QString &path : emptyStateFiles) {
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(path));
+        const QString content = QString::fromUtf8(file.readAll());
+        QVERIFY2(content.contains("emptyStateText"), qPrintable(path + " must use shared empty-state helper"));
+    }
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)

@@ -17,6 +17,8 @@ QPushButton *markPrimary(QPushButton *button);
 QPushButton *markSecondary(QPushButton *button);
 QPushButton *markDanger(QPushButton *button);
 QPushButton *markGhost(QPushButton *button);
+void setButtonBusy(QPushButton *button, bool busy, const QString &busyText, const QString &idleText);
+QString emptyStateText(const QString &context);
 QString sceneDisplayName(const QString &sceneType);
 QString statusDisplayName(const QString &status);
 QString contactUnlockStatusText(const QString &status);

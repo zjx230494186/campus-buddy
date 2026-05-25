@@ -177,8 +177,10 @@ void ConversationsWidget::updateUnlockUi(const ContactUnlockStatusResult &result
 
 void ConversationsWidget::onRefreshConversations()
 {
+    UiHelpers::setButtonBusy(refreshButton_, true, QStringLiteral("加载中..."), QStringLiteral("刷新会话列表"));
     statusLabel_->setText(QStringLiteral("加载会话列表..."));
     contactService_.listConversations(0, 50, [this](const ConversationListResult &result) {
+        UiHelpers::setButtonBusy(refreshButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新会话列表"));
         if (result.success) {
             conversations_ = result.items;
             conversationListWidget_->clear();
@@ -195,7 +197,9 @@ void ConversationsWidget::onRefreshConversations()
                 }
                 conversationListWidget_->addItem(display);
             }
-            statusLabel_->setText(QStringLiteral("共 %1 个会话").arg(conversations_.size()));
+            statusLabel_->setText(conversations_.isEmpty()
+                ? UiHelpers::emptyStateText(QStringLiteral("conversations"))
+                : QStringLiteral("共 %1 个会话").arg(conversations_.size()));
         } else {
             statusLabel_->setText(QStringLiteral("加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -246,7 +250,9 @@ void ConversationsWidget::onConversationSelected()
                     .arg(msg.createdAt.left(19), msg.senderId.left(8), msg.content.left(100));
                 messageListWidget_->addItem(display);
             }
-            statusLabel_->setText(QStringLiteral("共 %1 条消息").arg(result.items.size()));
+            statusLabel_->setText(result.items.isEmpty()
+                ? UiHelpers::emptyStateText(QStringLiteral("messages"))
+                : QStringLiteral("共 %1 条消息").arg(result.items.size()));
         } else {
             statusLabel_->setText(QStringLiteral("消息加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -265,14 +271,16 @@ void ConversationsWidget::onSendMessage()
         return;
     }
 
-    sendButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(sendButton_, true, QStringLiteral("发送中..."), QStringLiteral("发送"));
     statusLabel_->setText(QStringLiteral("发送中..."));
     contactService_.sendMessage(currentConversationId_, message, [this](const SendMessageResult &result) {
         if (result.success) {
             messageEdit_->clear();
+            UiHelpers::setButtonBusy(sendButton_, false, QStringLiteral("发送中..."), QStringLiteral("发送"));
             updateSendButtonState();
             onConversationSelected();
         } else {
+            UiHelpers::setButtonBusy(sendButton_, false, QStringLiteral("发送中..."), QStringLiteral("发送"));
             if (result.errorCode == QStringLiteral("CONVERSATION_CLOSED")) {
                 currentConversationStatus_ = QStringLiteral("CLOSED");
                 updateSendButtonState();
@@ -287,8 +295,10 @@ void ConversationsWidget::onMarkRead()
 {
     if (currentConversationId_ <= 0) return;
 
+    UiHelpers::setButtonBusy(markReadButton_, true, QStringLiteral("标记中..."), QStringLiteral("标记已读"));
     statusLabel_->setText(QStringLiteral("标记已读..."));
     contactService_.markConversationRead(currentConversationId_, [this](const MarkReadResult &result) {
+        UiHelpers::setButtonBusy(markReadButton_, false, QStringLiteral("标记中..."), QStringLiteral("标记已读"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("已标记已读"));
             onRefreshConversations();
@@ -302,8 +312,10 @@ void ConversationsWidget::onCloseConversation()
 {
     if (currentConversationId_ <= 0) return;
 
+    UiHelpers::setButtonBusy(closeConversationButton_, true, QStringLiteral("关闭中..."), QStringLiteral("关闭会话"));
     statusLabel_->setText(QStringLiteral("关闭会话..."));
     contactService_.closeConversation(currentConversationId_, [this](const CloseConversationResult &result) {
+        UiHelpers::setButtonBusy(closeConversationButton_, false, QStringLiteral("关闭中..."), QStringLiteral("关闭会话"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("会话已关闭"));
             onRefreshConversations();
@@ -315,12 +327,14 @@ void ConversationsWidget::onCloseConversation()
 
 void ConversationsWidget::onSaveContactCard()
 {
+    UiHelpers::setButtonBusy(saveContactCardButton_, true, QStringLiteral("保存中..."), QStringLiteral("保存联系方式"));
     contactCardStatusLabel_->setText(QStringLiteral("保存中..."));
     contactService_.upsertMyContactCard(
         wechatEdit_->text().trimmed(),
         phoneEdit_->text().trimmed(),
         qqEdit_->text().trimmed(),
         [this](const ContactCardResult &result) {
+            UiHelpers::setButtonBusy(saveContactCardButton_, false, QStringLiteral("保存中..."), QStringLiteral("保存联系方式"));
             if (result.success) {
                 contactCardStatusLabel_->setText(QStringLiteral("联系方式已保存"));
             } else {
@@ -353,9 +367,10 @@ void ConversationsWidget::onConfirmUnlock()
 {
     if (currentConversationId_ <= 0) return;
 
-    confirmUnlockButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(confirmUnlockButton_, true, QStringLiteral("确认中..."), QStringLiteral("确认交换联系方式"));
     statusLabel_->setText(QStringLiteral("确认交换..."));
     contactService_.confirmContactUnlock(currentConversationId_, [this](const ContactUnlockStatusResult &result) {
+        UiHelpers::setButtonBusy(confirmUnlockButton_, false, QStringLiteral("确认中..."), QStringLiteral("确认交换联系方式"));
         if (result.success) {
             updateUnlockUi(result);
             if (result.status == QStringLiteral("UNLOCKED")) {
@@ -374,7 +389,7 @@ void ConversationsWidget::onViewPeerContactCard()
 {
     if (currentConversationId_ <= 0) return;
 
-    viewPeerCardButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(viewPeerCardButton_, true, QStringLiteral("获取中..."), QStringLiteral("查看对方联系方式"));
     statusLabel_->setText(QStringLiteral("获取对方联系方式..."));
     contactService_.getPeerContactCard(currentConversationId_, [this](const PeerContactCardResult &result) {
         if (result.success) {
@@ -384,11 +399,11 @@ void ConversationsWidget::onViewPeerContactCard()
                 .arg((result.qqNumber.isEmpty() ? QStringLiteral("(未填)") : result.qqNumber).toHtmlEscaped());
             peerCardLabel_->setText(info);
             statusLabel_->setText(QStringLiteral("已获取对方联系方式"));
-            viewPeerCardButton_->setEnabled(true);
+            UiHelpers::setButtonBusy(viewPeerCardButton_, false, QStringLiteral("获取中..."), QStringLiteral("查看对方联系方式"));
         } else {
             peerCardLabel_->clear();
             statusLabel_->setText(QStringLiteral("获取失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
-            viewPeerCardButton_->setEnabled(true);
+            UiHelpers::setButtonBusy(viewPeerCardButton_, false, QStringLiteral("获取中..."), QStringLiteral("查看对方联系方式"));
         }
     });
 }

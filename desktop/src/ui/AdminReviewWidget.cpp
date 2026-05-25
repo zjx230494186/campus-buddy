@@ -129,8 +129,10 @@ AdminReviewWidget::AdminReviewWidget(AdminReviewApiService &adminService, QWidge
 
 void AdminReviewWidget::onRefreshPostQueue()
 {
+    UiHelpers::setButtonBusy(refreshPostQueueButton_, true, QStringLiteral("加载中..."), QStringLiteral("刷新发布审核队列"));
     statusLabel_->setText(QStringLiteral("加载发布审核队列..."));
     adminService_.listPartnerPostReviewQueue(0, 50, [this](const PartnerPostReviewQueueResult &result) {
+        UiHelpers::setButtonBusy(refreshPostQueueButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新发布审核队列"));
         if (result.success) {
             postQueueItems_ = result.items;
             selectedPostId_.clear();
@@ -144,7 +146,9 @@ void AdminReviewWidget::onRefreshPostQueue()
             }
             approvePostButton_->setEnabled(false);
             rejectPostButton_->setEnabled(false);
-            statusLabel_->setText(QStringLiteral("发布审核队列: %1 条").arg(result.items.size()));
+            statusLabel_->setText(result.items.isEmpty()
+                ? UiHelpers::emptyStateText(QStringLiteral("adminPosts"))
+                : QStringLiteral("发布审核队列: %1 条").arg(result.items.size()));
         } else {
             statusLabel_->setText(QStringLiteral("加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -192,7 +196,9 @@ void AdminReviewWidget::onApprovePost()
     }
     PartnerPostReviewRequest req;
     req.decision = QStringLiteral("APPROVE");
+    UiHelpers::setButtonBusy(approvePostButton_, true, QStringLiteral("通过中..."), QStringLiteral("通过"));
     adminService_.reviewPartnerPost(selectedPostId_, req, [this](const PartnerPostReviewResult &r) {
+        UiHelpers::setButtonBusy(approvePostButton_, false, QStringLiteral("通过中..."), QStringLiteral("通过"));
         if (r.success) {
             statusLabel_->setText(QStringLiteral("审核通过! status=%1").arg(r.detail.status));
             selectedPostId_.clear();
@@ -218,7 +224,9 @@ void AdminReviewWidget::onRejectPost()
         statusLabel_->setText(QStringLiteral("驳回必须填写原因"));
         return;
     }
+    UiHelpers::setButtonBusy(rejectPostButton_, true, QStringLiteral("驳回中..."), QStringLiteral("驳回"));
     adminService_.reviewPartnerPost(selectedPostId_, req, [this](const PartnerPostReviewResult &r) {
+        UiHelpers::setButtonBusy(rejectPostButton_, false, QStringLiteral("驳回中..."), QStringLiteral("驳回"));
         if (r.success) {
             statusLabel_->setText(QStringLiteral("已驳回! status=%1 reason=%2").arg(r.detail.status).arg(r.detail.rejectReason));
             selectedPostId_.clear();
@@ -233,8 +241,10 @@ void AdminReviewWidget::onRejectPost()
 
 void AdminReviewWidget::onRefreshIdentityQueue()
 {
+    UiHelpers::setButtonBusy(refreshIdentityQueueButton_, true, QStringLiteral("加载中..."), QStringLiteral("刷新认证审核队列"));
     statusLabel_->setText(QStringLiteral("加载认证审核队列..."));
     adminService_.listPendingIdentityVerifications(0, 50, [this](const PendingIdentityVerificationListResult &result) {
+        UiHelpers::setButtonBusy(refreshIdentityQueueButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新认证审核队列"));
         if (result.success) {
             identityQueueItems_ = result.items;
             selectedSubmissionId_.clear();
@@ -251,7 +261,9 @@ void AdminReviewWidget::onRefreshIdentityQueue()
             }
             approveIdentityButton_->setEnabled(false);
             rejectIdentityButton_->setEnabled(false);
-            statusLabel_->setText(QStringLiteral("认证审核队列: %1 条").arg(result.items.size()));
+            statusLabel_->setText(result.items.isEmpty()
+                ? UiHelpers::emptyStateText(QStringLiteral("adminIdentity"))
+                : QStringLiteral("认证审核队列: %1 条").arg(result.items.size()));
         } else {
             statusLabel_->setText(QStringLiteral("加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -291,7 +303,9 @@ void AdminReviewWidget::onApproveIdentity()
     }
     IdentityVerificationReviewRequest req;
     req.decision = QStringLiteral("APPROVED");
+    UiHelpers::setButtonBusy(approveIdentityButton_, true, QStringLiteral("通过中..."), QStringLiteral("通过"));
     adminService_.reviewIdentityVerification(selectedSubmissionId_, req, [this](const IdentityVerificationReviewResult &r) {
+        UiHelpers::setButtonBusy(approveIdentityButton_, false, QStringLiteral("通过中..."), QStringLiteral("通过"));
         if (r.success) {
             statusLabel_->setText(QStringLiteral("认证通过! reviewStatus=%1 authStatus=%2").arg(r.reviewStatus).arg(r.authenticationStatus));
             selectedSubmissionId_.clear();
@@ -317,7 +331,9 @@ void AdminReviewWidget::onRejectIdentity()
         statusLabel_->setText(QStringLiteral("驳回必须填写原因"));
         return;
     }
+    UiHelpers::setButtonBusy(rejectIdentityButton_, true, QStringLiteral("驳回中..."), QStringLiteral("驳回"));
     adminService_.reviewIdentityVerification(selectedSubmissionId_, req, [this](const IdentityVerificationReviewResult &r) {
+        UiHelpers::setButtonBusy(rejectIdentityButton_, false, QStringLiteral("驳回中..."), QStringLiteral("驳回"));
         if (r.success) {
             statusLabel_->setText(QStringLiteral("已驳回! reviewStatus=%1").arg(r.reviewStatus));
             selectedSubmissionId_.clear();

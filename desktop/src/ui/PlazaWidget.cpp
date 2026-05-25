@@ -83,6 +83,7 @@ PlazaWidget::PlazaWidget(PartnerPostApiService &plazaService,
 
 void PlazaWidget::onRefresh()
 {
+    UiHelpers::setButtonBusy(refreshButton_, true, QStringLiteral("加载中..."), QStringLiteral("刷新广场"));
     statusLabel_->setText(QStringLiteral("加载中..."));
     QString sceneType = sceneTypeFilter_->currentText();
     if (sceneType == QStringLiteral("全部")) sceneType.clear();
@@ -90,6 +91,7 @@ void PlazaWidget::onRefresh()
 
     if (!sceneType.isEmpty() || !keyword.isEmpty()) {
         plazaService_.listPosts(sceneType, keyword, 0, 50, [this](const PlazaListResult &result) {
+            UiHelpers::setButtonBusy(refreshButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新广场"));
             if (result.success) {
                 items_ = result.items;
                 listWidget_->clear();
@@ -98,13 +100,16 @@ void PlazaWidget::onRefresh()
                         .arg(item.title, UiHelpers::sceneDisplayName(item.sceneType), item.publisherDisplayName);
                     listWidget_->addItem(display);
                 }
-                statusLabel_->setText(QStringLiteral("共 %1 条").arg(items_.size()));
+                statusLabel_->setText(items_.isEmpty()
+                    ? UiHelpers::emptyStateText(QStringLiteral("plaza"))
+                    : QStringLiteral("共 %1 条").arg(items_.size()));
             } else {
                 statusLabel_->setText(QStringLiteral("加载失败: %1").arg(result.errorMessage));
             }
         });
     } else {
         plazaService_.listPosts(0, 50, [this](const PlazaListResult &result) {
+            UiHelpers::setButtonBusy(refreshButton_, false, QStringLiteral("加载中..."), QStringLiteral("刷新广场"));
             if (result.success) {
                 items_ = result.items;
                 listWidget_->clear();
@@ -113,7 +118,9 @@ void PlazaWidget::onRefresh()
                         .arg(item.title, UiHelpers::sceneDisplayName(item.sceneType), item.publisherDisplayName);
                     listWidget_->addItem(display);
                 }
-                statusLabel_->setText(QStringLiteral("共 %1 条").arg(items_.size()));
+                statusLabel_->setText(items_.isEmpty()
+                    ? UiHelpers::emptyStateText(QStringLiteral("plaza"))
+                    : QStringLiteral("共 %1 条").arg(items_.size()));
             } else {
                 statusLabel_->setText(QStringLiteral("加载失败: %1").arg(result.errorMessage));
             }
@@ -182,8 +189,10 @@ void PlazaWidget::onContactRequest()
         return;
     }
 
+    UiHelpers::setButtonBusy(contactButton_, true, QStringLiteral("联系中..."), QStringLiteral("发起联系"));
     statusLabel_->setText(QStringLiteral("联系中..."));
     contactService_.requestContact(item.postId, message, [this](const ContactRequestResult &result) {
+        UiHelpers::setButtonBusy(contactButton_, false, QStringLiteral("联系中..."), QStringLiteral("发起联系"));
         if (result.success) {
             statusLabel_->setText(QStringLiteral("联系成功，已创建会话 #%1，可到“会话”页继续沟通。").arg(result.conversationId));
             contactMessageEdit_->clear();
