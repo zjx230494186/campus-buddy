@@ -23,6 +23,10 @@ void AuthApiService::login(const QString &campusEmail, const QString &password, 
             result.success = true;
             result.accessToken = response.json.value(QStringLiteral("accessToken")).toString();
             tokenStore_.setAccessToken(result.accessToken);
+            const QJsonObject user = response.json.value(QStringLiteral("user")).toObject();
+            result.accountRole = user.value(QStringLiteral("accountRole")).toString();
+            result.displayName = user.value(QStringLiteral("displayName")).toString();
+            result.authenticationStatus = user.value(QStringLiteral("authenticationStatus")).toString();
         } else {
             result.success = false;
             result.errorCode = response.error.code;

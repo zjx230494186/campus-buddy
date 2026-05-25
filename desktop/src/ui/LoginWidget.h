@@ -15,7 +15,7 @@ public:
     explicit LoginWidget(AuthApiService &authService, QWidget *parent = nullptr);
 
 signals:
-    void loginSuccess();
+    void loginSuccess(const QString &accountRole);
     void switchToRegister();
 
 private slots:

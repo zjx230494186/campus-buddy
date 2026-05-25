@@ -45,7 +45,8 @@ int main(int argc, char *argv[])
 
     navigator.setCurrentIndex(0);
 
-    QObject::connect(loginPage, &LoginWidget::loginSuccess, [&navigator]() {
+    QObject::connect(loginPage, &LoginWidget::loginSuccess, [&navigator, homePage](const QString &accountRole) {
+        homePage->setupTabsForRole(accountRole);
         navigator.setCurrentIndex(2);
     });
     QObject::connect(loginPage, &LoginWidget::switchToRegister, [&navigator]() {

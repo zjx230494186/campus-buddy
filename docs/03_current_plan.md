@@ -54,7 +54,8 @@
 - 课程演示与交付清单见 `docs/27_course_demo_and_delivery_checklist_v1.md`。
 - Round 50 已完成答辩演示彩排与最终验收证据包（人工试用），发现 VALIDATION_FAILED 模糊提示、场景字段缺失、防重复提交缺失等问题。
 - Round 51 已完成用户行为负向测试矩阵与错误处理修复：新增 200+ 负向测试案例文档、修复 Qt VALIDATION_FAILED 字段级错误展示、场景字段动态 UI、防重复提交、8 个新自动化测试；Qt ctest 10/10、server smoke 38/38 通过。
-- 下一步优先级：进入答辩现场演示或按需做 Round 52 生产化收口。
+- Round 52 已完成角色隔离 UI 与切换账号数据清理：后端登录响应增加 accountRole 字段；Qt 根据角色动态构建 tab（STUDENT 只显示学生功能，ADMIN 只显示审核功能）；退出登录时清空所有子 widget 缓存数据；后端 249/249、Qt ctest 10/10、server smoke 38/38 通过。
+- 下一步优先级：进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史
 

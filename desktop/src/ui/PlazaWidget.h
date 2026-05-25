@@ -19,8 +19,10 @@ public:
                          ContactConversationApiService &contactService,
                          QWidget *parent = nullptr);
 
-private slots:
+public slots:
     void onRefresh();
+
+private slots:
     void onItemSelected();
     void onContactRequest();
 

@@ -61,7 +61,7 @@ void LoginWidget::onLoginClicked()
         loginButton_->setEnabled(true);
         if (result.success) {
             statusLabel_->setText(QStringLiteral("登录成功"));
-            emit loginSuccess();
+            emit loginSuccess(result.accountRole);
         } else {
             statusLabel_->setText(result.errorMessage.isEmpty() ? QStringLiteral("登录失败") : result.errorMessage);
         }

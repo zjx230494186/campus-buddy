@@ -19,6 +19,8 @@ struct AuthResult
     QString reviewStatus;
     QString rejectReason;
     QStringList allowedActions;
+    QString accountRole;
+    QString displayName;
     QString errorCode;
     QString errorMessage;
 };

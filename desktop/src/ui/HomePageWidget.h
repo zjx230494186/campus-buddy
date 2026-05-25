@@ -30,6 +30,9 @@ public:
                             AdminReviewApiService &adminService,
                             QWidget *parent = nullptr);
 
+    void setupTabsForRole(const QString &accountRole);
+    void clearAllData();
+
 signals:
     void logout();
 
@@ -54,4 +57,6 @@ private:
     QPushButton *checkStatusButton_;
     QLabel *statusLabel_;
     QLabel *verificationStatusLabel_;
+    QLabel *welcomeLabel_;
+    QString currentRole_;
 };

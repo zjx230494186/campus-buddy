@@ -67,7 +67,8 @@ class AuthLoginService {
                         account.getUserId().toString(),
                         account.getDisplayName(),
                         account.getAuthenticationStatus(),
-                        account.getCampusEmailVerificationStatus()
+                        account.getCampusEmailVerificationStatus(),
+                        account.getAccountRole()
                 )
         );
     }
@@ -111,7 +112,8 @@ class AuthLoginService {
             String userId,
             String displayName,
             String authenticationStatus,
-            String campusEmailVerificationStatus
+            String campusEmailVerificationStatus,
+            String accountRole
     ) {
     }
 }

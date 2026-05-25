@@ -16,8 +16,10 @@ class ConversationsWidget : public QWidget
 public:
     explicit ConversationsWidget(ContactConversationApiService &contactService, QWidget *parent = nullptr);
 
-private slots:
+public slots:
     void onRefreshConversations();
+
+private slots:
     void onConversationSelected();
     void onSendMessage();
     void onMarkRead();

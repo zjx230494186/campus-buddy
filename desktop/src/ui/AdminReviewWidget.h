@@ -18,8 +18,10 @@ class AdminReviewWidget : public QWidget
 public:
     explicit AdminReviewWidget(AdminReviewApiService &adminService, QWidget *parent = nullptr);
 
-private slots:
+public slots:
     void onRefreshPostQueue();
+
+private slots:
     void onPostQueueItemClicked(QListWidgetItem *item);
     void onApprovePost();
     void onRejectPost();

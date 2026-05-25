@@ -17,8 +17,10 @@ public:
 signals:
     void editPostRequested(const QString &postId, const MyPostItem &item);
 
-private slots:
+public slots:
     void onRefresh();
+
+private slots:
     void onItemSelected();
     void onWithdrawReview();
     void onUnpublish();
