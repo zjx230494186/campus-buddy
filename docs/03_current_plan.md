@@ -59,9 +59,10 @@
 - Qt UI 视觉打磨第二批已完成：打磨认证资料、我的发布、管理员审核页面；补管理员认证审核队列选择处理；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - Qt UI 视觉打磨第三批已完成：统一主链路空状态、加载态和防重复点击；新增 `UiHelpers::setButtonBusy` / `emptyStateText` 并接入认证、我的发布、广场、会话、管理员审核；Qt build 通过，逐项 `ctest -R` 10/10 通过，desktop smoke 通过；同一 `ctest` 批量进程下出现 `0xc0000135` DLL 搜索异常，server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - Qt UI 视觉打磨第四批已完成：发布表单增加字段级错误标签，保存/更新/提交接入忙碌态；评价信用页改为滚动内容区，并补刷新、提交、修改、列表刷新忙碌态和评价列表空状态；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
-- 真实邮箱验证码发送能力已补齐：新增 SMTP delivery mode、JavaMailSender 配置、SMTP 验证码 sender 和测试；后端全量测试 251/251 通过；真实外部收信仍需在私有 env 中配置 SMTP 账号/授权码并做端到端 smoke。
-- 真实注册收信 smoke 辅助脚本已补齐：`scripts/real_email_registration_smoke.ps1` 可从项目外私有 env 启动 local-h2 后端、发送验证码、读取私有 env 中的验证码并完成注册/登录验证；当前阻塞于 `D:\big_homework_private\smtp.env` 不存在。
-- 下一步优先级：在项目目录外配置私有 SMTP/注册 smoke env，完成真实注册收信 smoke，然后进入答辩现场演示或按需做 Round 53 生产化收口。
+- 真实邮箱验证码发送能力已补齐：新增 SMTP delivery mode、JavaMailSender 配置、SMTP 验证码 sender 和测试；后端全量测试 251/251 通过。
+- 真实注册收信 smoke 辅助脚本已补齐：`scripts/real_email_registration_smoke.ps1` 可从项目外私有 env 启动 local-h2 后端、发送验证码、读取私有 env 中的验证码并完成注册/登录验证。
+- 真实注册收信 smoke 已通过：使用项目目录外 `D:\big_homework_private\smtp-service.env`、QQ SMTP 发信服务和 `bjtu.edu.cn` 收件域名完成真实收信、验证码校验、注册和登录验证；validation 见 `docs/validation/20260525_real_email_registration_smoke_success_record.md`。
+- 下一步优先级：如需演示 Qt 桌面端注册页，使用一个尚未注册过的新 `bjtu.edu.cn` 邮箱重新走 GUI 注册链路；然后进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史
 
