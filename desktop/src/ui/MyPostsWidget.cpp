@@ -1,5 +1,9 @@
 #include "ui/MyPostsWidget.h"
+#include "ui/UiHelpers.h"
 
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QSplitter>
 #include <QVBoxLayout>
 
 MyPostsWidget::MyPostsWidget(MyPartnerPostApiService &myPostService, QWidget *parent)
@@ -7,44 +11,60 @@ MyPostsWidget::MyPostsWidget(MyPartnerPostApiService &myPostService, QWidget *pa
       myPostService_(myPostService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *header = new QLabel(QStringLiteral("我的发布"), this);
-    header->setAlignment(Qt::AlignCenter);
-    QFont f = header->font();
-    f.setPointSize(14);
-    f.setBold(true);
-    header->setFont(f);
-    layout->addWidget(header);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("我的发布"),
+        QStringLiteral("管理草稿、审核中和已发布的搭子需求，必要时撤回或下架。"),
+        this));
 
-    refreshButton_ = new QPushButton(QStringLiteral("刷新列表"), this);
+    refreshButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新列表"), this));
     refreshButton_->setObjectName(QStringLiteral("myPostsRefreshButton"));
     layout->addWidget(refreshButton_);
 
+    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    auto *listGroup = new QGroupBox(QStringLiteral("发布列表"), splitter);
+    auto *listLayout = new QVBoxLayout(listGroup);
+
     listWidget_ = new QListWidget(this);
     listWidget_->setObjectName(QStringLiteral("myPostsListWidget"));
-    layout->addWidget(listWidget_);
+    listLayout->addWidget(listWidget_);
+
+    auto *detailGroup = new QGroupBox(QStringLiteral("详情与操作"), splitter);
+    auto *detailLayout = new QVBoxLayout(detailGroup);
 
     detailLabel_ = new QLabel(this);
     detailLabel_->setObjectName(QStringLiteral("myPostsDetailLabel"));
     detailLabel_->setWordWrap(true);
-    layout->addWidget(detailLabel_);
+    detailLabel_->setText(QStringLiteral("请选择左侧发布查看详情。"));
+    detailLayout->addWidget(detailLabel_, 1);
 
-    editButton_ = new QPushButton(QStringLiteral("编辑此发布"), this);
+    auto *actionLayout = new QHBoxLayout();
+    editButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("编辑"), this));
     editButton_->setObjectName(QStringLiteral("editPostButton"));
     editButton_->setEnabled(false);
-    layout->addWidget(editButton_);
+    actionLayout->addWidget(editButton_);
 
-    withdrawButton_ = new QPushButton(QStringLiteral("撤回审核"), this);
+    withdrawButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("撤回审核"), this));
     withdrawButton_->setObjectName(QStringLiteral("withdrawButton"));
     withdrawButton_->setEnabled(false);
-    layout->addWidget(withdrawButton_);
+    actionLayout->addWidget(withdrawButton_);
 
-    unpublishButton_ = new QPushButton(QStringLiteral("下架"), this);
+    unpublishButton_ = UiHelpers::markDanger(new QPushButton(QStringLiteral("下架"), this));
     unpublishButton_->setObjectName(QStringLiteral("unpublishButton"));
     unpublishButton_->setEnabled(false);
-    layout->addWidget(unpublishButton_);
+    actionLayout->addWidget(unpublishButton_);
+    actionLayout->addStretch();
+    detailLayout->addLayout(actionLayout);
 
-    statusLabel_ = new QLabel(this);
+    splitter->addWidget(listGroup);
+    splitter->addWidget(detailGroup);
+    splitter->setStretchFactor(0, 2);
+    splitter->setStretchFactor(1, 3);
+    layout->addWidget(splitter, 1);
+
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(statusLabel_);
 
     connect(refreshButton_, &QPushButton::clicked, this, &MyPostsWidget::onRefresh);
@@ -67,10 +87,15 @@ void MyPostsWidget::onRefresh()
             items_ = result.items;
             listWidget_->clear();
             for (const auto &item : items_) {
-                QString display = QStringLiteral("[%1] %2  %3").arg(item.status, item.title, item.sceneType);
+                QString display = QStringLiteral("%1\n%2 / %3")
+                    .arg(item.title,
+                         UiHelpers::statusDisplayName(item.status),
+                         UiHelpers::sceneDisplayName(item.sceneType));
                 listWidget_->addItem(display);
             }
-            statusLabel_->setText(QStringLiteral("共 %1 条").arg(items_.size()));
+            statusLabel_->setText(items_.isEmpty()
+                ? QStringLiteral("还没有发布记录。可以先到“发布草稿”创建第一条需求。")
+                : QStringLiteral("共 %1 条发布记录").arg(items_.size()));
         } else {
             statusLabel_->setText(QStringLiteral("加载失败: %1").arg(result.errorMessage));
         }
@@ -90,11 +115,12 @@ void MyPostsWidget::onItemSelected()
 
     const auto &item = items_[selectedIndex_];
     detailLabel_->setText(
-        QStringLiteral("ID: %1\n标题: %2\n状态: %3\n场景: %4\n时间: %5\n地点: %6\n操作: %7")
+        QStringLiteral("<b>%2</b><br><span style='color:#627d78'>%3 · %4</span><br><br>"
+                       "<b>ID</b>：%1<br><b>时间</b>：%5<br><b>地点</b>：%6<br><b>可用操作</b>：%7")
             .arg(item.postId.left(8) + QStringLiteral("..."))
             .arg(item.title)
-            .arg(item.status)
-            .arg(item.sceneType)
+            .arg(UiHelpers::statusDisplayName(item.status))
+            .arg(UiHelpers::sceneDisplayName(item.sceneType))
             .arg(item.timeText)
             .arg(item.locationText)
             .arg(item.allowedActions.join(QStringLiteral(", "))));

@@ -14,6 +14,7 @@ private slots:
     void plazaWidgetSourceDoesNotContainHardcodedCredentials();
     void conversationsWidgetSourceDoesNotContainHardcodedCredentials();
     void coreDemoUiUsesSharedVisualHelpers();
+    void secondBatchUiUsesSharedVisualHelpersAndIdentitySelection();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -108,6 +109,36 @@ void StudentPostPlazaWidgetTest::coreDemoUiUsesSharedVisualHelpers()
         const QString content = QString::fromUtf8(file.readAll());
         QVERIFY2(content.contains("UiHelpers"), qPrintable(path + " must use shared UI helpers"));
     }
+}
+
+void StudentPostPlazaWidgetTest::secondBatchUiUsesSharedVisualHelpersAndIdentitySelection()
+{
+    const QStringList secondBatchFiles = {
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/IdentityVerificationWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/MyPostsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AdminReviewWidget.cpp")
+    };
+
+    for (const QString &path : secondBatchFiles) {
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(path));
+        const QString content = QString::fromUtf8(file.readAll());
+        QVERIFY2(content.contains("UiHelpers"), qPrintable(path + " must use shared UI helpers"));
+    }
+
+    QFile adminHeader(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AdminReviewWidget.h"));
+    QVERIFY2(adminHeader.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open AdminReviewWidget.h");
+    const QString headerContent = QString::fromUtf8(adminHeader.readAll());
+    QVERIFY2(headerContent.contains("onIdentityQueueItemClicked"),
+             "AdminReviewWidget must expose an identity queue selection handler");
+    QVERIFY2(headerContent.contains("identityQueueItems_"),
+             "AdminReviewWidget must retain identity queue items for selected submission IDs");
+
+    QFile adminSource(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AdminReviewWidget.cpp"));
+    QVERIFY2(adminSource.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open AdminReviewWidget.cpp");
+    const QString sourceContent = QString::fromUtf8(adminSource.readAll());
+    QVERIFY2(sourceContent.contains("connect(identityQueueList_"),
+             "AdminReviewWidget must connect identity queue clicks to selection handling");
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)

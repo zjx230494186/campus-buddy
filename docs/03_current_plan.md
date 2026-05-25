@@ -56,6 +56,7 @@
 - Round 51 已完成用户行为负向测试矩阵与错误处理修复：新增 200+ 负向测试案例文档、修复 Qt VALIDATION_FAILED 字段级错误展示、场景字段动态 UI、防重复提交、8 个新自动化测试；Qt ctest 10/10、server smoke 38/38 通过。
 - Round 52 已完成角色隔离 UI 与切换账号数据清理：后端登录响应增加 accountRole 字段；Qt 根据角色动态构建 tab（STUDENT 只显示学生功能，ADMIN 只显示审核功能）；退出登录时清空所有子 widget 缓存数据；后端 249/249、Qt ctest 10/10、server smoke 38/38 通过。
 - Qt UI 视觉打磨第一批已完成：新增 AppStyles/UiHelpers，打磨登录/注册、首页、发布表单、广场、会话和评价信用页；Qt build、ctest 10/10、desktop smoke 通过；server smoke 因当前 shell 未注入私有 smoke 账号环境变量而阻塞，未伪装为通过。
+- Qt UI 视觉打磨第二批已完成：打磨认证资料、我的发布、管理员审核页面；补管理员认证审核队列选择处理；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - 下一步优先级：进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史

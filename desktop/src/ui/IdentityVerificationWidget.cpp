@@ -1,8 +1,11 @@
 #include "ui/IdentityVerificationWidget.h"
+#include "ui/UiHelpers.h"
 
 #include <QByteArray>
 #include <QFileDialog>
 #include <QFormLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 
 IdentityVerificationWidget::IdentityVerificationWidget(AuthApiService &authService, QWidget *parent)
@@ -10,60 +13,69 @@ IdentityVerificationWidget::IdentityVerificationWidget(AuthApiService &authServi
       authService_(authService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *title = new QLabel(QStringLiteral("认证资料提交"), this);
-    title->setAlignment(Qt::AlignCenter);
-    QFont titleFont = title->font();
-    titleFont.setPointSize(14);
-    titleFont.setBold(true);
-    title->setFont(titleFont);
-    layout->addWidget(title);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("校园身份认证"),
+        QStringLiteral("提交基本学籍信息和认证材料，管理员审核通过后才能发布需求。"),
+        this));
 
-    auto *formLayout = new QFormLayout();
+    auto *profileGroup = new QGroupBox(QStringLiteral("基本信息"), this);
+    auto *formLayout = new QFormLayout(profileGroup);
+    formLayout->setLabelAlignment(Qt::AlignRight);
     realNameEdit_ = new QLineEdit(this);
     realNameEdit_->setPlaceholderText(QStringLiteral("真实姓名"));
-    formLayout->addRow(QStringLiteral("姓名:"), realNameEdit_);
+    formLayout->addRow(QStringLiteral("姓名"), realNameEdit_);
 
     studentNumberEdit_ = new QLineEdit(this);
     studentNumberEdit_->setPlaceholderText(QStringLiteral("学号"));
-    formLayout->addRow(QStringLiteral("学号:"), studentNumberEdit_);
+    formLayout->addRow(QStringLiteral("学号"), studentNumberEdit_);
 
     collegeEdit_ = new QLineEdit(this);
     collegeEdit_->setPlaceholderText(QStringLiteral("学院"));
-    formLayout->addRow(QStringLiteral("学院:"), collegeEdit_);
+    formLayout->addRow(QStringLiteral("学院"), collegeEdit_);
 
     majorEdit_ = new QLineEdit(this);
     majorEdit_->setPlaceholderText(QStringLiteral("专业"));
-    formLayout->addRow(QStringLiteral("专业:"), majorEdit_);
+    formLayout->addRow(QStringLiteral("专业"), majorEdit_);
 
     gradeEdit_ = new QLineEdit(this);
     gradeEdit_->setPlaceholderText(QStringLiteral("年级"));
-    formLayout->addRow(QStringLiteral("年级:"), gradeEdit_);
+    formLayout->addRow(QStringLiteral("年级"), gradeEdit_);
 
-    layout->addLayout(formLayout);
+    layout->addWidget(profileGroup);
 
-    selectFileButton_ = new QPushButton(QStringLiteral("选择认证材料文件"), this);
-    layout->addWidget(selectFileButton_);
+    auto *materialGroup = new QGroupBox(QStringLiteral("认证材料"), this);
+    auto *materialLayout = new QVBoxLayout(materialGroup);
+
+    auto *fileActionLayout = new QHBoxLayout();
+    selectFileButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("选择材料"), this));
+    fileActionLayout->addWidget(selectFileButton_);
 
     fileLabel_ = new QLabel(QStringLiteral("未选择文件"), this);
-    fileLabel_->setAlignment(Qt::AlignCenter);
-    layout->addWidget(fileLabel_);
+    fileLabel_->setProperty("muted", true);
+    fileActionLayout->addWidget(fileLabel_, 1);
+    materialLayout->addLayout(fileActionLayout);
 
-    uploadFileButton_ = new QPushButton(QStringLiteral("上传文件"), this);
+    auto *submitActionLayout = new QHBoxLayout();
+    uploadFileButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("上传材料"), this));
     uploadFileButton_->setEnabled(false);
-    layout->addWidget(uploadFileButton_);
+    submitActionLayout->addWidget(uploadFileButton_);
 
-    submitButton_ = new QPushButton(QStringLiteral("提交认证"), this);
+    submitButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("提交认证"), this));
     submitButton_->setEnabled(false);
-    layout->addWidget(submitButton_);
+    submitActionLayout->addWidget(submitButton_);
+    submitActionLayout->addStretch();
+    materialLayout->addLayout(submitActionLayout);
+    layout->addWidget(materialGroup);
 
-    rejectReasonLabel_ = new QLabel(this);
-    rejectReasonLabel_->setAlignment(Qt::AlignCenter);
+    rejectReasonLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(rejectReasonLabel_);
 
-    statusLabel_ = new QLabel(this);
-    statusLabel_->setAlignment(Qt::AlignCenter);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(statusLabel_);
+    layout->addStretch();
 
     connect(selectFileButton_, &QPushButton::clicked, this, &IdentityVerificationWidget::onSelectFileClicked);
     connect(uploadFileButton_, &QPushButton::clicked, this, &IdentityVerificationWidget::onUploadFileClicked);

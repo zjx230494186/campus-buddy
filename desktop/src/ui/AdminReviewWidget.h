@@ -8,6 +8,7 @@
 #include <QTabWidget>
 #include <QTextEdit>
 #include <QWidget>
+#include <QList>
 
 #include "api/AdminReviewApiService.h"
 
@@ -23,6 +24,7 @@ public slots:
 
 private slots:
     void onPostQueueItemClicked(QListWidgetItem *item);
+    void onIdentityQueueItemClicked(QListWidgetItem *item);
     void onApprovePost();
     void onRejectPost();
     void onRefreshIdentityQueue();
@@ -52,4 +54,6 @@ private:
 
     QString selectedPostId_;
     QString selectedSubmissionId_;
+    QList<PartnerPostReviewQueueItem> postQueueItems_;
+    QList<PendingIdentityVerificationItem> identityQueueItems_;
 };
