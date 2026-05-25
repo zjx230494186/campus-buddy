@@ -1,6 +1,8 @@
 #include "ui/LoginWidget.h"
+#include "ui/UiHelpers.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QVBoxLayout>
 
 LoginWidget::LoginWidget(AuthApiService &authService, QWidget *parent)
@@ -8,16 +10,17 @@ LoginWidget::LoginWidget(AuthApiService &authService, QWidget *parent)
       authService_(authService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(14);
+    layout->addStretch();
 
-    auto *title = new QLabel(QStringLiteral("登录 - 校园搭子平台"), this);
-    title->setAlignment(Qt::AlignCenter);
-    QFont titleFont = title->font();
-    titleFont.setPointSize(16);
-    titleFont.setBold(true);
-    title->setFont(titleFont);
-    layout->addWidget(title);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("登录校园搭子平台"),
+        QStringLiteral("进入发布、广场、会话和评价演示链路。"),
+        this));
 
-    auto *formLayout = new QFormLayout();
+    auto *formGroup = new QGroupBox(QStringLiteral("账号信息"), this);
+    auto *formLayout = new QFormLayout(formGroup);
     emailEdit_ = new QLineEdit(this);
     emailEdit_->setPlaceholderText(QStringLiteral("校园邮箱"));
     formLayout->addRow(QStringLiteral("邮箱:"), emailEdit_);
@@ -27,18 +30,19 @@ LoginWidget::LoginWidget(AuthApiService &authService, QWidget *parent)
     passwordEdit_->setPlaceholderText(QStringLiteral("密码"));
     formLayout->addRow(QStringLiteral("密码:"), passwordEdit_);
 
-    layout->addLayout(formLayout);
+    layout->addWidget(formGroup);
 
-    loginButton_ = new QPushButton(QStringLiteral("登录"), this);
+    loginButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("登录"), this));
     layout->addWidget(loginButton_);
 
-    registerButton_ = new QPushButton(QStringLiteral("没有账号？去注册"), this);
+    registerButton_ = UiHelpers::markGhost(new QPushButton(QStringLiteral("没有账号？去注册"), this));
     registerButton_->setFlat(true);
     layout->addWidget(registerButton_);
 
-    statusLabel_ = new QLabel(this);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     statusLabel_->setAlignment(Qt::AlignCenter);
     layout->addWidget(statusLabel_);
+    layout->addStretch();
 
     connect(loginButton_, &QPushButton::clicked, this, &LoginWidget::onLoginClicked);
     connect(registerButton_, &QPushButton::clicked, this, &LoginWidget::switchToRegister);

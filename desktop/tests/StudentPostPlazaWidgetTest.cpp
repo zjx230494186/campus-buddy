@@ -13,6 +13,7 @@ private slots:
     void myPostsWidgetSourceDoesNotContainHardcodedCredentials();
     void plazaWidgetSourceDoesNotContainHardcodedCredentials();
     void conversationsWidgetSourceDoesNotContainHardcodedCredentials();
+    void coreDemoUiUsesSharedVisualHelpers();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -79,6 +80,34 @@ void StudentPostPlazaWidgetTest::conversationsWidgetSourceDoesNotContainHardcode
     QRegularExpression passwordPattern("(password|Password|secret)\\s*[=\"]\\s*\"[^\"]+\"");
     QVERIFY2(!content.contains(passwordPattern), "ConversationsWidget must not contain hardcoded password");
     QVERIFY2(!content.contains("@campus.edu.cn"), "ConversationsWidget must not contain hardcoded email");
+}
+
+void StudentPostPlazaWidgetTest::coreDemoUiUsesSharedVisualHelpers()
+{
+    QFile cmakeFile(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/CMakeLists.txt"));
+    QVERIFY2(cmakeFile.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open CMakeLists.txt");
+    const QString cmake = QString::fromUtf8(cmakeFile.readAll());
+    QVERIFY2(cmake.contains("src/ui/AppStyles.cpp"), "AppStyles.cpp must be built into the desktop app");
+    QVERIFY2(cmake.contains("src/ui/UiHelpers.cpp"), "UiHelpers.cpp must be built into the desktop app");
+
+    QFile mainFile(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/main.cpp"));
+    QVERIFY2(mainFile.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open main.cpp");
+    const QString mainContent = QString::fromUtf8(mainFile.readAll());
+    QVERIFY2(mainContent.contains("AppStyles::apply"), "main.cpp must apply the shared desktop style sheet");
+
+    const QStringList coreDemoFiles = {
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/HomePageWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PostEditorWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PlazaWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp"),
+        QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ReviewCreditWidget.cpp")
+    };
+    for (const QString &path : coreDemoFiles) {
+        QFile file(path);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(path));
+        const QString content = QString::fromUtf8(file.readAll());
+        QVERIFY2(content.contains("UiHelpers"), qPrintable(path + " must use shared UI helpers"));
+    }
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)

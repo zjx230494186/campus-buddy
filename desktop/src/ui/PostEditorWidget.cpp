@@ -1,7 +1,11 @@
 #include "ui/PostEditorWidget.h"
+#include "ui/UiHelpers.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QJsonArray>
+#include <QScrollArea>
 #include <QVBoxLayout>
 
 PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidget *parent)
@@ -9,85 +13,124 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
       myPostService_(myPostService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
+
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("发布搭子需求"),
+        QStringLiteral("先保存草稿，确认内容清楚后再提交审核。联系方式请留在会话交换卡片中。"),
+        this));
 
     postIdLabel_ = new QLabel(this);
     postIdLabel_->setObjectName(QStringLiteral("postIdLabel"));
+    postIdLabel_->setProperty("muted", true);
     layout->addWidget(postIdLabel_);
 
-    auto *form = new QFormLayout();
+    auto *scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    auto *formHost = new QWidget(scrollArea);
+    auto *formHostLayout = new QVBoxLayout(formHost);
+    formHostLayout->setContentsMargins(0, 0, 0, 0);
+    formHostLayout->setSpacing(12);
+
+    auto *basicGroup = new QGroupBox(QStringLiteral("基础信息"), formHost);
+    auto *basicForm = new QFormLayout(basicGroup);
+    basicForm->setLabelAlignment(Qt::AlignRight);
 
     sceneTypeCombo_ = new QComboBox(this);
     sceneTypeCombo_->setObjectName(QStringLiteral("sceneTypeCombo"));
     sceneTypeCombo_->addItems({QStringLiteral("STUDY"), QStringLiteral("MEAL"), QStringLiteral("SPORT"),
                                QStringLiteral("COURSE_TEAM"), QStringLiteral("INNOVATION_PROJECT")});
-    form->addRow(QStringLiteral("场景类型"), sceneTypeCombo_);
+    basicForm->addRow(QStringLiteral("场景类型"), sceneTypeCombo_);
 
     titleEdit_ = new QLineEdit(this);
     titleEdit_->setObjectName(QStringLiteral("titleEdit"));
-    form->addRow(QStringLiteral("标题"), titleEdit_);
+    titleEdit_->setPlaceholderText(QStringLiteral("一句话说明你想找什么搭子"));
+    basicForm->addRow(QStringLiteral("标题"), titleEdit_);
 
     descriptionEdit_ = new QTextEdit(this);
     descriptionEdit_->setObjectName(QStringLiteral("descriptionEdit"));
-    descriptionEdit_->setMaximumHeight(80);
-    form->addRow(QStringLiteral("描述"), descriptionEdit_);
-
-    timeModeCombo_ = new QComboBox(this);
-    timeModeCombo_->setObjectName(QStringLiteral("timeModeCombo"));
-    timeModeCombo_->addItems({QStringLiteral("EXACT_TIME"), QStringLiteral("TIME_RANGE"), QStringLiteral("TEXT_PREFERENCE")});
-    timeModeCombo_->setCurrentIndex(2);
-    form->addRow(QStringLiteral("时间模式"), timeModeCombo_);
-
-    timeTextEdit_ = new QLineEdit(this);
-    timeTextEdit_->setObjectName(QStringLiteral("timeTextEdit"));
-    form->addRow(QStringLiteral("时间"), timeTextEdit_);
-
-    locationTextEdit_ = new QLineEdit(this);
-    locationTextEdit_->setObjectName(QStringLiteral("locationTextEdit"));
-    form->addRow(QStringLiteral("地点"), locationTextEdit_);
-
-    participantCountSpin_ = new QSpinBox(this);
-    participantCountSpin_->setObjectName(QStringLiteral("participantCountSpin"));
-    participantCountSpin_->setRange(1, 100);
-    participantCountSpin_->setValue(2);
-    form->addRow(QStringLiteral("人数"), participantCountSpin_);
-
-    targetRequirementEdit_ = new QLineEdit(this);
-    targetRequirementEdit_->setObjectName(QStringLiteral("targetRequirementEdit"));
-    form->addRow(QStringLiteral("要求"), targetRequirementEdit_);
-
-    contactPreferenceEdit_ = new QLineEdit(this);
-    contactPreferenceEdit_->setObjectName(QStringLiteral("contactPreferenceEdit"));
-    contactPreferenceEdit_->setPlaceholderText(QStringLiteral("如: in-app chat"));
-    form->addRow(QStringLiteral("联系偏好"), contactPreferenceEdit_);
-
-    tagsEdit_ = new QLineEdit(this);
-    tagsEdit_->setObjectName(QStringLiteral("tagsEdit"));
-    tagsEdit_->setPlaceholderText(QStringLiteral("逗号分隔，如 math,physics"));
-    form->addRow(QStringLiteral("标签"), tagsEdit_);
+    descriptionEdit_->setPlaceholderText(QStringLiteral("补充目标、节奏、人数预期和注意事项"));
+    descriptionEdit_->setMinimumHeight(96);
+    basicForm->addRow(QStringLiteral("正文"), descriptionEdit_);
 
     sceneFieldLabel_ = new QLabel(QStringLiteral("学习目标"), this);
     sceneFieldEdit_ = new QLineEdit(this);
     sceneFieldEdit_->setObjectName(QStringLiteral("sceneFieldEdit"));
     sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 通过考试"));
-    form->addRow(sceneFieldLabel_, sceneFieldEdit_);
+    basicForm->addRow(sceneFieldLabel_, sceneFieldEdit_);
+    formHostLayout->addWidget(basicGroup);
 
-    layout->addLayout(form);
+    auto *timeGroup = new QGroupBox(QStringLiteral("时间与地点"), formHost);
+    auto *timeForm = new QFormLayout(timeGroup);
+    timeForm->setLabelAlignment(Qt::AlignRight);
 
-    saveDraftButton_ = new QPushButton(QStringLiteral("保存草稿"), this);
+    timeModeCombo_ = new QComboBox(this);
+    timeModeCombo_->setObjectName(QStringLiteral("timeModeCombo"));
+    timeModeCombo_->addItems({QStringLiteral("EXACT_TIME"), QStringLiteral("TIME_RANGE"), QStringLiteral("TEXT_PREFERENCE")});
+    timeModeCombo_->setCurrentIndex(2);
+    timeForm->addRow(QStringLiteral("时间模式"), timeModeCombo_);
+
+    timeTextEdit_ = new QLineEdit(this);
+    timeTextEdit_->setObjectName(QStringLiteral("timeTextEdit"));
+    timeTextEdit_->setPlaceholderText(QStringLiteral("如: 周三晚 7 点，或工作日晚上"));
+    timeForm->addRow(QStringLiteral("时间"), timeTextEdit_);
+
+    locationTextEdit_ = new QLineEdit(this);
+    locationTextEdit_->setObjectName(QStringLiteral("locationTextEdit"));
+    locationTextEdit_->setPlaceholderText(QStringLiteral("如: 图书馆三楼 / 一食堂"));
+    timeForm->addRow(QStringLiteral("地点"), locationTextEdit_);
+
+    participantCountSpin_ = new QSpinBox(this);
+    participantCountSpin_->setObjectName(QStringLiteral("participantCountSpin"));
+    participantCountSpin_->setRange(1, 100);
+    participantCountSpin_->setValue(2);
+    timeForm->addRow(QStringLiteral("人数"), participantCountSpin_);
+    formHostLayout->addWidget(timeGroup);
+
+    auto *preferenceGroup = new QGroupBox(QStringLiteral("偏好与标签"), formHost);
+    auto *preferenceForm = new QFormLayout(preferenceGroup);
+    preferenceForm->setLabelAlignment(Qt::AlignRight);
+
+    targetRequirementEdit_ = new QLineEdit(this);
+    targetRequirementEdit_->setObjectName(QStringLiteral("targetRequirementEdit"));
+    targetRequirementEdit_->setPlaceholderText(QStringLiteral("如: 希望对方准时、基础相近"));
+    preferenceForm->addRow(QStringLiteral("要求"), targetRequirementEdit_);
+
+    contactPreferenceEdit_ = new QLineEdit(this);
+    contactPreferenceEdit_->setObjectName(QStringLiteral("contactPreferenceEdit"));
+    contactPreferenceEdit_->setPlaceholderText(QStringLiteral("如: 先站内聊，确认后交换联系方式"));
+    preferenceForm->addRow(QStringLiteral("联系偏好"), contactPreferenceEdit_);
+
+    tagsEdit_ = new QLineEdit(this);
+    tagsEdit_->setObjectName(QStringLiteral("tagsEdit"));
+    tagsEdit_->setPlaceholderText(QStringLiteral("逗号分隔，如 高数,考研,羽毛球"));
+    preferenceForm->addRow(QStringLiteral("标签"), tagsEdit_);
+    formHostLayout->addWidget(preferenceGroup);
+    formHostLayout->addStretch();
+    scrollArea->setWidget(formHost);
+    layout->addWidget(scrollArea, 1);
+
+    auto *buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+
+    saveDraftButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("保存草稿"), this));
     saveDraftButton_->setObjectName(QStringLiteral("saveDraftButton"));
-    layout->addWidget(saveDraftButton_);
+    buttonLayout->addWidget(saveDraftButton_);
 
-    updateDraftButton_ = new QPushButton(QStringLiteral("更新草稿"), this);
+    updateDraftButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("更新草稿"), this));
     updateDraftButton_->setObjectName(QStringLiteral("updateDraftButton"));
     updateDraftButton_->setEnabled(false);
-    layout->addWidget(updateDraftButton_);
+    buttonLayout->addWidget(updateDraftButton_);
 
-    submitReviewButton_ = new QPushButton(QStringLiteral("提交审核"), this);
+    submitReviewButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("提交审核"), this));
     submitReviewButton_->setObjectName(QStringLiteral("submitReviewButton"));
     submitReviewButton_->setEnabled(false);
-    layout->addWidget(submitReviewButton_);
+    buttonLayout->addWidget(submitReviewButton_);
+    layout->addLayout(buttonLayout);
 
-    statusLabel_ = new QLabel(this);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     statusLabel_->setObjectName(QStringLiteral("statusLabel"));
     layout->addWidget(statusLabel_);
 
@@ -161,7 +204,8 @@ QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
 void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
 {
     currentPostId_ = postId;
-    postIdLabel_->setText(QStringLiteral("Post ID: %1  Status: %2").arg(postId.left(8) + QStringLiteral("...")).arg(item.status));
+    postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2")
+        .arg(postId.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(item.status)));
 
     sceneTypeCombo_->setCurrentText(item.sceneType);
     titleEdit_->setText(item.title);
@@ -232,7 +276,7 @@ void PostEditorWidget::onSaveDraft()
     myPostService_.createDraft(req, [this](const MyPostResult &result) {
         if (result.success) {
             currentPostId_ = result.post.postId;
-            postIdLabel_->setText(QStringLiteral("Post ID: %1  Status: %2").arg(currentPostId_.left(8) + QStringLiteral("...")).arg(result.post.status));
+            postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
             updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
             submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
             saveDraftButton_->setEnabled(false);
@@ -254,7 +298,7 @@ void PostEditorWidget::onUpdateDraft()
     MyPostDraftRequest req = buildDraftRequest();
     myPostService_.updateDraft(currentPostId_, req, [this](const MyPostResult &result) {
         if (result.success) {
-            postIdLabel_->setText(QStringLiteral("Post ID: %1  Status: %2").arg(currentPostId_.left(8) + QStringLiteral("...")).arg(result.post.status));
+            postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
             updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
             submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
             setStatusMessage(QStringLiteral("草稿已更新"));
@@ -278,7 +322,7 @@ void PostEditorWidget::onSubmitReview()
     myPostService_.submitReview(currentPostId_, [this](const PostActionResult &result) {
         submitting_ = false;
         if (result.success) {
-            postIdLabel_->setText(QStringLiteral("Post ID: %1  Status: %2").arg(currentPostId_.left(8) + QStringLiteral("...")).arg(result.post.status));
+            postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
             updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
             submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
             setStatusMessage(QStringLiteral("已提交审核"));

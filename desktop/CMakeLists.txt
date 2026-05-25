@@ -26,6 +26,10 @@ set(DESKTOP_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/LoginWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/LoginWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/AppStyles.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/AppStyles.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/UiHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/UiHelpers.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/RegisterWidget.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/RegisterWidget.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/HomePageWidget.cpp

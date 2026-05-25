@@ -1,6 +1,8 @@
 #include "ui/RegisterWidget.h"
+#include "ui/UiHelpers.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QVBoxLayout>
 
 RegisterWidget::RegisterWidget(AuthApiService &authService, QWidget *parent)
@@ -8,16 +10,17 @@ RegisterWidget::RegisterWidget(AuthApiService &authService, QWidget *parent)
       authService_(authService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(28, 28, 28, 28);
+    layout->setSpacing(14);
+    layout->addStretch();
 
-    auto *title = new QLabel(QStringLiteral("注册 - 校园搭子平台"), this);
-    title->setAlignment(Qt::AlignCenter);
-    QFont titleFont = title->font();
-    titleFont.setPointSize(16);
-    titleFont.setBold(true);
-    title->setFont(titleFont);
-    layout->addWidget(title);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("注册校园搭子平台"),
+        QStringLiteral("使用校园邮箱完成验证码校验后创建账号。"),
+        this));
 
-    auto *formLayout = new QFormLayout();
+    auto *formGroup = new QGroupBox(QStringLiteral("注册信息"), this);
+    auto *formLayout = new QFormLayout(formGroup);
     emailEdit_ = new QLineEdit(this);
     emailEdit_->setPlaceholderText(QStringLiteral("校园邮箱"));
     formLayout->addRow(QStringLiteral("邮箱:"), emailEdit_);
@@ -35,24 +38,25 @@ RegisterWidget::RegisterWidget(AuthApiService &authService, QWidget *parent)
     passwordEdit_->setPlaceholderText(QStringLiteral("密码"));
     formLayout->addRow(QStringLiteral("密码:"), passwordEdit_);
 
-    layout->addLayout(formLayout);
+    layout->addWidget(formGroup);
 
-    sendCodeButton_ = new QPushButton(QStringLiteral("发送验证码"), this);
+    sendCodeButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("发送验证码"), this));
     layout->addWidget(sendCodeButton_);
 
-    verifyCodeButton_ = new QPushButton(QStringLiteral("校验验证码"), this);
+    verifyCodeButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("校验验证码"), this));
     layout->addWidget(verifyCodeButton_);
 
-    registerButton_ = new QPushButton(QStringLiteral("注册"), this);
+    registerButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("注册"), this));
     layout->addWidget(registerButton_);
 
-    loginButton_ = new QPushButton(QStringLiteral("已有账号？去登录"), this);
+    loginButton_ = UiHelpers::markGhost(new QPushButton(QStringLiteral("已有账号？去登录"), this));
     loginButton_->setFlat(true);
     layout->addWidget(loginButton_);
 
-    statusLabel_ = new QLabel(this);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     statusLabel_->setAlignment(Qt::AlignCenter);
     layout->addWidget(statusLabel_);
+    layout->addStretch();
 
     connect(sendCodeButton_, &QPushButton::clicked, this, &RegisterWidget::onSendCodeClicked);
     connect(verifyCodeButton_, &QPushButton::clicked, this, &RegisterWidget::onVerifyCodeClicked);

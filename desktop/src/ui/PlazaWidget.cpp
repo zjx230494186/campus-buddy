@@ -1,5 +1,9 @@
 #include "ui/PlazaWidget.h"
+#include "ui/UiHelpers.h"
 
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QSplitter>
 #include <QVBoxLayout>
 
 PlazaWidget::PlazaWidget(PartnerPostApiService &plazaService,
@@ -10,16 +14,16 @@ PlazaWidget::PlazaWidget(PartnerPostApiService &plazaService,
       contactService_(contactService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *header = new QLabel(QStringLiteral("广场"), this);
-    header->setAlignment(Qt::AlignCenter);
-    QFont f = header->font();
-    f.setPointSize(14);
-    f.setBold(true);
-    header->setFont(f);
-    layout->addWidget(header);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("搭子广场"),
+        QStringLiteral("浏览已发布需求，查看发布者认证与信用摘要，再发起低压力联系。"),
+        this));
 
-    auto *filterLayout = new QVBoxLayout();
+    auto *filterCard = new QGroupBox(QStringLiteral("筛选"), this);
+    auto *filterLayout = new QHBoxLayout(filterCard);
     sceneTypeFilter_ = new QComboBox(this);
     sceneTypeFilter_->setObjectName(QStringLiteral("sceneTypeFilter"));
     sceneTypeFilter_->addItems({QStringLiteral("全部"), QStringLiteral("MEAL"), QStringLiteral("STUDY"), QStringLiteral("SPORT"),
@@ -28,34 +32,48 @@ PlazaWidget::PlazaWidget(PartnerPostApiService &plazaService,
 
     keywordFilter_ = new QLineEdit(this);
     keywordFilter_->setObjectName(QStringLiteral("keywordFilter"));
-    keywordFilter_->setPlaceholderText(QStringLiteral("搜索关键词"));
-    filterLayout->addWidget(keywordFilter_);
-    layout->addLayout(filterLayout);
+    keywordFilter_->setPlaceholderText(QStringLiteral("搜索标题、描述或标签"));
+    filterLayout->addWidget(keywordFilter_, 1);
 
-    refreshButton_ = new QPushButton(QStringLiteral("刷新广场"), this);
+    refreshButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新广场"), this));
     refreshButton_->setObjectName(QStringLiteral("plazaRefreshButton"));
-    layout->addWidget(refreshButton_);
+    filterLayout->addWidget(refreshButton_);
+    layout->addWidget(filterCard);
+
+    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    auto *listCard = new QGroupBox(QStringLiteral("需求列表"), splitter);
+    auto *listLayout = new QVBoxLayout(listCard);
 
     listWidget_ = new QListWidget(this);
     listWidget_->setObjectName(QStringLiteral("plazaListWidget"));
-    layout->addWidget(listWidget_);
+    listLayout->addWidget(listWidget_);
+
+    auto *detailCard = new QGroupBox(QStringLiteral("需求详情"), splitter);
+    auto *detailLayout = new QVBoxLayout(detailCard);
 
     detailLabel_ = new QLabel(this);
     detailLabel_->setObjectName(QStringLiteral("plazaDetailLabel"));
     detailLabel_->setWordWrap(true);
-    layout->addWidget(detailLabel_);
+    detailLabel_->setText(QStringLiteral("请选择左侧需求查看详情。"));
+    detailLayout->addWidget(detailLabel_, 1);
 
     contactMessageEdit_ = new QLineEdit(this);
     contactMessageEdit_->setObjectName(QStringLiteral("contactMessageEdit"));
-    contactMessageEdit_->setPlaceholderText(QStringLiteral("输入邀约消息后发起联系"));
-    layout->addWidget(contactMessageEdit_);
+    contactMessageEdit_->setPlaceholderText(QStringLiteral("写一句自然的邀约消息"));
+    detailLayout->addWidget(contactMessageEdit_);
 
-    contactButton_ = new QPushButton(QStringLiteral("发起联系"), this);
+    contactButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("发起联系"), this));
     contactButton_->setObjectName(QStringLiteral("contactButton"));
     contactButton_->setEnabled(false);
-    layout->addWidget(contactButton_);
+    detailLayout->addWidget(contactButton_);
 
-    statusLabel_ = new QLabel(this);
+    splitter->addWidget(listCard);
+    splitter->addWidget(detailCard);
+    splitter->setStretchFactor(0, 2);
+    splitter->setStretchFactor(1, 3);
+    layout->addWidget(splitter, 1);
+
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(statusLabel_);
 
     connect(refreshButton_, &QPushButton::clicked, this, &PlazaWidget::onRefresh);
@@ -76,7 +94,8 @@ void PlazaWidget::onRefresh()
                 items_ = result.items;
                 listWidget_->clear();
                 for (const auto &item : items_) {
-                    QString display = QStringLiteral("%1 [%2] by %3").arg(item.title, item.sceneType, item.publisherDisplayName);
+                    QString display = QStringLiteral("%1\n%2 / 发布者: %3")
+                        .arg(item.title, UiHelpers::sceneDisplayName(item.sceneType), item.publisherDisplayName);
                     listWidget_->addItem(display);
                 }
                 statusLabel_->setText(QStringLiteral("共 %1 条").arg(items_.size()));
@@ -90,7 +109,8 @@ void PlazaWidget::onRefresh()
                 items_ = result.items;
                 listWidget_->clear();
                 for (const auto &item : items_) {
-                    QString display = QStringLiteral("%1 [%2] by %3").arg(item.title, item.sceneType, item.publisherDisplayName);
+                    QString display = QStringLiteral("%1\n%2 / 发布者: %3")
+                        .arg(item.title, UiHelpers::sceneDisplayName(item.sceneType), item.publisherDisplayName);
                     listWidget_->addItem(display);
                 }
                 statusLabel_->setText(QStringLiteral("共 %1 条").arg(items_.size()));
@@ -121,18 +141,21 @@ void PlazaWidget::onItemSelected()
                 creditInfo = QStringLiteral("  信用: %1星(%2评)").arg(result.publisherCreditSummary.averageRating).arg(result.publisherCreditSummary.ratingSampleCount);
             }
             detailLabel_->setText(
-                QStringLiteral("标题: %1\n描述: %2\n发布者: %3 [%4]%5\n场景: %6\n时间: %7  地点: %8\n要求: %9\n标签: %10%11")
-                    .arg(result.title)
-                    .arg(result.description.left(200))
-                    .arg(result.publisherDisplayName)
-                    .arg(result.publisherAuthenticationStatus)
-                    .arg(creditInfo)
-                    .arg(result.sceneType)
-                    .arg(result.timeText)
-                    .arg(result.locationText)
-                    .arg(result.targetRequirement)
-                    .arg(result.tags.join(QStringLiteral(", ")))
-                    .arg(result.ownPost ? QStringLiteral("\n(自己的发布)") : QString()));
+                QStringLiteral("<b>%1</b><br><span style='color:#627d78'>%2 · %3</span><br><br>"
+                               "%4<br><br>"
+                               "<b>发布者</b>：%5（%6）%7<br>"
+                               "<b>要求</b>：%8<br>"
+                               "<b>标签</b>：%9%10")
+                    .arg(result.title.toHtmlEscaped())
+                    .arg(UiHelpers::sceneDisplayName(result.sceneType).toHtmlEscaped())
+                    .arg((result.timeText + QStringLiteral(" / ") + result.locationText).toHtmlEscaped())
+                    .arg(result.description.left(260).toHtmlEscaped().replace(QStringLiteral("\n"), QStringLiteral("<br>")))
+                    .arg(result.publisherDisplayName.toHtmlEscaped())
+                    .arg(UiHelpers::statusDisplayName(result.publisherAuthenticationStatus).toHtmlEscaped())
+                    .arg(creditInfo.toHtmlEscaped())
+                    .arg(result.targetRequirement.toHtmlEscaped())
+                    .arg(UiHelpers::compactTags(result.tags).toHtmlEscaped())
+                    .arg(result.ownPost ? QStringLiteral("<br><b>这是你自己的发布，不能发起联系。</b>") : QString()));
 
             contactButton_->setEnabled(!result.ownPost);
             if (result.ownPost) {
@@ -162,7 +185,7 @@ void PlazaWidget::onContactRequest()
     statusLabel_->setText(QStringLiteral("联系中..."));
     contactService_.requestContact(item.postId, message, [this](const ContactRequestResult &result) {
         if (result.success) {
-            statusLabel_->setText(QStringLiteral("联系成功! conversationId=%1").arg(result.conversationId));
+            statusLabel_->setText(QStringLiteral("联系成功，已创建会话 #%1，可到“会话”页继续沟通。").arg(result.conversationId));
             contactMessageEdit_->clear();
         } else {
             statusLabel_->setText(QStringLiteral("联系失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));

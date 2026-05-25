@@ -1,6 +1,10 @@
 #include "ui/ConversationsWidget.h"
+#include "ui/UiHelpers.h"
 
+#include <QFormLayout>
+#include <QGroupBox>
 #include <QHBoxLayout>
+#include <QSplitter>
 #include <QVBoxLayout>
 
 ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactService, QWidget *parent)
@@ -8,117 +12,123 @@ ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactS
       contactService_(contactService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *header = new QLabel(QStringLiteral("会话"), this);
-    header->setAlignment(Qt::AlignCenter);
-    QFont f = header->font();
-    f.setPointSize(14);
-    f.setBold(true);
-    header->setFont(f);
-    layout->addWidget(header);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("会话与联系方式"),
+        QStringLiteral("左侧选择会话，右侧完成消息沟通、已读、关闭和双方联系方式交换。"),
+        this));
 
-    refreshButton_ = new QPushButton(QStringLiteral("刷新会话列表"), this);
+    auto *splitter = new QSplitter(Qt::Horizontal, this);
+    auto *listCard = new QGroupBox(QStringLiteral("会话列表"), splitter);
+    auto *listLayout = new QVBoxLayout(listCard);
+
+    refreshButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新会话列表"), this));
     refreshButton_->setObjectName(QStringLiteral("refreshConversationsButton"));
-    layout->addWidget(refreshButton_);
+    listLayout->addWidget(refreshButton_);
 
     conversationListWidget_ = new QListWidget(this);
     conversationListWidget_->setObjectName(QStringLiteral("conversationListWidget"));
-    conversationListWidget_->setMaximumHeight(200);
-    layout->addWidget(conversationListWidget_);
+    listLayout->addWidget(conversationListWidget_, 1);
 
-    conversationStatusLabel_ = new QLabel(this);
+    conversationStatusLabel_ = UiHelpers::createStatusLabel(this);
     conversationStatusLabel_->setObjectName(QStringLiteral("conversationStatusLabel"));
-    layout->addWidget(conversationStatusLabel_);
+    listLayout->addWidget(conversationStatusLabel_);
 
-    auto *msgHeader = new QLabel(QStringLiteral("消息"), this);
-    layout->addWidget(msgHeader);
+    auto *rightPanel = new QWidget(splitter);
+    auto *rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setContentsMargins(0, 0, 0, 0);
+    rightLayout->setSpacing(12);
+
+    auto *messageCard = new QGroupBox(QStringLiteral("消息区"), rightPanel);
+    auto *messageLayout = new QVBoxLayout(messageCard);
 
     messageListWidget_ = new QListWidget(this);
     messageListWidget_->setObjectName(QStringLiteral("messageListWidget"));
-    layout->addWidget(messageListWidget_);
+    messageLayout->addWidget(messageListWidget_, 1);
 
     messageEdit_ = new QLineEdit(this);
     messageEdit_->setObjectName(QStringLiteral("messageEdit"));
-    messageEdit_->setPlaceholderText(QStringLiteral("输入消息"));
-    layout->addWidget(messageEdit_);
+    messageEdit_->setPlaceholderText(QStringLiteral("输入一条短消息"));
+    messageLayout->addWidget(messageEdit_);
 
-    sendButton_ = new QPushButton(QStringLiteral("发送"), this);
+    auto *messageActionLayout = new QHBoxLayout();
+    sendButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("发送"), this));
     sendButton_->setObjectName(QStringLiteral("sendMessageButton"));
     sendButton_->setEnabled(false);
-    layout->addWidget(sendButton_);
+    messageActionLayout->addWidget(sendButton_);
 
-    auto *actionLayout = new QHBoxLayout();
-    markReadButton_ = new QPushButton(QStringLiteral("标记已读"), this);
+    markReadButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("标记已读"), this));
     markReadButton_->setObjectName(QStringLiteral("markReadButton"));
     markReadButton_->setEnabled(false);
-    actionLayout->addWidget(markReadButton_);
+    messageActionLayout->addWidget(markReadButton_);
 
-    closeConversationButton_ = new QPushButton(QStringLiteral("关闭会话"), this);
+    closeConversationButton_ = UiHelpers::markDanger(new QPushButton(QStringLiteral("关闭会话"), this));
     closeConversationButton_->setObjectName(QStringLiteral("closeConversationButton"));
     closeConversationButton_->setEnabled(false);
-    actionLayout->addWidget(closeConversationButton_);
+    messageActionLayout->addWidget(closeConversationButton_);
+    messageActionLayout->addStretch();
+    messageLayout->addLayout(messageActionLayout);
+    rightLayout->addWidget(messageCard, 2);
 
-    layout->addLayout(actionLayout);
+    auto *contactCard = new QGroupBox(QStringLiteral("联系方式卡片"), rightPanel);
+    auto *contactLayout = new QVBoxLayout(contactCard);
 
-    auto *cardHeader = new QLabel(QStringLiteral("我的联系方式"), this);
-    f.setPointSize(11);
-    f.setBold(true);
-    cardHeader->setFont(f);
-    layout->addWidget(cardHeader);
-
-    auto *cardFormLayout = new QHBoxLayout();
-    cardFormLayout->addWidget(new QLabel(QStringLiteral("微信:"), this));
+    auto *cardFormLayout = new QFormLayout();
     wechatEdit_ = new QLineEdit(this);
     wechatEdit_->setObjectName(QStringLiteral("wechatEdit"));
     wechatEdit_->setPlaceholderText(QStringLiteral("微信号"));
-    cardFormLayout->addWidget(wechatEdit_);
+    cardFormLayout->addRow(QStringLiteral("微信"), wechatEdit_);
 
-    cardFormLayout->addWidget(new QLabel(QStringLiteral("手机:"), this));
     phoneEdit_ = new QLineEdit(this);
     phoneEdit_->setObjectName(QStringLiteral("phoneEdit"));
     phoneEdit_->setPlaceholderText(QStringLiteral("手机号"));
-    cardFormLayout->addWidget(phoneEdit_);
+    cardFormLayout->addRow(QStringLiteral("手机"), phoneEdit_);
 
-    cardFormLayout->addWidget(new QLabel(QStringLiteral("QQ:"), this));
     qqEdit_ = new QLineEdit(this);
     qqEdit_->setObjectName(QStringLiteral("qqEdit"));
     qqEdit_->setPlaceholderText(QStringLiteral("QQ号"));
-    cardFormLayout->addWidget(qqEdit_);
-    layout->addLayout(cardFormLayout);
+    cardFormLayout->addRow(QStringLiteral("QQ"), qqEdit_);
+    contactLayout->addLayout(cardFormLayout);
 
-    saveContactCardButton_ = new QPushButton(QStringLiteral("保存联系方式"), this);
+    saveContactCardButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("保存联系方式"), this));
     saveContactCardButton_->setObjectName(QStringLiteral("saveContactCardButton"));
-    layout->addWidget(saveContactCardButton_);
+    contactLayout->addWidget(saveContactCardButton_);
 
-    contactCardStatusLabel_ = new QLabel(this);
+    contactCardStatusLabel_ = UiHelpers::createStatusLabel(this);
     contactCardStatusLabel_->setObjectName(QStringLiteral("contactCardStatusLabel"));
-    layout->addWidget(contactCardStatusLabel_);
+    contactLayout->addWidget(contactCardStatusLabel_);
 
-    auto *unlockHeader = new QLabel(QStringLiteral("联系方式交换"), this);
-    unlockHeader->setFont(f);
-    layout->addWidget(unlockHeader);
-
-    unlockStatusLabel_ = new QLabel(this);
+    unlockStatusLabel_ = UiHelpers::createStatusLabel(this);
     unlockStatusLabel_->setObjectName(QStringLiteral("unlockStatusLabel"));
-    layout->addWidget(unlockStatusLabel_);
+    contactLayout->addWidget(unlockStatusLabel_);
 
     auto *unlockActionLayout = new QHBoxLayout();
-    confirmUnlockButton_ = new QPushButton(QStringLiteral("确认交换联系方式"), this);
+    confirmUnlockButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("确认交换联系方式"), this));
     confirmUnlockButton_->setObjectName(QStringLiteral("confirmUnlockButton"));
     confirmUnlockButton_->setEnabled(false);
     unlockActionLayout->addWidget(confirmUnlockButton_);
 
-    viewPeerCardButton_ = new QPushButton(QStringLiteral("查看对方联系方式"), this);
+    viewPeerCardButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("查看对方联系方式"), this));
     viewPeerCardButton_->setObjectName(QStringLiteral("viewPeerCardButton"));
     viewPeerCardButton_->setEnabled(false);
     unlockActionLayout->addWidget(viewPeerCardButton_);
-    layout->addLayout(unlockActionLayout);
+    contactLayout->addLayout(unlockActionLayout);
 
     peerCardLabel_ = new QLabel(this);
     peerCardLabel_->setObjectName(QStringLiteral("peerCardLabel"));
-    layout->addWidget(peerCardLabel_);
+    peerCardLabel_->setWordWrap(true);
+    contactLayout->addWidget(peerCardLabel_);
+    rightLayout->addWidget(contactCard, 1);
 
-    statusLabel_ = new QLabel(this);
+    splitter->addWidget(listCard);
+    splitter->addWidget(rightPanel);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 3);
+    layout->addWidget(splitter, 1);
+
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(statusLabel_);
 
     connect(refreshButton_, &QPushButton::clicked, this, &ConversationsWidget::onRefreshConversations);
@@ -148,15 +158,15 @@ void ConversationsWidget::updateSendButtonState()
 void ConversationsWidget::updateUnlockUi(const ContactUnlockStatusResult &result)
 {
     if (result.status == QStringLiteral("UNLOCKED")) {
-        unlockStatusLabel_->setText(QStringLiteral("状态: 已解锁 - 双方已确认交换"));
+        unlockStatusLabel_->setText(UiHelpers::contactUnlockStatusText(result.status));
         confirmUnlockButton_->setEnabled(false);
         viewPeerCardButton_->setEnabled(true);
     } else if (result.status == QStringLiteral("WAITING_FOR_PEER")) {
-        unlockStatusLabel_->setText(QStringLiteral("状态: 等待对方确认"));
+        unlockStatusLabel_->setText(UiHelpers::contactUnlockStatusText(result.status));
         confirmUnlockButton_->setEnabled(false);
         viewPeerCardButton_->setEnabled(false);
     } else {
-        unlockStatusLabel_->setText(QStringLiteral("状态: 未解锁"));
+        unlockStatusLabel_->setText(UiHelpers::contactUnlockStatusText(result.status));
         confirmUnlockButton_->setEnabled(currentConversationId_ > 0
             && currentConversationStatus_ == QStringLiteral("ACTIVE")
             && result.currentUserHasContactCard);
@@ -173,7 +183,10 @@ void ConversationsWidget::onRefreshConversations()
             conversations_ = result.items;
             conversationListWidget_->clear();
             for (const auto &item : conversations_) {
-                QString display = QStringLiteral("[%1] %2 - %3").arg(item.status, item.otherParticipantDisplayName, item.relatedPostTitle);
+                QString display = QStringLiteral("%1\n%2 / %3")
+                    .arg(item.relatedPostTitle,
+                         item.otherParticipantDisplayName,
+                         UiHelpers::statusDisplayName(item.status));
                 if (item.unreadCount > 0) {
                     display += QStringLiteral(" (%1未读)").arg(item.unreadCount);
                 }
@@ -211,7 +224,10 @@ void ConversationsWidget::onConversationSelected()
     currentConversationId_ = conv.conversationId;
     currentConversationStatus_ = conv.status;
 
-    QString statusText = QStringLiteral("会话 %1: %2 [%3]").arg(conv.conversationId).arg(conv.otherParticipantDisplayName).arg(conv.status);
+    QString statusText = QStringLiteral("会话 #%1 · %2 · %3")
+        .arg(conv.conversationId)
+        .arg(conv.otherParticipantDisplayName)
+        .arg(UiHelpers::statusDisplayName(conv.status));
     if (conv.unreadCount > 0) {
         statusText += QStringLiteral(" %1未读").arg(conv.unreadCount);
     }
@@ -226,7 +242,8 @@ void ConversationsWidget::onConversationSelected()
         if (result.success) {
             messageListWidget_->clear();
             for (const auto &msg : result.items) {
-                QString display = QStringLiteral("[%1] %2: %3").arg(msg.createdAt.left(19), msg.senderId.left(8), msg.content.left(100));
+                QString display = QStringLiteral("%1\n%2：%3")
+                    .arg(msg.createdAt.left(19), msg.senderId.left(8), msg.content.left(100));
                 messageListWidget_->addItem(display);
             }
             statusLabel_->setText(QStringLiteral("共 %1 条消息").arg(result.items.size()));
@@ -361,10 +378,10 @@ void ConversationsWidget::onViewPeerContactCard()
     statusLabel_->setText(QStringLiteral("获取对方联系方式..."));
     contactService_.getPeerContactCard(currentConversationId_, [this](const PeerContactCardResult &result) {
         if (result.success) {
-            QString info = QStringLiteral("微信: %1  手机: %2  QQ: %3")
-                .arg(result.wechatId.isEmpty() ? QStringLiteral("(未填)") : result.wechatId)
-                .arg(result.phoneNumber.isEmpty() ? QStringLiteral("(未填)") : result.phoneNumber)
-                .arg(result.qqNumber.isEmpty() ? QStringLiteral("(未填)") : result.qqNumber);
+            QString info = QStringLiteral("<b>对方联系方式</b><br>微信：%1<br>手机：%2<br>QQ：%3")
+                .arg((result.wechatId.isEmpty() ? QStringLiteral("(未填)") : result.wechatId).toHtmlEscaped())
+                .arg((result.phoneNumber.isEmpty() ? QStringLiteral("(未填)") : result.phoneNumber).toHtmlEscaped())
+                .arg((result.qqNumber.isEmpty() ? QStringLiteral("(未填)") : result.qqNumber).toHtmlEscaped());
             peerCardLabel_->setText(info);
             statusLabel_->setText(QStringLiteral("已获取对方联系方式"));
             viewPeerCardButton_->setEnabled(true);

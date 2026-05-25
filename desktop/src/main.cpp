@@ -14,12 +14,14 @@
 #include "auth/AuthTokenStore.h"
 #include "domain/ApiClientConfig.h"
 #include "ui/HomePageWidget.h"
+#include "ui/AppStyles.h"
 #include "ui/LoginWidget.h"
 #include "ui/RegisterWidget.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
+    AppStyles::apply(app);
 
     const ApiClientConfig config = ApiClientConfig::fromRuntime(
         QCoreApplication::arguments(),

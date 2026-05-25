@@ -1,5 +1,7 @@
 #include "ui/HomePageWidget.h"
+#include "ui/UiHelpers.h"
 
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 
 HomePageWidget::HomePageWidget(AuthApiService &authService,
@@ -13,26 +15,31 @@ HomePageWidget::HomePageWidget(AuthApiService &authService,
       authService_(authService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *title = new QLabel(QStringLiteral("校园搭子平台"), this);
-    title->setAlignment(Qt::AlignCenter);
-    QFont titleFont = title->font();
-    titleFont.setPointSize(16);
-    titleFont.setBold(true);
-    title->setFont(titleFont);
-    layout->addWidget(title);
-
+    auto *header = UiHelpers::createPageHeader(
+        QStringLiteral("校园搭子平台"),
+        QStringLiteral("校园搭子、发布、联系、评价和审核的桌面演示端"),
+        this);
+    auto *headerRow = new QHBoxLayout();
+    headerRow->setContentsMargins(0, 0, 0, 0);
+    auto *headerText = new QWidget(header);
+    auto *headerTextLayout = new QVBoxLayout(headerText);
+    headerTextLayout->setContentsMargins(0, 0, 0, 0);
     welcomeLabel_ = new QLabel(this);
-    welcomeLabel_->setAlignment(Qt::AlignCenter);
-    layout->addWidget(welcomeLabel_);
-
-    statusLabel_ = new QLabel(this);
-    statusLabel_->setAlignment(Qt::AlignCenter);
-    layout->addWidget(statusLabel_);
-
-    verificationStatusLabel_ = new QLabel(this);
-    verificationStatusLabel_->setAlignment(Qt::AlignCenter);
-    layout->addWidget(verificationStatusLabel_);
+    welcomeLabel_->setProperty("muted", true);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
+    verificationStatusLabel_ = UiHelpers::createStatusLabel(this);
+    headerTextLayout->addWidget(welcomeLabel_);
+    headerTextLayout->addWidget(statusLabel_);
+    headerTextLayout->addWidget(verificationStatusLabel_);
+    headerRow->addWidget(headerText, 1);
+    headerRow->addStretch();
+    logoutButton_ = UiHelpers::markDanger(new QPushButton(QStringLiteral("退出登录"), this));
+    headerRow->addWidget(logoutButton_);
+    qobject_cast<QVBoxLayout *>(header->layout())->addLayout(headerRow);
+    layout->addWidget(header);
 
     tabWidget_ = new QTabWidget(this);
     tabWidget_->setObjectName(QStringLiteral("mainTabWidget"));
@@ -47,10 +54,7 @@ HomePageWidget::HomePageWidget(AuthApiService &authService,
 
     layout->addWidget(tabWidget_);
 
-    logoutButton_ = new QPushButton(QStringLiteral("退出登录"), this);
-    layout->addWidget(logoutButton_);
-
-    checkStatusButton_ = new QPushButton(QStringLiteral("查询认证状态"), this);
+    checkStatusButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("查询认证状态"), this));
 
     connect(logoutButton_, &QPushButton::clicked, this, &HomePageWidget::onLogoutClicked);
     connect(checkStatusButton_, &QPushButton::clicked, this, &HomePageWidget::onCheckVerificationStatus);

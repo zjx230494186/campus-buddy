@@ -1,6 +1,9 @@
 #include "ui/ReviewCreditWidget.h"
+#include "ui/UiHelpers.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
+#include <QHBoxLayout>
 #include <QVBoxLayout>
 
 ReviewCreditWidget::ReviewCreditWidget(ReviewCreditApiService &reviewService, QWidget *parent)
@@ -8,25 +11,33 @@ ReviewCreditWidget::ReviewCreditWidget(ReviewCreditApiService &reviewService, QW
       reviewService_(reviewService)
 {
     auto *layout = new QVBoxLayout(this);
+    layout->setContentsMargins(16, 16, 16, 16);
+    layout->setSpacing(12);
 
-    auto *header = new QLabel(QStringLiteral("评价与信用"), this);
-    header->setAlignment(Qt::AlignCenter);
-    QFont f = header->font(); f.setPointSize(14); f.setBold(true); header->setFont(f);
-    layout->addWidget(header);
+    layout->addWidget(UiHelpers::createPageHeader(
+        QStringLiteral("评价与信用"),
+        QStringLiteral("查看自己的信用摘要，并在有效会话后提交或修改评价。"),
+        this));
+
+    auto *summaryGroup = new QGroupBox(QStringLiteral("信用摘要"), this);
+    auto *summaryLayout = new QVBoxLayout(summaryGroup);
 
     creditSummaryLabel_ = new QLabel(this);
     creditSummaryLabel_->setObjectName(QStringLiteral("creditSummaryLabel"));
     creditSummaryLabel_->setWordWrap(true);
-    layout->addWidget(creditSummaryLabel_);
+    creditSummaryLabel_->setText(QStringLiteral("点击刷新后查看评分、真实会话数和高频标签。"));
+    summaryLayout->addWidget(creditSummaryLabel_);
 
-    refreshCreditButton_ = new QPushButton(QStringLiteral("刷新信用摘要"), this);
+    refreshCreditButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新信用摘要"), this));
     refreshCreditButton_->setObjectName(QStringLiteral("refreshCreditButton"));
-    layout->addWidget(refreshCreditButton_);
+    summaryLayout->addWidget(refreshCreditButton_);
+    layout->addWidget(summaryGroup);
 
-    auto *submitForm = new QFormLayout();
+    auto *submitGroup = new QGroupBox(QStringLiteral("提交评价"), this);
+    auto *submitForm = new QFormLayout(submitGroup);
     convIdEdit_ = new QLineEdit(this);
     convIdEdit_->setObjectName(QStringLiteral("convIdEdit"));
-    convIdEdit_->setPlaceholderText(QStringLiteral("conversationId (long)"));
+    convIdEdit_->setPlaceholderText(QStringLiteral("从会话详情复制的会话 ID"));
     submitForm->addRow(QStringLiteral("会话ID"), convIdEdit_);
 
     revieweeIdEdit_ = new QLineEdit(this);
@@ -38,20 +49,20 @@ ReviewCreditWidget::ReviewCreditWidget(ReviewCreditApiService &reviewService, QW
     ratingSpin_->setObjectName(QStringLiteral("ratingSpin"));
     ratingSpin_->setRange(1, 6);
     ratingSpin_->setValue(5);
-    submitForm->addRow(QStringLiteral("评分(1-6)"), ratingSpin_);
+    submitForm->addRow(QStringLiteral("评分"), ratingSpin_);
 
     reviewTagsEdit_ = new QLineEdit(this);
     reviewTagsEdit_->setObjectName(QStringLiteral("reviewTagsEdit"));
-    reviewTagsEdit_->setPlaceholderText(QStringLiteral("逗号分隔, 如 friendly,punctual"));
+    reviewTagsEdit_->setPlaceholderText(QStringLiteral("逗号分隔，如 准时,友好,靠谱"));
     submitForm->addRow(QStringLiteral("评价标签"), reviewTagsEdit_);
 
-    layout->addLayout(submitForm);
-
-    submitReviewButton_ = new QPushButton(QStringLiteral("提交评价"), this);
+    submitReviewButton_ = UiHelpers::markPrimary(new QPushButton(QStringLiteral("提交评价"), this));
     submitReviewButton_->setObjectName(QStringLiteral("submitReviewButton"));
-    layout->addWidget(submitReviewButton_);
+    submitForm->addRow(QString(), submitReviewButton_);
+    layout->addWidget(submitGroup);
 
-    auto *updateForm = new QFormLayout();
+    auto *updateGroup = new QGroupBox(QStringLiteral("修改已提交评价"), this);
+    auto *updateForm = new QFormLayout(updateGroup);
     reviewIdEdit_ = new QLineEdit(this);
     reviewIdEdit_->setObjectName(QStringLiteral("reviewIdEdit"));
     reviewIdEdit_->setPlaceholderText(QStringLiteral("reviewId (long)"));
@@ -66,29 +77,34 @@ ReviewCreditWidget::ReviewCreditWidget(ReviewCreditApiService &reviewService, QW
     updateTagsEdit_ = new QLineEdit(this);
     updateTagsEdit_->setObjectName(QStringLiteral("updateTagsEdit"));
     updateForm->addRow(QStringLiteral("新标签"), updateTagsEdit_);
-    layout->addLayout(updateForm);
-
-    updateReviewButton_ = new QPushButton(QStringLiteral("修改评价"), this);
+    updateReviewButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("修改评价"), this));
     updateReviewButton_->setObjectName(QStringLiteral("updateReviewButton"));
-    layout->addWidget(updateReviewButton_);
+    updateForm->addRow(QString(), updateReviewButton_);
+    layout->addWidget(updateGroup);
 
-    layout->addWidget(new QLabel(QStringLiteral("已发出评价:"), this));
+    auto *listLayout = new QHBoxLayout();
+    auto *givenGroup = new QGroupBox(QStringLiteral("已发出评价"), this);
+    auto *givenLayout = new QVBoxLayout(givenGroup);
     givenListWidget_ = new QListWidget(this);
     givenListWidget_->setObjectName(QStringLiteral("givenListWidget"));
     givenListWidget_->setMaximumHeight(120);
-    layout->addWidget(givenListWidget_);
-    refreshGivenButton_ = new QPushButton(QStringLiteral("刷新已发出"), this);
-    layout->addWidget(refreshGivenButton_);
+    givenLayout->addWidget(givenListWidget_);
+    refreshGivenButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新已发出"), this));
+    givenLayout->addWidget(refreshGivenButton_);
+    listLayout->addWidget(givenGroup);
 
-    layout->addWidget(new QLabel(QStringLiteral("已收到评价:"), this));
+    auto *receivedGroup = new QGroupBox(QStringLiteral("已收到评价"), this);
+    auto *receivedLayout = new QVBoxLayout(receivedGroup);
     receivedListWidget_ = new QListWidget(this);
     receivedListWidget_->setObjectName(QStringLiteral("receivedListWidget"));
     receivedListWidget_->setMaximumHeight(120);
-    layout->addWidget(receivedListWidget_);
-    refreshReceivedButton_ = new QPushButton(QStringLiteral("刷新已收到"), this);
-    layout->addWidget(refreshReceivedButton_);
+    receivedLayout->addWidget(receivedListWidget_);
+    refreshReceivedButton_ = UiHelpers::markSecondary(new QPushButton(QStringLiteral("刷新已收到"), this));
+    receivedLayout->addWidget(refreshReceivedButton_);
+    listLayout->addWidget(receivedGroup);
+    layout->addLayout(listLayout, 1);
 
-    statusLabel_ = new QLabel(this);
+    statusLabel_ = UiHelpers::createStatusLabel(this);
     layout->addWidget(statusLabel_);
 
     connect(refreshCreditButton_, &QPushButton::clicked, this, &ReviewCreditWidget::onRefreshCreditSummary);
@@ -109,7 +125,7 @@ void ReviewCreditWidget::onRefreshCreditSummary()
                 tagsStr += QStringLiteral("%1(%2)").arg(t.tag).arg(t.count);
             }
             creditSummaryLabel_->setText(
-                QStringLiteral("评分: %1  真实会话: %2  评价样本: %3  争议: %4\nTopTags: %5")
+                QStringLiteral("<b>平均评分</b>：%1<br><b>真实会话</b>：%2<br><b>评价样本</b>：%3<br><b>争议评价</b>：%4<br><b>高频标签</b>：%5")
                     .arg(result.averageRating)
                     .arg(result.realConversationCount)
                     .arg(result.ratingSampleCount)
@@ -138,8 +154,8 @@ void ReviewCreditWidget::onSubmitReview()
     statusLabel_->setText(QStringLiteral("提交评价中..."));
     reviewService_.createReview(req, [this](const ReviewResult &result) {
         if (result.success) {
-            statusLabel_->setText(QStringLiteral("评价已提交! reviewId=%1 status=%2 rating=%3")
-                .arg(result.review.id).arg(result.review.status).arg(result.review.rating));
+            statusLabel_->setText(QStringLiteral("评价已提交，评分 %1，状态 %2。")
+                .arg(result.review.rating).arg(result.review.status));
         } else {
             statusLabel_->setText(QStringLiteral("提交失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -161,7 +177,7 @@ void ReviewCreditWidget::onUpdateReview()
     statusLabel_->setText(QStringLiteral("修改评价中..."));
     reviewService_.updateReview(reviewId, req, [this](const ReviewResult &result) {
         if (result.success) {
-            statusLabel_->setText(QStringLiteral("评价已修改! status=%1 rating=%2").arg(result.review.status).arg(result.review.rating));
+            statusLabel_->setText(QStringLiteral("评价已修改，评分 %1，状态 %2。").arg(result.review.rating).arg(result.review.status));
         } else {
             statusLabel_->setText(QStringLiteral("修改失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
