@@ -16,6 +16,7 @@ private slots:
     void coreDemoUiUsesSharedVisualHelpers();
     void secondBatchUiUsesSharedVisualHelpersAndIdentitySelection();
     void thirdBatchUsesBusyAndEmptyStateHelpers();
+    void fourthBatchUsesFieldErrorsAndReviewBusyStates();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -178,6 +179,33 @@ void StudentPostPlazaWidgetTest::thirdBatchUsesBusyAndEmptyStateHelpers()
         const QString content = QString::fromUtf8(file.readAll());
         QVERIFY2(content.contains("emptyStateText"), qPrintable(path + " must use shared empty-state helper"));
     }
+}
+
+void StudentPostPlazaWidgetTest::fourthBatchUsesFieldErrorsAndReviewBusyStates()
+{
+    QFile postEditor(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/PostEditorWidget.cpp"));
+    QVERIFY2(postEditor.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open PostEditorWidget.cpp");
+    const QString postEditorContent = QString::fromUtf8(postEditor.readAll());
+    QVERIFY2(postEditorContent.contains("applyFieldErrors"),
+             "PostEditorWidget must map validation errors to field-level helper labels");
+    QVERIFY2(postEditorContent.contains("clearFieldErrors"),
+             "PostEditorWidget must clear field-level validation messages before new requests");
+    QVERIFY2(postEditorContent.contains("setButtonBusy"),
+             "PostEditorWidget must use shared busy-state helper for draft and submit actions");
+
+    QFile appStyles(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/AppStyles.cpp"));
+    QVERIFY2(appStyles.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open AppStyles.cpp");
+    const QString appStylesContent = QString::fromUtf8(appStyles.readAll());
+    QVERIFY2(appStylesContent.contains("QLabel[error=\"true\"]"),
+             "AppStyles must style field-level error labels");
+
+    QFile reviewCredit(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ReviewCreditWidget.cpp"));
+    QVERIFY2(reviewCredit.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open ReviewCreditWidget.cpp");
+    const QString reviewCreditContent = QString::fromUtf8(reviewCredit.readAll());
+    QVERIFY2(reviewCreditContent.contains("setButtonBusy"),
+             "ReviewCreditWidget must use shared busy-state helper for request buttons");
+    QVERIFY2(reviewCreditContent.contains("emptyStateText"),
+             "ReviewCreditWidget must use shared empty-state helper for review lists");
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)

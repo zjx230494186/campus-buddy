@@ -58,6 +58,7 @@
 - Qt UI 视觉打磨第一批已完成：新增 AppStyles/UiHelpers，打磨登录/注册、首页、发布表单、广场、会话和评价信用页；Qt build、ctest 10/10、desktop smoke 通过；server smoke 因当前 shell 未注入私有 smoke 账号环境变量而阻塞，未伪装为通过。
 - Qt UI 视觉打磨第二批已完成：打磨认证资料、我的发布、管理员审核页面；补管理员认证审核队列选择处理；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - Qt UI 视觉打磨第三批已完成：统一主链路空状态、加载态和防重复点击；新增 `UiHelpers::setButtonBusy` / `emptyStateText` 并接入认证、我的发布、广场、会话、管理员审核；Qt build 通过，逐项 `ctest -R` 10/10 通过，desktop smoke 通过；同一 `ctest` 批量进程下出现 `0xc0000135` DLL 搜索异常，server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
+- Qt UI 视觉打磨第四批已完成：发布表单增加字段级错误标签，保存/更新/提交接入忙碌态；评价信用页改为滚动内容区，并补刷新、提交、修改、列表刷新忙碌态和评价列表空状态；Qt build、ctest 10/10、desktop smoke 通过；server smoke 仍因当前 shell 未注入私有 smoke 账号环境变量而阻塞。
 - 下一步优先级：进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史

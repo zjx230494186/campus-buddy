@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QComboBox>
+#include <QHash>
 #include <QLabel>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -33,6 +34,11 @@ private slots:
 private:
     MyPostDraftRequest buildDraftRequest() const;
     void setStatusMessage(const QString &msg);
+    void clearFieldErrors();
+    void applyFieldErrors(const QJsonObject &details);
+    QLabel *createFieldErrorLabel(QWidget *parent);
+    QLabel *fieldErrorLabelForKey(const QString &key) const;
+    static QString fieldDisplayName(const QString &key);
     static QString formatErrorDetails(const QJsonObject &details);
     static QString sceneFieldKey(const QString &sceneType);
     static QString sceneFieldLabel(const QString &sceneType);
@@ -51,6 +57,14 @@ private:
     QLineEdit *tagsEdit_;
     QLineEdit *sceneFieldEdit_;
     QLabel *sceneFieldLabel_;
+    QLabel *titleErrorLabel_;
+    QLabel *descriptionErrorLabel_;
+    QLabel *sceneFieldErrorLabel_;
+    QLabel *timeTextErrorLabel_;
+    QLabel *locationTextErrorLabel_;
+    QLabel *targetRequirementErrorLabel_;
+    QLabel *contactPreferenceErrorLabel_;
+    QHash<QString, QLabel *> fieldErrorLabels_;
 
     QPushButton *saveDraftButton_;
     QPushButton *updateDraftButton_;

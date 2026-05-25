@@ -49,6 +49,13 @@ QString styleSheet()
             padding: 7px 10px;
         }
 
+        QLabel[error="true"] {
+            background: transparent;
+            color: #b42318;
+            font-size: 12px;
+            padding: 2px 0 0 2px;
+        }
+
         QLineEdit, QTextEdit, QComboBox, QSpinBox {
             background: #ffffff;
             border: 1px solid #cfd9d6;

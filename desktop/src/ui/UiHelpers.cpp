@@ -104,6 +104,12 @@ QString emptyStateText(const QString &context)
     if (context == QStringLiteral("adminIdentity")) {
         return QStringLiteral("当前没有待审核认证申请。");
     }
+    if (context == QStringLiteral("givenReviews")) {
+        return QStringLiteral("还没有发出评价。完成一次有效会话后再来评价对方。");
+    }
+    if (context == QStringLiteral("receivedReviews")) {
+        return QStringLiteral("还没有收到评价。");
+    }
     return QStringLiteral("暂无数据。");
 }
 

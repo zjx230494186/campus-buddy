@@ -48,18 +48,24 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     titleEdit_->setObjectName(QStringLiteral("titleEdit"));
     titleEdit_->setPlaceholderText(QStringLiteral("一句话说明你想找什么搭子"));
     basicForm->addRow(QStringLiteral("标题"), titleEdit_);
+    titleErrorLabel_ = createFieldErrorLabel(this);
+    basicForm->addRow(QString(), titleErrorLabel_);
 
     descriptionEdit_ = new QTextEdit(this);
     descriptionEdit_->setObjectName(QStringLiteral("descriptionEdit"));
     descriptionEdit_->setPlaceholderText(QStringLiteral("补充目标、节奏、人数预期和注意事项"));
     descriptionEdit_->setMinimumHeight(96);
     basicForm->addRow(QStringLiteral("正文"), descriptionEdit_);
+    descriptionErrorLabel_ = createFieldErrorLabel(this);
+    basicForm->addRow(QString(), descriptionErrorLabel_);
 
     sceneFieldLabel_ = new QLabel(QStringLiteral("学习目标"), this);
     sceneFieldEdit_ = new QLineEdit(this);
     sceneFieldEdit_->setObjectName(QStringLiteral("sceneFieldEdit"));
     sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 通过考试"));
     basicForm->addRow(sceneFieldLabel_, sceneFieldEdit_);
+    sceneFieldErrorLabel_ = createFieldErrorLabel(this);
+    basicForm->addRow(QString(), sceneFieldErrorLabel_);
     formHostLayout->addWidget(basicGroup);
 
     auto *timeGroup = new QGroupBox(QStringLiteral("时间与地点"), formHost);
@@ -76,11 +82,15 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     timeTextEdit_->setObjectName(QStringLiteral("timeTextEdit"));
     timeTextEdit_->setPlaceholderText(QStringLiteral("如: 周三晚 7 点，或工作日晚上"));
     timeForm->addRow(QStringLiteral("时间"), timeTextEdit_);
+    timeTextErrorLabel_ = createFieldErrorLabel(this);
+    timeForm->addRow(QString(), timeTextErrorLabel_);
 
     locationTextEdit_ = new QLineEdit(this);
     locationTextEdit_->setObjectName(QStringLiteral("locationTextEdit"));
     locationTextEdit_->setPlaceholderText(QStringLiteral("如: 图书馆三楼 / 一食堂"));
     timeForm->addRow(QStringLiteral("地点"), locationTextEdit_);
+    locationTextErrorLabel_ = createFieldErrorLabel(this);
+    timeForm->addRow(QString(), locationTextErrorLabel_);
 
     participantCountSpin_ = new QSpinBox(this);
     participantCountSpin_->setObjectName(QStringLiteral("participantCountSpin"));
@@ -97,11 +107,15 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     targetRequirementEdit_->setObjectName(QStringLiteral("targetRequirementEdit"));
     targetRequirementEdit_->setPlaceholderText(QStringLiteral("如: 希望对方准时、基础相近"));
     preferenceForm->addRow(QStringLiteral("要求"), targetRequirementEdit_);
+    targetRequirementErrorLabel_ = createFieldErrorLabel(this);
+    preferenceForm->addRow(QString(), targetRequirementErrorLabel_);
 
     contactPreferenceEdit_ = new QLineEdit(this);
     contactPreferenceEdit_->setObjectName(QStringLiteral("contactPreferenceEdit"));
     contactPreferenceEdit_->setPlaceholderText(QStringLiteral("如: 先站内聊，确认后交换联系方式"));
     preferenceForm->addRow(QStringLiteral("联系偏好"), contactPreferenceEdit_);
+    contactPreferenceErrorLabel_ = createFieldErrorLabel(this);
+    preferenceForm->addRow(QString(), contactPreferenceErrorLabel_);
 
     tagsEdit_ = new QLineEdit(this);
     tagsEdit_->setObjectName(QStringLiteral("tagsEdit"));
@@ -139,6 +153,13 @@ PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidg
     connect(submitReviewButton_, &QPushButton::clicked, this, &PostEditorWidget::onSubmitReview);
     connect(sceneTypeCombo_, &QComboBox::currentTextChanged, this, &PostEditorWidget::onSceneTypeChanged);
 
+    fieldErrorLabels_.insert(QStringLiteral("title"), titleErrorLabel_);
+    fieldErrorLabels_.insert(QStringLiteral("description"), descriptionErrorLabel_);
+    fieldErrorLabels_.insert(QStringLiteral("timeText"), timeTextErrorLabel_);
+    fieldErrorLabels_.insert(QStringLiteral("locationText"), locationTextErrorLabel_);
+    fieldErrorLabels_.insert(QStringLiteral("targetRequirement"), targetRequirementErrorLabel_);
+    fieldErrorLabels_.insert(QStringLiteral("contactPreference"), contactPreferenceErrorLabel_);
+    clearFieldErrors();
     onSceneTypeChanged();
 }
 
@@ -166,6 +187,10 @@ void PostEditorWidget::onSceneTypeChanged()
 {
     const QString sceneType = sceneTypeCombo_->currentText();
     sceneFieldLabel_->setText(sceneFieldLabel(sceneType));
+    if (sceneFieldErrorLabel_ && sceneFieldErrorLabel_->isVisible()) {
+        sceneFieldErrorLabel_->setText(QStringLiteral("%1：%2")
+            .arg(sceneFieldLabel(sceneType), sceneFieldErrorLabel_->text().section(QStringLiteral("："), 1)));
+    }
     const QString key = sceneFieldKey(sceneType);
     if (key == QStringLiteral("canteen")) {
         sceneFieldEdit_->setPlaceholderText(QStringLiteral("如: 一食堂"));
@@ -180,6 +205,72 @@ void PostEditorWidget::onSceneTypeChanged()
     }
 }
 
+QLabel *PostEditorWidget::createFieldErrorLabel(QWidget *parent)
+{
+    auto *label = new QLabel(parent);
+    label->setProperty("error", true);
+    label->setWordWrap(true);
+    label->hide();
+    return label;
+}
+
+QLabel *PostEditorWidget::fieldErrorLabelForKey(const QString &key) const
+{
+    QString normalized = key;
+    if (normalized.startsWith(QStringLiteral("scenePayload."))) {
+        return sceneFieldErrorLabel_;
+    }
+    return fieldErrorLabels_.value(normalized, nullptr);
+}
+
+QString PostEditorWidget::fieldDisplayName(const QString &key)
+{
+    QString normalized = key;
+    if (normalized.startsWith(QStringLiteral("scenePayload."))) {
+        normalized = normalized.mid(QStringLiteral("scenePayload.").length());
+    }
+    if (normalized == QStringLiteral("title")) return QStringLiteral("标题");
+    if (normalized == QStringLiteral("description")) return QStringLiteral("正文");
+    if (normalized == QStringLiteral("timeText")) return QStringLiteral("时间");
+    if (normalized == QStringLiteral("locationText")) return QStringLiteral("地点");
+    if (normalized == QStringLiteral("targetRequirement")) return QStringLiteral("要求");
+    if (normalized == QStringLiteral("contactPreference")) return QStringLiteral("联系偏好");
+    if (normalized == QStringLiteral("studyGoal")) return QStringLiteral("学习目标");
+    if (normalized == QStringLiteral("canteen")) return QStringLiteral("食堂");
+    if (normalized == QStringLiteral("sportType")) return QStringLiteral("运动类型");
+    if (normalized == QStringLiteral("courseName")) return QStringLiteral("课程名称");
+    if (normalized == QStringLiteral("projectDirection")) return QStringLiteral("项目方向");
+    return normalized;
+}
+
+void PostEditorWidget::clearFieldErrors()
+{
+    const auto labels = fieldErrorLabels_.values();
+    for (QLabel *label : labels) {
+        if (!label) continue;
+        label->clear();
+        label->hide();
+    }
+    if (sceneFieldErrorLabel_) {
+        sceneFieldErrorLabel_->clear();
+        sceneFieldErrorLabel_->hide();
+    }
+}
+
+void PostEditorWidget::applyFieldErrors(const QJsonObject &details)
+{
+    clearFieldErrors();
+    for (auto it = details.constBegin(); it != details.constEnd(); ++it) {
+        QLabel *label = fieldErrorLabelForKey(it.key());
+        if (!label) continue;
+        const QString value = it.value().isString()
+            ? it.value().toString()
+            : QString::fromUtf8(QJsonDocument(it.value().toObject()).toJson(QJsonDocument::Compact));
+        label->setText(QStringLiteral("%1：%2").arg(fieldDisplayName(it.key()), value.isEmpty() ? QStringLiteral("不合法") : value));
+        label->show();
+    }
+}
+
 QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
 {
     if (details.isEmpty()) return QString();
@@ -189,6 +280,7 @@ QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
         if (key.startsWith(QStringLiteral("scenePayload."))) {
             key = key.mid(QStringLiteral("scenePayload.").length());
         }
+        key = fieldDisplayName(key);
         QString val;
         if (it.value().isString()) {
             val = it.value().toString();
@@ -203,6 +295,7 @@ QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
 
 void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
 {
+    clearFieldErrors();
     currentPostId_ = postId;
     postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2")
         .arg(postId.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(item.status)));
@@ -232,6 +325,7 @@ void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
 
 void PostEditorWidget::clearForm()
 {
+    clearFieldErrors();
     currentPostId_.clear();
     postIdLabel_->clear();
     titleEdit_->clear();
@@ -271,9 +365,12 @@ MyPostDraftRequest PostEditorWidget::buildDraftRequest() const
 
 void PostEditorWidget::onSaveDraft()
 {
+    clearFieldErrors();
+    UiHelpers::setButtonBusy(saveDraftButton_, true, QStringLiteral("保存中..."), QStringLiteral("保存草稿"));
     setStatusMessage(QStringLiteral("保存中..."));
     MyPostDraftRequest req = buildDraftRequest();
     myPostService_.createDraft(req, [this](const MyPostResult &result) {
+        UiHelpers::setButtonBusy(saveDraftButton_, false, QStringLiteral("保存中..."), QStringLiteral("保存草稿"));
         if (result.success) {
             currentPostId_ = result.post.postId;
             postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
@@ -283,6 +380,7 @@ void PostEditorWidget::onSaveDraft()
             setStatusMessage(QStringLiteral("草稿已保存"));
             emit postSaved();
         } else {
+            applyFieldErrors(result.errorDetails);
             QString msg = QStringLiteral("保存失败: %1 - %2").arg(result.errorCode, result.errorMessage);
             QString details = formatErrorDetails(result.errorDetails);
             if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
@@ -294,9 +392,12 @@ void PostEditorWidget::onSaveDraft()
 void PostEditorWidget::onUpdateDraft()
 {
     if (currentPostId_.isEmpty()) return;
+    clearFieldErrors();
+    UiHelpers::setButtonBusy(updateDraftButton_, true, QStringLiteral("更新中..."), QStringLiteral("更新草稿"));
     setStatusMessage(QStringLiteral("更新中..."));
     MyPostDraftRequest req = buildDraftRequest();
     myPostService_.updateDraft(currentPostId_, req, [this](const MyPostResult &result) {
+        UiHelpers::setButtonBusy(updateDraftButton_, false, QStringLiteral("更新中..."), QStringLiteral("更新草稿"));
         if (result.success) {
             postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
             updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
@@ -304,6 +405,7 @@ void PostEditorWidget::onUpdateDraft()
             setStatusMessage(QStringLiteral("草稿已更新"));
             emit postSaved();
         } else {
+            applyFieldErrors(result.errorDetails);
             QString msg = QStringLiteral("更新失败: %1 - %2").arg(result.errorCode, result.errorMessage);
             QString details = formatErrorDetails(result.errorDetails);
             if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
@@ -316,8 +418,9 @@ void PostEditorWidget::onSubmitReview()
 {
     if (currentPostId_.isEmpty()) return;
     if (submitting_) return;
+    clearFieldErrors();
     submitting_ = true;
-    submitReviewButton_->setEnabled(false);
+    UiHelpers::setButtonBusy(submitReviewButton_, true, QStringLiteral("提交中..."), QStringLiteral("提交审核"));
     setStatusMessage(QStringLiteral("提交审核中..."));
     myPostService_.submitReview(currentPostId_, [this](const PostActionResult &result) {
         submitting_ = false;
@@ -328,6 +431,7 @@ void PostEditorWidget::onSubmitReview()
             setStatusMessage(QStringLiteral("已提交审核"));
             emit postSubmitted();
         } else {
+            applyFieldErrors(result.errorDetails);
             QString msg;
             if (result.errorCode == QStringLiteral("VALIDATION_FAILED")) {
                 msg = QStringLiteral("校验失败");
@@ -351,7 +455,7 @@ void PostEditorWidget::onSubmitReview()
                 if (!details.isEmpty()) msg += QStringLiteral(" (%1)").arg(details);
             }
             setStatusMessage(msg);
-            submitReviewButton_->setEnabled(true);
+            UiHelpers::setButtonBusy(submitReviewButton_, false, QStringLiteral("提交中..."), QStringLiteral("提交审核"));
         }
     });
 }

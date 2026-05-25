@@ -1,26 +1,29 @@
 # Latest Handoff
 
-## 2026-05-25 Qt UI 视觉打磨第三批完成
+## 2026-05-25 Qt UI 视觉打磨第四批完成
 
 ### 本轮完成
 
 - 延续 `docs/prompts/codex/20260525_qt_ui_visual_polish_thread.md` 的边界，只做 Qt UI、测试和留档。
-- 第三批聚焦主链路细节体验：空状态、加载态、按钮防重复点击。
-- 新增 `UiHelpers::setButtonBusy`，统一按钮忙碌态文案与禁用行为。
-- 新增 `UiHelpers::emptyStateText`，统一我的发布、广场、会话、消息、管理员审核队列的空状态文案。
-- 已接入页面：
-  - `IdentityVerificationWidget`
-  - `MyPostsWidget`
-  - `PlazaWidget`
-  - `ConversationsWidget`
-  - `AdminReviewWidget`
-- 新增 `StudentPostPlazaWidgetTest::thirdBatchUsesBusyAndEmptyStateHelpers`，先红灯后绿灯。
+- 第四批聚焦发布表单字段级错误、评价页加载态/空状态和较矮窗口下的滚动容器。
+- `PostEditorWidget` 新增字段级错误标签：
+  - `title`
+  - `description`
+  - `timeText`
+  - `locationText`
+  - `targetRequirement`
+  - `contactPreference`
+  - `scenePayload.*`
+- 发布表单保存草稿、更新草稿、提交审核接入 `UiHelpers::setButtonBusy`。
+- `ReviewCreditWidget` 内容区改为 `QScrollArea`，刷新信用摘要、提交评价、修改评价、刷新评价列表均接入忙碌态。
+- `UiHelpers::emptyStateText` 新增已发出评价、已收到评价空状态文案。
+- `AppStyles` 新增 `QLabel[error="true"]` 字段级错误样式。
+- 新增 `StudentPostPlazaWidgetTest::fourthBatchUsesFieldErrorsAndReviewBusyStates`，先红灯后绿灯。
 - Qt build 通过。
-- `student_post_plaza_widget_test` 通过。
-- 逐项运行 10 个 `ctest -R` 测试全部通过。
+- `ctest --output-on-failure -j4` 10/10 PASS。
 - `campus_buddy_desktop --smoke-test` 通过。
 - `qt_server_integration_smoke` 因当前 shell 缺少私有 smoke 账号环境变量被阻塞，未伪装为通过。
-- Validation 留档：`docs/validation/20260525_qt_ui_visual_polish_third_batch_record.md`
+- Validation 留档：`docs/validation/20260525_qt_ui_visual_polish_fourth_batch_record.md`
 
 ### 边界确认
 
@@ -36,37 +39,38 @@
 
 - 第一批 UI polish 提交：`230ea93`
 - 第二批 UI polish 提交：`49467d3`
-- 第三批提交：待当前线程提交后以最终回复为准。
-- Qt desktop：build 通过，逐项 `ctest -R` 10/10，desktop smoke 通过。
-- 已知验证环境异常：同一 `ctest` 批量进程下出现 `0xc0000135`，表现为第一个测试能启动，后续测试立即失败；逐项运行全部通过，建议后续环境线程单独排查 DLL 搜索路径问题。
+- 第三批 UI polish 提交：`7b64398`
+- 第四批提交：待当前线程提交后以最终回复为准。
+- Qt desktop：build 通过，ctest 10/10，desktop smoke 通过。
 - Server smoke：因缺少私有环境变量未运行。
 
 ### 下一步候选
 
-1. **答辩演示前最终验证** — 建议新开演示/验收线程；在私有 shell 注入 smoke 账号环境变量，运行 `qt_server_integration_smoke`，然后按 `docs/27_course_demo_and_delivery_checklist_v1.md` 走主演示链路。
-2. **Qt 验证环境收口** — 建议新开环境/验证线程；专门排查同一 `ctest` 批量进程下的 `0xc0000135` DLL 搜索异常。
-3. **UI 生产化小修** — 建议新开 UI 收口线程；只做窄窗口响应式、字段级错误贴近输入框和登录后截图，不扩大业务功能。
+1. **答辩演示前最终验证** — 建议新开演示/验收线程；在私有 shell 注入 smoke 账号环境变量，运行 `qt_server_integration_smoke`，然后按 `docs/27_course_demo_and_delivery_checklist_v1.md` 走主演示链路并截图。
+2. **登录后 UI 截图补证据** — 建议复用 UI 验证线程；重点截图发布表单字段级错误、评价页空列表、广场、会话和管理员审核，但不得包含真实密码、token 或联系方式明文。
+3. **UI 生产化小修** — 建议新开 UI 收口线程；只做窄窗口响应式、按钮文本压缩和少量字段提示，不扩大业务功能。
 
 ### 建议下一线程名称
 
-`Qt 答辩演示前最终验证与截图`
+`Qt 答辩演示前最终验证与主链路截图`
 
 ### 可复制启动 Prompt
 
 ```text
-请读取 D:\big_homework\AGENTS.md、D:\big_homework\docs\03_current_plan.md、D:\big_homework\handoff\latest.md、D:\big_homework\docs\validation\20260525_qt_ui_visual_polish_record.md、D:\big_homework\docs\validation\20260525_qt_ui_visual_polish_second_batch_record.md、D:\big_homework\docs\validation\20260525_qt_ui_visual_polish_third_batch_record.md。
+请读取 D:\big_homework\AGENTS.md、D:\big_homework\docs\03_current_plan.md、D:\big_homework\handoff\latest.md，以及 D:\big_homework\docs\validation\ 下 20260525_qt_ui_visual_polish 的最近 4 份记录。
 
-当前任务是 Qt 答辩演示前最终验证与截图。范围只包括运行验证、截图、validation 和 handoff；除非我明确要求，不改代码。不改 backend、Flyway、deploy 或服务器配置。
+当前任务是 Qt 答辩演示前最终验证与主链路截图。范围只包括运行验证、截图、validation 和 handoff；除非我明确要求，不改代码。不改 backend、Flyway、deploy 或服务器配置。
 
 已完成：
 1. 第一批：AppStyles/UiHelpers，登录/注册、首页、发布表单、广场、会话、评价信用。
 2. 第二批：认证资料、我的发布、管理员审核；修复管理员认证审核队列选择处理。
 3. 第三批：统一空状态、加载态和按钮防重复点击。
+4. 第四批：发布表单字段级错误、评价页忙碌态/空状态和滚动容器。
 
 本轮要求：
 - 先确认私有 shell 是否已注入 CAMPUS_BUDDY_SMOKE_EMAIL / CAMPUS_BUDDY_SMOKE_PASSWORD / CAMPUS_BUDDY_SMOKE_ADMIN_EMAIL / CAMPUS_BUDDY_SMOKE_ADMIN_PASSWORD。
 - 若已注入，运行 qt_server_integration_smoke；若未注入，只记录阻塞，不要求我在聊天中提供凭据。
-- 运行 Qt build、ctest 或逐项 ctest 复核、campus_buddy_desktop --smoke-test。
-- 截图主链路页面，但不得截图真实密码、token 或联系方式明文。
+- 运行 Qt build、ctest、campus_buddy_desktop --smoke-test。
+- 截图主链路页面，重点包括发布表单字段级错误、评价页空列表、广场、会话和管理员审核；不得截图真实密码、token 或联系方式明文。
 - 输出 validation：实际验证命令、结果、截图路径、敏感信息检查、Git status、未覆盖风险和下一步建议。
 ```
