@@ -1,5 +1,41 @@
 # Latest Handoff
 
+## 2026-05-26 服务器真实邮箱验证码发送上线完成
+
+### 本轮完成
+
+- 将本机项目目录外私有 SMTP 配置同步到服务器 `/etc/campus-buddy/backend.env`。
+- 设置服务器允许收件域名为 `bjtu.edu.cn`。
+- 发现服务器旧 jar 只包含 Noop sender，重新构建并上线包含 SMTP sender 的后端 jar。
+- 重启 `campus-buddy-backend` systemd 服务。
+- 新增验证记录：
+  - `docs/validation/20260526_server_smtp_bjtu_deploy_record.md`
+
+### 备份
+
+- 配置备份：
+  - `/etc/campus-buddy/backend.env.backup.20260526_222031`
+- jar 备份：
+  - `/srv/campus-buddy/campus-buddy-backend-0.0.1-SNAPSHOT.jar.backup.20260526_222339`
+
+### 验证结果
+
+- 服务器 health：`GET http://114.116.203.78/api/health` 返回 `{"status":"UP"}`。
+- 非 `bjtu.edu.cn` 邮箱请求验证码返回 `INVALID_CAMPUS_EMAIL_DOMAIN`。
+- `24301082@bjtu.edu.cn` 请求验证码返回 `CODE_SENT`。
+- 初始学生账号和管理员账号登录回归通过。
+
+### 安全边界
+
+- 未把 SMTP 授权码、服务器私钥、数据库密码、OBS AK/SK、JWT secret、验证码或 token 写入仓库、文档或聊天。
+- 文档只记录变量 present/missing、备份路径、接口状态码和脱敏邮箱。
+
+### 后续建议
+
+1. **用户收件确认** — 请检查 `24301082@bjtu.edu.cn` 是否收到最新验证码。
+2. **Qt 注册页演示** — 使用尚未注册的新 `bjtu.edu.cn` 邮箱，从桌面端走发送验证码、输入验证码、注册和登录。
+3. **HTTPS 收口** — 公网仍为 HTTP，正式外发前建议补 HTTPS。
+
 ## 2026-05-26 Windows 内测版桌面端打包完成
 
 ### 本轮完成
