@@ -23,7 +23,7 @@ void ApiClientConfigTest::defaultValuesDescribeTechnicalSpikeRuntime()
 {
     const ApiClientConfig config;
 
-    QCOMPARE(config.apiBaseUrl(), QString("http://localhost:8080/api"));
+    QCOMPARE(config.apiBaseUrl(), QString("http://114.116.203.78/api"));
     QCOMPARE(config.requestTimeoutMs(), 10000);
     QCOMPARE(config.messagePollIntervalMs(), 1000);
     QVERIFY(config.technicalSpikeMode());
@@ -37,7 +37,7 @@ void ApiClientConfigTest::fromRuntimeUsesDefaultWhenNoEnvOrArg()
 
     const ApiClientConfig config = ApiClientConfig::fromRuntime(args, env);
 
-    QCOMPARE(config.apiBaseUrl(), QString("http://localhost:8080/api"));
+    QCOMPARE(config.apiBaseUrl(), QString("http://114.116.203.78/api"));
 }
 
 void ApiClientConfigTest::fromRuntimeReadsEnvironmentVariable()
@@ -82,7 +82,7 @@ void ApiClientConfigTest::fromRuntimeFallsBackToDefaultOnEmptyEnv()
 
     const ApiClientConfig config = ApiClientConfig::fromRuntime(args, env);
 
-    QCOMPARE(config.apiBaseUrl(), QString("http://localhost:8080/api"));
+    QCOMPARE(config.apiBaseUrl(), QString("http://114.116.203.78/api"));
 }
 
 void ApiClientConfigTest::fromRuntimeFallsBackToDefaultOnEmptyArg()
@@ -93,7 +93,7 @@ void ApiClientConfigTest::fromRuntimeFallsBackToDefaultOnEmptyArg()
 
     const ApiClientConfig config = ApiClientConfig::fromRuntime(args, env);
 
-    QCOMPARE(config.apiBaseUrl(), QString("http://localhost:8080/api"));
+    QCOMPARE(config.apiBaseUrl(), QString("http://114.116.203.78/api"));
 }
 
 QTEST_MAIN(ApiClientConfigTest)

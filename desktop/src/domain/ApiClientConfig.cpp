@@ -5,7 +5,7 @@
 namespace {
 const QString ENV_KEY = "CAMPUS_BUDDY_API_BASE_URL";
 const QString ARG_PREFIX = "--api-base-url=";
-const QString DEFAULT_BASE_URL = "http://localhost:8080/api";
+const QString DEFAULT_BASE_URL = "http://114.116.203.78/api";
 }
 
 ApiClientConfig::ApiClientConfig()
