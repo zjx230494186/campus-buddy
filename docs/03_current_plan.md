@@ -62,6 +62,8 @@
 - 真实邮箱验证码发送能力已补齐：新增 SMTP delivery mode、JavaMailSender 配置、SMTP 验证码 sender 和测试；后端全量测试 251/251 通过。
 - 真实注册收信 smoke 辅助脚本已补齐：`scripts/real_email_registration_smoke.ps1` 可从项目外私有 env 启动 local-h2 后端、发送验证码、读取私有 env 中的验证码并完成注册/登录验证。
 - 真实注册收信 smoke 已通过：使用项目目录外 `D:\big_homework_private\smtp-service.env`、QQ SMTP 发信服务和 `bjtu.edu.cn` 收件域名完成真实收信、验证码校验、注册和登录验证；validation 见 `docs/validation/20260525_real_email_registration_smoke_success_record.md`。
+- Windows 内测版桌面端打包已完成：默认 API 地址切换为 `http://114.116.203.78/api`，Release 构建、Qt API 配置测试、桌面端 smoke、打包目录剥离 PATH smoke 和 zip 内容检查均通过；交付物为 `D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip`，validation 见 `docs/validation/20260526_windows_internal_beta_package_record.md`。
+- 服务器密钥依赖检查已完成：客户端包只依赖公开 HTTP API 和可选 API base URL 覆盖项，未发现依赖本机 SSH 私钥、服务器私钥、数据库密码、OBS AK/SK、SMTP 授权码或项目外私有 env 文件；Qt TLS DLL 中的私钥相关字符串为官方解析器内置文本，不是项目密钥。
 - 下一步优先级：如需演示 Qt 桌面端注册页，使用一个尚未注册过的新 `bjtu.edu.cn` 邮箱重新走 GUI 注册链路；然后进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史

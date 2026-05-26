@@ -1,5 +1,60 @@
 # Latest Handoff
 
+## 2026-05-26 Windows 内测版桌面端打包完成
+
+### 本轮完成
+
+- 将 Qt 桌面端默认 API 地址从本机 `localhost` 切换为服务器 `http://114.116.203.78/api`。
+- 使用 Qt 6.10.3 MinGW Release 构建桌面端，并通过 `windeployqt` 收集运行时依赖。
+- 生成 Windows 内测 zip 包：
+  - `D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip`
+  - 解压后入口程序：`CampusBuddyInternalBeta_20260526\campus_buddy_desktop.exe`
+- 新增打包验证记录：
+  - `docs/validation/20260526_windows_internal_beta_package_record.md`
+- 已提交本轮源码与验证文档：
+  - `103d476 build(desktop): package internal beta for server runtime`
+
+### 验证结果
+
+- 服务器 health：`GET http://114.116.203.78/api/health` 返回 `{"status":"UP"}`。
+- Qt API 配置测试通过。
+- Release 桌面端 `--smoke-test` 通过。
+- 在剥离 Qt/CMake/MinGW PATH 后，打包目录内 exe `--smoke-test` 通过。
+- zip 内容包含 exe、Qt Core/Gui/Widgets/Network DLL、MinGW runtime、platforms/qwindows.dll、tls backend 和 README。
+
+### 服务器密钥依赖检查
+
+- 客户端只依赖公开 HTTP API 地址和运行时可选覆盖项 `CAMPUS_BUDDY_API_BASE_URL` / `--api-base-url=`。
+- 未发现客户端包依赖本机 SSH 私钥、服务器私钥、数据库密码、OBS AK/SK、SMTP 授权码或项目外私有 env 文件。
+- 包内 Qt 网络/TLS DLL 出现的 `BEGIN PRIVATE KEY` 等字符串属于 Qt 官方 TLS/证书解析器内置文本，不是项目密钥材料。
+
+### 边界与残余风险
+
+- 本轮不修改后端业务逻辑、不修改 Flyway、不修改 deploy 脚本。
+- 公网接口当前仍是 HTTP；用于内测可以接受，正式外发前建议补 HTTPS/Nginx 证书。
+- `windeployqt` 报告未找到 `dxcompiler.dll` / `dxil.dll`，当前 Qt Widgets 主链路 smoke 通过，低风险；若后续引入 Qt Quick 或 shader 相关能力需重新验证。
+- `deliverables/internal_beta/` 为本地交付物目录，未纳入 Git 提交。
+
+### 后续建议
+
+1. **内测分发** — 可直接分发 `CampusBuddyInternalBeta_20260526.zip`，让测试者整包解压后双击 exe。
+2. **HTTPS 收口** — 建议新开部署线程，为服务器接入 HTTPS，再重新打包或改默认 API 地址。
+3. **现场演示前复核** — 演示前重新确认服务器服务 `UP`，并用包内 exe 做一次登录/注册/发布主链路人工 smoke。
+
+### 建议下一线程名称
+
+`Windows 内测包分发与现场演示复核`
+
+### 可复制启动 Prompt
+
+```text
+请读取 D:\big_homework\AGENTS.md、D:\big_homework\docs\03_current_plan.md、D:\big_homework\handoff\latest.md、D:\big_homework\docs\validation\20260526_windows_internal_beta_package_record.md。
+
+当前任务是对 Windows 内测包做最终分发前复核。交付物为 D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip，解压后双击 campus_buddy_desktop.exe 应连接到 http://114.116.203.78/api。
+
+本轮范围：检查服务器 health、检查 zip 内容、运行包内 exe smoke，必要时做一次主链路人工演示。不要修改后端、Flyway 或 deploy；不要写入或泄露服务器 SSH 私钥、DB 密码、OBS AK/SK、SMTP 授权码、验证码、token 或真实联系方式。
+```
+
 ## 2026-05-25 真实邮箱验证码收信与注册 smoke 已通过
 
 ### 本轮完成
