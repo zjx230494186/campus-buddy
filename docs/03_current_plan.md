@@ -65,6 +65,7 @@
 - Windows 内测版桌面端打包已完成：默认 API 地址切换为 `http://114.116.203.78/api`，Release 构建、Qt API 配置测试、桌面端 smoke、打包目录剥离 PATH smoke 和 zip 内容检查均通过；交付物为 `D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip`，validation 见 `docs/validation/20260526_windows_internal_beta_package_record.md`。
 - 服务器密钥依赖检查已完成：客户端包只依赖公开 HTTP API 和可选 API base URL 覆盖项，未发现依赖本机 SSH 私钥、服务器私钥、数据库密码、OBS AK/SK、SMTP 授权码或项目外私有 env 文件；Qt TLS DLL 中的私钥相关字符串为官方解析器内置文本，不是项目密钥。
 - 服务器真实邮箱验证码发送已上线：`/etc/campus-buddy/backend.env` 已注入 SMTP 私有配置并设置 `CAMPUS_EMAIL_ALLOWED_DOMAIN=bjtu.edu.cn`，服务器 jar 已替换为包含 SMTP sender 的新包；公网验证非 bjtu 域名返回 `INVALID_CAMPUS_EMAIL_DOMAIN`，`24301082@bjtu.edu.cn` 返回 `CODE_SENT`；validation 见 `docs/validation/20260526_server_smtp_bjtu_deploy_record.md`。
+- 广场访问认证状态缺口已修复并上线：`PartnerPostPlazaService` 列表和详情入口均要求当前用户 `authenticationStatus=VERIFIED`；未认证用户公网访问列表/详情返回 403 `AUTHENTICATION_STATUS_REQUIRED`，已认证用户仍返回 200；validation 见 `docs/validation/20260526_plaza_requires_verified_server_fix_record.md`。
 - 下一步优先级：如需演示 Qt 桌面端注册页，使用一个尚未注册过的新 `bjtu.edu.cn` 邮箱重新走 GUI 注册链路；然后进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史

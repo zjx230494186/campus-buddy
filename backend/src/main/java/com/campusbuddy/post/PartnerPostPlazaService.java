@@ -28,6 +28,8 @@ public class PartnerPostPlazaService {
     }
 
     public PlazaListResponse listPosts(UUID currentUserId, String sceneType, String keyword, int page, int size) {
+        requireVerified(currentUserId);
+
         int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
         PageRequest pageable = PageRequest.of(page, safeSize);
 
@@ -54,6 +56,8 @@ public class PartnerPostPlazaService {
 
     @Transactional(readOnly = true)
     public PlazaDetailResponse getPostDetail(UUID currentUserId, UUID postId) {
+        requireVerified(currentUserId);
+
         PartnerPost post = postRepository.findByIdAndStatus(postId, "PUBLISHED")
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "POST_NOT_FOUND",
                         "Post not found", "postId does not exist or is not published"));
@@ -130,6 +134,18 @@ public class PartnerPostPlazaService {
                 post.getPublishedAt() != null ? post.getPublishedAt().toString() : null,
                 post.getUpdatedAt().toString(),
                 ownPost
+        );
+    }
+
+    private void requireVerified(UUID userId) {
+        userAccountRepository.findById(userId).ifPresentOrElse(
+                account -> {
+                    if (!"VERIFIED".equals(account.getAuthenticationStatus())) {
+                        throw new ApiException(HttpStatus.FORBIDDEN, "AUTHENTICATION_STATUS_REQUIRED",
+                                "Verified authentication status required", "current: " + account.getAuthenticationStatus());
+                    }
+                },
+                () -> { throw new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "User not found", "invalid userId"); }
         );
     }
 

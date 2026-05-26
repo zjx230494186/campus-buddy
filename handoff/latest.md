@@ -1,5 +1,48 @@
 # Latest Handoff
 
+## 2026-05-26 广场访问认证状态缺口修复并上线
+
+### 本轮完成
+
+- 修复未完成身份认证用户仍可访问广场列表和帖子详情的问题。
+- `PartnerPostPlazaService.listPosts(...)` 和 `getPostDetail(...)` 入口增加 `VERIFIED` 状态校验。
+- 未认证用户现在返回：
+  - HTTP 403
+  - `AUTHENTICATION_STATUS_REQUIRED`
+- 新增 service 单测：
+  - `PartnerPostPlazaServiceTest`
+- 修正 endpoint 合同测试：
+  - `unverifiedUserCanViewPlazaList` 改为 `unverifiedUserCannotViewPlazaList`
+  - 新增 `unverifiedUserCannotViewPlazaDetail`
+- 已重新构建 jar 并部署到华为云服务器。
+- 新增验证记录：
+  - `docs/validation/20260526_plaza_requires_verified_server_fix_record.md`
+
+### 验证结果
+
+- 红灯：`PartnerPostPlazaServiceTest` 初始 2/2 failed，失败原因为未抛权限异常。
+- 绿灯：`PartnerPostPlazaServiceTest` 2/2 passed。
+- 轻量回归：`PartnerPostPlazaServiceTest,SmtpCampusEmailVerificationCodeSenderTest` 4/4 passed。
+- 构建：`.\mvnw.cmd -DskipTests package` 通过。
+- 服务器 health：`GET http://114.116.203.78/api/health` 返回 `{"status":"UP"}`。
+- 服务器公网 smoke：
+  - 未认证 smoke 账号访问广场列表：403 `AUTHENTICATION_STATUS_REQUIRED`
+  - 已认证初始学生账号访问广场列表：200
+  - 未认证 smoke 账号访问帖子详情：403 `AUTHENTICATION_STATUS_REQUIRED`
+  - 已认证初始学生账号访问同一帖子详情：200
+
+### 服务器备份
+
+- jar 备份：
+  - `/srv/campus-buddy/campus-buddy-backend-0.0.1-SNAPSHOT.jar.backup.20260526_234539`
+
+### 边界
+
+- 未修改 Flyway。
+- 未修改 Qt 客户端。
+- 未修改 deploy 脚本。
+- 未写入真实用户密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+
 ## 2026-05-26 服务器真实邮箱验证码发送上线完成
 
 ### 本轮完成

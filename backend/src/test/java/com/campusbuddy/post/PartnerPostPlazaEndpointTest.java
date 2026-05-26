@@ -48,11 +48,30 @@ class PartnerPostPlazaEndpointTest {
     }
 
     @Test
-    void unverifiedUserCanViewPlazaList() throws Exception {
+    void unverifiedUserCannotViewPlazaList() throws Exception {
         String token = registerAndLogin("pl-unver@campus.edu.cn", "Str0ngPassword!", "PLUnver");
         mockMvc.perform(get("/api/partner-posts")
                         .header("Authorization", "Bearer " + token))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_STATUS_REQUIRED"));
+    }
+
+    @Test
+    void unverifiedUserCannotViewPlazaDetail() throws Exception {
+        registerVerifiedAndLogin("pl-det-owner@campus.edu.cn", "Str0ngPassword!", "PLDetOwner");
+        java.util.UUID ownerId = getUserId("pl-det-owner@campus.edu.cn");
+        String unverifiedToken = registerAndLogin("pl-det-unver@campus.edu.cn", "Str0ngPassword!", "PLDetUnver");
+
+        PartnerPost post = new PartnerPost(ownerId, "PUBLISHED", Instant.now());
+        post.setTitle("Verified Only Detail");
+        post.setSceneType("STUDY");
+        post.setPublishedAt(Instant.now());
+        partnerPostRepository.save(post);
+
+        mockMvc.perform(get("/api/partner-posts/" + post.getId())
+                        .header("Authorization", "Bearer " + unverifiedToken))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_STATUS_REQUIRED"));
     }
 
     @Test
