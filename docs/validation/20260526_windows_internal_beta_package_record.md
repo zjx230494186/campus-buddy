@@ -63,6 +63,26 @@ campus_buddy_desktop.exe --smoke-test
 package_smoke_exit=0
 ```
 
+模拟异机复制解压验证：
+
+```text
+验证方式：
+1. 从 CampusBuddyInternalBeta_20260526.zip 重新解压到独立临时目录。
+2. 将 PATH 临时收窄为 C:\Windows\System32;C:\Windows，避免使用本机 Qt/CMake/MinGW。
+3. 清除 CAMPUS_BUDDY_API_BASE_URL，避免使用本机 API 覆盖变量。
+4. 运行解压后的 campus_buddy_desktop.exe --smoke-test。
+5. 单独请求默认服务器 health。
+
+结果：
+clean_path_smoke_exit=0
+server_health={"status":"UP"}
+required_present:Qt6Core.dll=True
+required_present:Qt6Gui.dll=True
+required_present:Qt6Widgets.dll=True
+required_present:Qt6Network.dll=True
+required_present:platforms\qwindows.dll=True
+```
+
 zip 内容关键项：
 
 ```text
