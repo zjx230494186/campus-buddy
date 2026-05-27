@@ -33,5 +33,10 @@ public interface ConversationMessageRepository extends JpaRepository<Conversatio
     long countAllFromOther(@Param("conversationId") Long conversationId,
                            @Param("userId") UUID userId);
 
+    @Query("SELECT COUNT(m) FROM ConversationMessage m WHERE m.conversationId = :conversationId " +
+            "AND m.senderId <> :userId AND m.messageType = 'USER_TEXT'")
+    long countUserTextFromOther(@Param("conversationId") Long conversationId,
+                                @Param("userId") UUID userId);
+
     Optional<ConversationMessage> findTop1ByConversationIdOrderByIdDesc(Long conversationId);
 }

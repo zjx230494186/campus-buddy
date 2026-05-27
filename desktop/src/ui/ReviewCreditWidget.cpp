@@ -45,14 +45,22 @@ ReviewCreditWidget::ReviewCreditWidget(ReviewCreditApiService &reviewService, QW
 
     auto *submitGroup = new QGroupBox(QStringLiteral("提交评价"), content);
     auto *submitForm = new QFormLayout(submitGroup);
+
+    auto *reviewHintLabel = new QLabel(
+        QStringLiteral("先到“会话与联系方式”页选中会话，复制那里显示的“评价用会话ID”和“被评价者ID”。只有双方完成有效对话后才能评价。"),
+        this);
+    reviewHintLabel->setWordWrap(true);
+    reviewHintLabel->setProperty("muted", true);
+    submitForm->addRow(QString(), reviewHintLabel);
+
     convIdEdit_ = new QLineEdit(this);
     convIdEdit_->setObjectName(QStringLiteral("convIdEdit"));
-    convIdEdit_->setPlaceholderText(QStringLiteral("从会话详情复制的会话 ID"));
+    convIdEdit_->setPlaceholderText(QStringLiteral("从会话页选中会话后复制“评价用会话ID”"));
     submitForm->addRow(QStringLiteral("会话ID"), convIdEdit_);
 
     revieweeIdEdit_ = new QLineEdit(this);
     revieweeIdEdit_->setObjectName(QStringLiteral("revieweeIdEdit"));
-    revieweeIdEdit_->setPlaceholderText(QStringLiteral("UUID"));
+    revieweeIdEdit_->setPlaceholderText(QStringLiteral("从同一行复制“被评价者ID”"));
     submitForm->addRow(QStringLiteral("被评价者ID"), revieweeIdEdit_);
 
     ratingSpin_ = new QSpinBox(this);

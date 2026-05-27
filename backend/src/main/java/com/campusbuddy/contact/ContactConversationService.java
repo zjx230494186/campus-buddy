@@ -84,6 +84,8 @@ public class ContactConversationService {
         conversation.setUpdatedAt(Instant.now());
         conversationRepository.save(conversation);
 
+        ensurePeerHasRepliedBeforeAdditionalMessage(conversation, currentUserId);
+
         ConversationMessage msg = new ConversationMessage(
                 conversation.getId(), currentUserId, "USER_TEXT", message.trim(), Instant.now());
         conversationMessageRepository.save(msg);
@@ -108,6 +110,8 @@ public class ContactConversationService {
             throw new ApiException(HttpStatus.FORBIDDEN, "CONVERSATION_CLOSED",
                     "Conversation is closed", null);
         }
+
+        ensurePeerHasRepliedBeforeAdditionalMessage(conversation, currentUserId);
 
         ConversationMessage msg = new ConversationMessage(
                 conversationId, currentUserId, "USER_TEXT", message.trim(), Instant.now());
@@ -213,6 +217,17 @@ public class ContactConversationService {
         if (message.trim().length() > MAX_MESSAGE_LENGTH) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED",
                     "Message too long", Map.of("field", "message"));
+        }
+    }
+
+    private void ensurePeerHasRepliedBeforeAdditionalMessage(Conversation conversation, UUID currentUserId) {
+        long currentUserMessages = conversationMessageRepository.countByConversationIdAndSenderIdAndMessageType(
+                conversation.getId(), currentUserId, "USER_TEXT");
+        long peerMessages = conversationMessageRepository.countUserTextFromOther(conversation.getId(), currentUserId);
+
+        if (currentUserMessages > 0 && peerMessages == 0) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "CONTACT_REPLY_REQUIRED",
+                    "Please wait for the other participant to reply before sending another message", null);
         }
     }
 

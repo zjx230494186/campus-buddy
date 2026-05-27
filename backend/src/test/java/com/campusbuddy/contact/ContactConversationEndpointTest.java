@@ -204,11 +204,28 @@ class ContactConversationEndpointTest {
     }
 
     @Test
-    void participantCanSendMessage() throws Exception {
+    void requesterCannotSendSecondMessageBeforePublisherReplies() throws Exception {
         Long convId = setupConversationWithMessage("cc-sendmsg");
 
-        UUID requesterId = getUserId("cc-sendmsgreq@campus.edu.cn");
         String requesterToken = login("cc-sendmsgreq@campus.edu.cn", "Str0ngPassword!");
+
+        mockMvc.perform(post("/api/me/conversations/" + convId + "/messages")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"a follow up\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CONTACT_REPLY_REQUIRED"));
+    }
+
+    @Test
+    void requesterCanSendMessageAfterPublisherReplies() throws Exception {
+        Long convId = setupConversationWithMessage("cc-sendafterreply");
+
+        UUID publisherId = getUserId("cc-sendafterreplypub@campus.edu.cn");
+        conversationMessageRepository.save(
+                new ConversationMessage(convId, publisherId, "USER_TEXT", "publisher reply", Instant.now()));
+
+        String requesterToken = login("cc-sendafterreplyreq@campus.edu.cn", "Str0ngPassword!");
 
         mockMvc.perform(post("/api/me/conversations/" + convId + "/messages")
                         .header("Authorization", "Bearer " + requesterToken)
@@ -216,6 +233,28 @@ class ContactConversationEndpointTest {
                         .content("{\"message\":\"a follow up\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messageId").exists());
+    }
+
+    @Test
+    void repeatedContactRequestBeforePublisherRepliesIsRejected() throws Exception {
+        String publisherToken = registerVerifiedAndLogin("cc-repeatpub@campus.edu.cn", "Str0ngPassword!", "CCRepeatPub");
+        UUID publisherId = getUserId("cc-repeatpub@campus.edu.cn");
+        PartnerPost post = createPublishedPost(publisherId, "Repeat Contact Post");
+
+        String requesterToken = registerVerifiedAndLogin("cc-repeatreq@campus.edu.cn", "Str0ngPassword!", "CCRepeatReq");
+
+        mockMvc.perform(post("/api/partner-posts/" + post.getId() + "/contact-requests")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"first invite\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/partner-posts/" + post.getId() + "/contact-requests")
+                        .header("Authorization", "Bearer " + requesterToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"message\":\"second invite\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CONTACT_REPLY_REQUIRED"));
     }
 
     @Test

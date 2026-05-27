@@ -31,6 +31,7 @@ private slots:
 
 private:
     void updateSendButtonState();
+    void updateMessageExchangeState(const QList<MessageItem> &messages);
     void updateUnlockUi(const ContactUnlockStatusResult &result);
 
     ContactConversationApiService &contactService_;
@@ -59,4 +60,6 @@ private:
     QList<ConversationListItem> conversations_;
     long long currentConversationId_ = 0;
     QString currentConversationStatus_;
+    QString currentOtherParticipantId_;
+    bool currentConversationAwaitingPeerReply_ = false;
 };

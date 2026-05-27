@@ -1,5 +1,55 @@
 # Latest Handoff
 
+## 2026-05-27 初始邀约消息限制与评价信息提示修复
+
+### 本轮完成
+
+- 修复“发起联系后，对方未回复前仍可继续发送多条消息”的合同缺口。
+- 后端 `requestContact(...)` 和 `sendMessage(...)` 均增加统一门禁：
+  - 当前用户已发送过 `USER_TEXT`
+  - 对方尚未发送过 `USER_TEXT`
+  - 则返回 HTTP 403 `CONTACT_REPLY_REQUIRED`
+- `ConversationMessageRepository` 增加 `countUserTextFromOther(...)`，只用对方真实文本回复作为放行条件。
+- Qt 会话页选中会话后显示：
+  - `评价用会话ID`
+  - `被评价者ID`
+- Qt 会话页在等待对方回复时禁用发送按钮，并对 `CONTACT_REPLY_REQUIRED` 显示中文提示。
+- Qt 评价页补充提示，告诉用户到“会话与联系方式”页选中会话复制所需 ID。
+- 已重新生成内测 zip：
+  - `D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip`
+- 新增验证记录：
+  - `docs/validation/20260527_contact_reply_gate_and_review_hint_fix_record.md`
+
+### 验证结果
+
+- 后端红灯：新增 service 测试后，旧实现未能拒绝第二条消息/重复联系。
+- 后端绿灯：`ContactConversationServiceTest,SmtpCampusEmailVerificationCodeSenderTest` 5/5 passed。
+- 后端 jar 构建：`.\mvnw.cmd -DskipTests package` passed。
+- Qt 红灯：新增源码测试后，旧 UI 缺少评价信息来源提示。
+- Qt 绿灯：`ctest` 11/11 passed。
+- 桌面端 smoke：`campus_buddy_desktop.exe --smoke-test` passed。
+- 包内 exe 剥离 Qt/CMake/MinGW PATH 后 `--smoke-test` passed。
+- 服务器部署：systemd `campus-buddy-backend` active，公网 health 返回 `{"status":"UP"}`。
+
+### 备份
+
+- 服务器 jar 备份：
+  - `/srv/campus-buddy/campus-buddy-backend-0.0.1-SNAPSHOT.jar.backup.20260527_151353`
+- 旧 Windows 内测包和旧解压目录备份：
+  - `D:\big_homework\deliverables\internal_beta\backups\contact_reply_review_hint_20260527_144806`
+
+### 未完成验证
+
+- 尝试执行完整服务器公网行为 smoke，但 Windows PowerShell 到 Linux bash 的脚本转义/CRLF 问题导致输出不可采信。
+- 已确认没有残留 `codex-contact-*` 临时 smoke 用户或 `Codex contact smoke` 临时帖子。
+- 不把该行为级公网 smoke 伪装为已通过；后续如需更强线上证据，建议写成项目内稳定脚本，而不是临时跨 shell here-string。
+
+### 边界
+
+- 未修改 Flyway。
+- 未修改 deploy 脚本。
+- 未写入真实用户密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+
 ## 2026-05-27 Qt 发布编辑页校验失败后按钮恢复修复
 
 ### 本轮完成

@@ -152,7 +152,29 @@ ConversationsWidget::ConversationsWidget(ContactConversationApiService &contactS
 
 void ConversationsWidget::updateSendButtonState()
 {
-    sendButton_->setEnabled(currentConversationId_ > 0 && currentConversationStatus_ == QStringLiteral("ACTIVE"));
+    sendButton_->setEnabled(currentConversationId_ > 0
+        && currentConversationStatus_ == QStringLiteral("ACTIVE")
+        && !currentConversationAwaitingPeerReply_);
+}
+
+void ConversationsWidget::updateMessageExchangeState(const QList<MessageItem> &messages)
+{
+    bool hasCurrentUserText = false;
+    bool hasPeerText = false;
+
+    for (const auto &msg : messages) {
+        if (msg.messageType != QStringLiteral("USER_TEXT")) {
+            continue;
+        }
+        if (!currentOtherParticipantId_.isEmpty() && msg.senderId == currentOtherParticipantId_) {
+            hasPeerText = true;
+        } else {
+            hasCurrentUserText = true;
+        }
+    }
+
+    currentConversationAwaitingPeerReply_ = hasCurrentUserText && !hasPeerText;
+    updateSendButtonState();
 }
 
 void ConversationsWidget::updateUnlockUi(const ContactUnlockStatusResult &result)
@@ -212,6 +234,8 @@ void ConversationsWidget::onConversationSelected()
     if (idx < 0 || idx >= conversations_.size()) {
         currentConversationId_ = 0;
         currentConversationStatus_.clear();
+        currentOtherParticipantId_.clear();
+        currentConversationAwaitingPeerReply_ = false;
         messageListWidget_->clear();
         sendButton_->setEnabled(false);
         markReadButton_->setEnabled(false);
@@ -227,11 +251,14 @@ void ConversationsWidget::onConversationSelected()
     const auto &conv = conversations_[idx];
     currentConversationId_ = conv.conversationId;
     currentConversationStatus_ = conv.status;
+    currentOtherParticipantId_ = conv.otherParticipantId;
+    currentConversationAwaitingPeerReply_ = false;
 
-    QString statusText = QStringLiteral("会话 #%1 · %2 · %3")
+    QString statusText = QStringLiteral("会话 #%1 · %2 · %3<br>评价用会话ID：%1；被评价者ID：%4")
         .arg(conv.conversationId)
         .arg(conv.otherParticipantDisplayName)
-        .arg(UiHelpers::statusDisplayName(conv.status));
+        .arg(UiHelpers::statusDisplayName(conv.status))
+        .arg(conv.otherParticipantId);
     if (conv.unreadCount > 0) {
         statusText += QStringLiteral(" %1未读").arg(conv.unreadCount);
     }
@@ -250,9 +277,13 @@ void ConversationsWidget::onConversationSelected()
                     .arg(msg.createdAt.left(19), msg.senderId.left(8), msg.content.left(100));
                 messageListWidget_->addItem(display);
             }
+            updateMessageExchangeState(result.items);
             statusLabel_->setText(result.items.isEmpty()
                 ? UiHelpers::emptyStateText(QStringLiteral("messages"))
                 : QStringLiteral("共 %1 条消息").arg(result.items.size()));
+            if (currentConversationAwaitingPeerReply_) {
+                statusLabel_->setText(QStringLiteral("已发送初始邀约，请等待对方回复后再继续发送消息"));
+            }
         } else {
             statusLabel_->setText(QStringLiteral("消息加载失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }
@@ -285,6 +316,11 @@ void ConversationsWidget::onSendMessage()
                 currentConversationStatus_ = QStringLiteral("CLOSED");
                 updateSendButtonState();
                 closeConversationButton_->setEnabled(false);
+            } else if (result.errorCode == QStringLiteral("CONTACT_REPLY_REQUIRED")) {
+                currentConversationAwaitingPeerReply_ = true;
+                updateSendButtonState();
+                statusLabel_->setText(QStringLiteral("发送失败: 请等待对方回复后再继续发送消息"));
+                return;
             }
             statusLabel_->setText(QStringLiteral("发送失败: %1 - %2").arg(result.errorCode).arg(result.errorMessage));
         }

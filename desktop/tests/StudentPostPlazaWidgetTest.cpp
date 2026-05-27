@@ -17,6 +17,7 @@ private slots:
     void secondBatchUiUsesSharedVisualHelpersAndIdentitySelection();
     void thirdBatchUsesBusyAndEmptyStateHelpers();
     void fourthBatchUsesFieldErrorsAndReviewBusyStates();
+    void reviewFlowShowsWhereToFindConversationAndRevieweeIds();
 };
 
 void StudentPostPlazaWidgetTest::widgetLayerDoesNotDirectlyUseNetworkAccessManager()
@@ -206,6 +207,25 @@ void StudentPostPlazaWidgetTest::fourthBatchUsesFieldErrorsAndReviewBusyStates()
              "ReviewCreditWidget must use shared busy-state helper for request buttons");
     QVERIFY2(reviewCreditContent.contains("emptyStateText"),
              "ReviewCreditWidget must use shared empty-state helper for review lists");
+}
+
+void StudentPostPlazaWidgetTest::reviewFlowShowsWhereToFindConversationAndRevieweeIds()
+{
+    QFile conversations(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ConversationsWidget.cpp"));
+    QVERIFY2(conversations.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open ConversationsWidget.cpp");
+    const QString conversationsContent = QString::fromUtf8(conversations.readAll());
+    QVERIFY2(conversationsContent.contains(QStringLiteral("评价用会话ID")),
+             "ConversationsWidget must expose the conversation ID needed by the review form");
+    QVERIFY2(conversationsContent.contains(QStringLiteral("被评价者ID")),
+             "ConversationsWidget must expose the peer user ID needed by the review form");
+
+    QFile reviewCredit(QStringLiteral(CAMPUS_BUDDY_DESKTOP_SOURCE_DIR "/src/ui/ReviewCreditWidget.cpp"));
+    QVERIFY2(reviewCredit.open(QIODevice::ReadOnly | QIODevice::Text), "Cannot open ReviewCreditWidget.cpp");
+    const QString reviewCreditContent = QString::fromUtf8(reviewCredit.readAll());
+    QVERIFY2(reviewCreditContent.contains(QStringLiteral("会话页选中会话")),
+             "ReviewCreditWidget must tell users where to find the required IDs");
+    QVERIFY2(reviewCreditContent.contains(QStringLiteral("评价用会话ID")),
+             "ReviewCreditWidget must use the same label as the conversation page");
 }
 
 QTEST_MAIN(StudentPostPlazaWidgetTest)
