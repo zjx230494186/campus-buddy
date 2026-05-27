@@ -1,5 +1,36 @@
 # Latest Handoff
 
+## 2026-05-27 移动端接口文档补齐
+
+### 本轮完成
+
+- 新增移动端接口文档：
+  - `docs/mobile_api_reference_20260527.md`
+- 文档按移动端接入视角整理：
+  - 服务器 base URL：`http://114.116.203.78/api/`
+  - Retrofit `baseUrl` 必须以 `/` 结尾
+  - 移动端不连接 H2，只通过 HTTP API 调后端
+  - Android HTTP 明文测试放行方式
+  - Bearer Token 鉴权与统一错误体
+  - 注册、验证码、登录、身份认证、帖子、广场、会话、联系方式解锁、评价信用、管理员审核接口
+  - `CONTACT_REPLY_REQUIRED`、`AUTHENTICATION_STATUS_REQUIRED`、字段级 `VALIDATION_FAILED` 等移动端必须处理的业务错误
+- 更新项目文档索引：
+  - `docs/00_project_map.md`
+  - `docs/03_current_plan.md`
+
+### 验证结果
+
+- 文档内容基于当前后端 Controller / Service 源码核对。
+- 未运行后端测试或服务器 smoke；本轮是接口文档整理，无代码行为变更。
+
+### 边界
+
+- 未修改后端。
+- 未修改 Qt。
+- 未修改 Flyway。
+- 未修改 deploy 脚本。
+- 未写入真实用户密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+
 ## 2026-05-27 初始邀约消息限制与评价信息提示修复
 
 ### 本轮完成
