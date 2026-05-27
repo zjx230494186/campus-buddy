@@ -1,5 +1,46 @@
 # Latest Handoff
 
+## 2026-05-27 Qt 发布编辑页校验失败后按钮恢复修复
+
+### 本轮完成
+
+- 修复发布草稿提交审核返回字段缺失后，补齐字段仍无法继续更新草稿或提交审核的问题。
+- `PostEditorWidget` 现在统一缓存当前草稿状态和 `allowedActions`。
+- 草稿编辑动作兼容后端当前返回的 `EDIT`，同时保留历史 `UPDATE_DRAFT` 兼容。
+- 保存、更新、提交审核成功或失败后，统一恢复“保存草稿 / 更新草稿 / 提交审核”按钮状态。
+- 新增 `post_editor_widget_test`，覆盖：
+  - `EDIT + SUBMIT_REVIEW` 动作下加载草稿后按钮可用。
+  - `VALIDATION_FAILED` 后更新草稿和提交审核按钮恢复可用。
+- 修正 `MyPartnerPostApiServiceTest` 里的草稿样例动作，避免过期 `UPDATE_DRAFT` 掩盖真实合同。
+- 已重新生成内测 zip：
+  - `D:\big_homework\deliverables\internal_beta\CampusBuddyInternalBeta_20260526.zip`
+- 新增验证记录：
+  - `docs/validation/20260527_qt_post_editor_validation_recovery_fix_record.md`
+
+### 验证结果
+
+- Qt Release 构建通过。
+- `ctest`：11/11 passed。
+- `post_editor_widget_test.exe`：passed。
+- `my_partner_post_api_service_test.exe`：passed。
+- `campus_buddy_desktop.exe --smoke-test`：passed。
+- 剥离 Qt/CMake/MinGW PATH 后运行包内 exe `--smoke-test`：passed。
+- 服务器 health：`GET http://114.116.203.78/api/health` 返回 `{"status":"UP"}`。
+
+### 备份
+
+- 旧 zip 与旧解压目录已备份：
+  - `D:\big_homework\deliverables\internal_beta\backups\post_editor_fix_20260527_135738`
+
+### 边界
+
+- 本轮只修改 Qt 桌面端和桌面端测试。
+- 未修改后端。
+- 未修改 Flyway。
+- 未修改 deploy 脚本。
+- 未写入真实用户密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+- 这是客户端 bug，服务器后端 jar 不需要重新部署；内测用户需要使用更新后的 zip。
+
 ## 2026-05-26 广场访问认证状态缺口修复并上线
 
 ### 本轮完成

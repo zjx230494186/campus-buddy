@@ -36,6 +36,10 @@ private:
     void setStatusMessage(const QString &msg);
     void clearFieldErrors();
     void applyFieldErrors(const QJsonObject &details);
+    void rememberPostState(const MyPostItem &item);
+    bool currentDraftCanUpdate() const;
+    bool currentDraftCanSubmit() const;
+    void applyCurrentDraftActionState();
     QLabel *createFieldErrorLabel(QWidget *parent);
     QLabel *fieldErrorLabelForKey(const QString &key) const;
     static QString fieldDisplayName(const QString &key);
@@ -73,5 +77,7 @@ private:
     QLabel *postIdLabel_;
 
     QString currentPostId_;
+    QString currentPostStatus_;
+    QStringList currentAllowedActions_;
     bool submitting_ = false;
 };

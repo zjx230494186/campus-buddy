@@ -8,6 +8,14 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
+namespace {
+bool draftActionsAllowEdit(const QStringList &actions)
+{
+    return actions.contains(QStringLiteral("EDIT")) ||
+           actions.contains(QStringLiteral("UPDATE_DRAFT"));
+}
+}
+
 PostEditorWidget::PostEditorWidget(MyPartnerPostApiService &myPostService, QWidget *parent)
     : QWidget(parent),
       myPostService_(myPostService)
@@ -293,10 +301,36 @@ QString PostEditorWidget::formatErrorDetails(const QJsonObject &details)
     return parts.join(QStringLiteral("; "));
 }
 
+void PostEditorWidget::rememberPostState(const MyPostItem &item)
+{
+    currentPostStatus_ = item.status;
+    currentAllowedActions_ = item.allowedActions;
+}
+
+bool PostEditorWidget::currentDraftCanUpdate() const
+{
+    return !currentPostId_.isEmpty() &&
+           (currentPostStatus_ == QStringLiteral("DRAFT") || draftActionsAllowEdit(currentAllowedActions_));
+}
+
+bool PostEditorWidget::currentDraftCanSubmit() const
+{
+    return !currentPostId_.isEmpty() &&
+           currentAllowedActions_.contains(QStringLiteral("SUBMIT_REVIEW"));
+}
+
+void PostEditorWidget::applyCurrentDraftActionState()
+{
+    saveDraftButton_->setEnabled(currentPostId_.isEmpty());
+    updateDraftButton_->setEnabled(currentDraftCanUpdate());
+    submitReviewButton_->setEnabled(currentDraftCanSubmit());
+}
+
 void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
 {
     clearFieldErrors();
     currentPostId_ = postId;
+    rememberPostState(item);
     postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2")
         .arg(postId.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(item.status)));
 
@@ -318,15 +352,15 @@ void PostEditorWidget::loadPost(const QString &postId, const MyPostItem &item)
         sceneFieldEdit_->clear();
     }
 
-    updateDraftButton_->setEnabled(item.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
-    submitReviewButton_->setEnabled(item.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
-    saveDraftButton_->setEnabled(false);
+    applyCurrentDraftActionState();
 }
 
 void PostEditorWidget::clearForm()
 {
     clearFieldErrors();
     currentPostId_.clear();
+    currentPostStatus_.clear();
+    currentAllowedActions_.clear();
     postIdLabel_->clear();
     titleEdit_->clear();
     descriptionEdit_->clear();
@@ -373,10 +407,9 @@ void PostEditorWidget::onSaveDraft()
         UiHelpers::setButtonBusy(saveDraftButton_, false, QStringLiteral("保存中..."), QStringLiteral("保存草稿"));
         if (result.success) {
             currentPostId_ = result.post.postId;
+            rememberPostState(result.post);
             postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
-            updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
-            submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
-            saveDraftButton_->setEnabled(false);
+            applyCurrentDraftActionState();
             setStatusMessage(QStringLiteral("草稿已保存"));
             emit postSaved();
         } else {
@@ -399,12 +432,13 @@ void PostEditorWidget::onUpdateDraft()
     myPostService_.updateDraft(currentPostId_, req, [this](const MyPostResult &result) {
         UiHelpers::setButtonBusy(updateDraftButton_, false, QStringLiteral("更新中..."), QStringLiteral("更新草稿"));
         if (result.success) {
+            rememberPostState(result.post);
             postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
-            updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
-            submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
+            applyCurrentDraftActionState();
             setStatusMessage(QStringLiteral("草稿已更新"));
             emit postSaved();
         } else {
+            applyCurrentDraftActionState();
             applyFieldErrors(result.errorDetails);
             QString msg = QStringLiteral("更新失败: %1 - %2").arg(result.errorCode, result.errorMessage);
             QString details = formatErrorDetails(result.errorDetails);
@@ -425,9 +459,9 @@ void PostEditorWidget::onSubmitReview()
     myPostService_.submitReview(currentPostId_, [this](const PostActionResult &result) {
         submitting_ = false;
         if (result.success) {
+            rememberPostState(result.post);
             postIdLabel_->setText(QStringLiteral("当前草稿: %1 / %2").arg(currentPostId_.left(8) + QStringLiteral("..."), UiHelpers::statusDisplayName(result.post.status)));
-            updateDraftButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
-            submitReviewButton_->setEnabled(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
+            applyCurrentDraftActionState();
             setStatusMessage(QStringLiteral("已提交审核"));
             emit postSubmitted();
         } else {
@@ -456,6 +490,7 @@ void PostEditorWidget::onSubmitReview()
             }
             setStatusMessage(msg);
             UiHelpers::setButtonBusy(submitReviewButton_, false, QStringLiteral("提交中..."), QStringLiteral("提交审核"));
+            applyCurrentDraftActionState();
         }
     });
 }

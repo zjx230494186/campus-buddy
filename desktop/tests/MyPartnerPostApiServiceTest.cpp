@@ -114,7 +114,7 @@ QByteArray MyPartnerPostApiServiceTest::extractHeader(const RawRequest &captured
     return {};
 }
 
-static const char *DRAFT_RESPONSE_JSON = R"({"postId":"abc-123","publisherId":"u1","sceneType":"STUDY","status":"DRAFT","title":"Test","description":"desc","timeMode":"TEXT_PREFERENCE","timeText":"weekend","startAt":null,"endAt":null,"locationText":"library","participantCount":2,"targetRequirement":"any","contactPreference":"in-app","tags":["math"],"attachmentIds":[],"scenePayload":{"studyGoal":"pass exam"},"rejectReason":null,"publishedAt":null,"createdAt":"2026-05-23T00:00:00Z","updatedAt":"2026-05-23T00:00:00Z","allowedActions":["UPDATE_DRAFT","SUBMIT_REVIEW","DELETE"]})";
+static const char *DRAFT_RESPONSE_JSON = R"({"postId":"abc-123","publisherId":"u1","sceneType":"STUDY","status":"DRAFT","title":"Test","description":"desc","timeMode":"TEXT_PREFERENCE","timeText":"weekend","startAt":null,"endAt":null,"locationText":"library","participantCount":2,"targetRequirement":"any","contactPreference":"in-app","tags":["math"],"attachmentIds":[],"scenePayload":{"studyGoal":"pass exam"},"rejectReason":null,"publishedAt":null,"createdAt":"2026-05-23T00:00:00Z","updatedAt":"2026-05-23T00:00:00Z","allowedActions":["EDIT","SUBMIT_REVIEW"]})";
 
 void MyPartnerPostApiServiceTest::createDraftUsesPostAndCorrectPath()
 {
@@ -408,10 +408,9 @@ void MyPartnerPostApiServiceTest::getMyPostDetailParsesAllowedActionsAndScenePay
     QVERIFY(result.success);
     QCOMPARE(extractMethod(captured), QByteArray("GET"));
     QCOMPARE(extractPath(captured), QByteArray("/api/me/partner-posts/abc-123"));
-    QCOMPARE(result.post.allowedActions.size(), 3);
-    QVERIFY(result.post.allowedActions.contains(QStringLiteral("UPDATE_DRAFT")));
+    QCOMPARE(result.post.allowedActions.size(), 2);
+    QVERIFY(result.post.allowedActions.contains(QStringLiteral("EDIT")));
     QVERIFY(result.post.allowedActions.contains(QStringLiteral("SUBMIT_REVIEW")));
-    QVERIFY(result.post.allowedActions.contains(QStringLiteral("DELETE")));
     QVERIFY(result.post.scenePayload.contains(QStringLiteral("studyGoal")));
     QCOMPARE(result.post.scenePayload.value(QStringLiteral("studyGoal")).toString(), QString("pass exam"));
 }
@@ -485,7 +484,7 @@ void MyPartnerPostApiServiceTest::unpublishUsesCorrectPath()
 {
     RawRequest captured;
     const QUrl baseUrl = serveAndCaptureRequest(captured, "HTTP/1.1 200 OK",
-        R"({"postId":"abc-123","publisherId":"u1","sceneType":"STUDY","status":"DRAFT","title":"Test","description":"desc","timeMode":"TEXT_PREFERENCE","timeText":"weekend","startAt":null,"endAt":null,"locationText":"library","participantCount":2,"targetRequirement":"any","contactPreference":"in-app","tags":[],"attachmentIds":[],"scenePayload":{},"rejectReason":null,"publishedAt":null,"createdAt":"2026-05-23T00:00:00Z","updatedAt":"2026-05-23T00:00:00Z","allowedActions":["UPDATE_DRAFT","SUBMIT_REVIEW","DELETE"]})");
+        R"({"postId":"abc-123","publisherId":"u1","sceneType":"STUDY","status":"DRAFT","title":"Test","description":"desc","timeMode":"TEXT_PREFERENCE","timeText":"weekend","startAt":null,"endAt":null,"locationText":"library","participantCount":2,"targetRequirement":"any","contactPreference":"in-app","tags":[],"attachmentIds":[],"scenePayload":{},"rejectReason":null,"publishedAt":null,"createdAt":"2026-05-23T00:00:00Z","updatedAt":"2026-05-23T00:00:00Z","allowedActions":["EDIT","SUBMIT_REVIEW"]})");
 
     CampusApiClient client(ApiClientConfig(baseUrl.toString(), 1000, 1000, true));
     InMemorySessionTokenStore tokenStore;

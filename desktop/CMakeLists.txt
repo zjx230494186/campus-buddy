@@ -245,6 +245,32 @@ target_include_directories(my_partner_post_api_service_test PRIVATE
 
 add_test(NAME my_partner_post_api_service_test COMMAND my_partner_post_api_service_test)
 
+qt_add_executable(post_editor_widget_test
+    ${CMAKE_CURRENT_SOURCE_DIR}/tests/PostEditorWidgetTest.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/CampusApiClient.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/api/MyPartnerPostApiService.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/SecureTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/auth/InMemorySessionTokenStore.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/ApiClientConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/domain/MyPartnerPostModels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/PostEditorWidget.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/UiHelpers.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ui/UiHelpers.h
+)
+
+target_link_libraries(post_editor_widget_test PRIVATE Qt6::Widgets Qt6::Test Qt6::Network)
+
+target_include_directories(post_editor_widget_test PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+add_test(NAME post_editor_widget_test COMMAND post_editor_widget_test)
+
 qt_add_executable(student_post_plaza_widget_test
     ${CMAKE_CURRENT_SOURCE_DIR}/tests/StudentPostPlazaWidgetTest.cpp
 )
