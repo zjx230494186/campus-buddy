@@ -85,6 +85,12 @@ test_output*.txt
 test_error*.txt
 test_flyway_out*.txt
 ppt_extracted.txt
+tmp_*
+
+# Local/generated deliverables that may contain packaged binaries or screenshots
+deliverables/internal_beta/
+picture/
+picture.zip
 
 # Local database and container data
 *.db

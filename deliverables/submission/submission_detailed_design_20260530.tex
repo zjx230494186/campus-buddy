@@ -1,0 +1,1068 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[
+]{ctexart}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor={blue},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={blue},
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{longtable,booktabs,array}
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\author{}
+\date{}
+
+\begin{document}
+
+\hypertarget{ux6821ux56edux642dux5b50ux5e73ux53f0ux8be6ux7ec6ux8bbeux8ba1ux6587ux6863}{%
+\section{校园搭子平台详细设计文档}\label{ux6821ux56edux642dux5b50ux5e73ux53f0ux8be6ux7ec6ux8bbeux8ba1ux6587ux6863}}
+
+文档日期：2026-05-30\\
+适用版本：课程作业正式提交版\\
+交付形态：本文为正式设计正文；提交 PDF 应使用同内容 LaTeX
+源文件生成，子行采用编号列表，不使用前置黑点列表。
+
+\hypertarget{ux5f15ux8a00}{%
+\subsection{1. 引言}\label{ux5f15ux8a00}}
+
+\hypertarget{ux9879ux76eeux80ccux666f}{%
+\subsubsection{1.1 项目背景}\label{ux9879ux76eeux80ccux666f}}
+
+校园搭子平台面向校内学生的结伴需求，覆盖饭搭子、学习搭子、运动搭子、课程组队和创新项目组队等场景。项目目标不是做一个普通聊天工具，而是提供``发布需求、审核、广场筛选、低压力联系、联系方式解锁、评价与信用摘要''的完整闭环，降低陌生同学之间建立合作或同行关系的成本。
+
+\hypertarget{ux5efaux8bbeux76eeux6807}{%
+\subsubsection{1.2 建设目标}\label{ux5efaux8bbeux76eeux6807}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  支持学生通过校园邮箱注册登录，并通过身份认证进入核心业务。
+\item
+  支持已认证学生发布结构化搭子需求，经管理员审核后进入广场。
+\item
+  支持其他已认证学生浏览广场、查看发布者信用摘要并发起联系。
+\item
+  支持会话中的低压力沟通、首条消息节制、未读状态、关闭会话和重新发起。
+\item
+  支持联系方式卡片保存、双方确认后解锁联系方式。
+\item
+  支持有效会话后的互评与信用摘要展示。
+\item
+  支持管理员审核身份认证和帖子内容，保障平台基本秩序。
+\item
+  支持后端服务器、数据库、对象存储、SMTP 邮件发送和 Windows
+  桌面端内测包的可运行交付。
+\end{enumerate}
+
+\hypertarget{ux9002ux7528ux8303ux56f4}{%
+\subsubsection{1.3 适用范围}\label{ux9002ux7528ux8303ux56f4}}
+
+本文描述当前课程提交版已经实现或已经形成稳定接口的系统设计。Qt
+桌面端是当前主要客户端；移动端目前具备 API
+文档和接入边界，但正式移动客户端不属于当前实现范围。投诉申诉、通知治理、HTTPS
+域名、刷新 token 接口等能力属于后续生产化改进。
+
+\hypertarget{ux672fux8bedux8bf4ux660e}{%
+\subsubsection{1.4 术语说明}\label{ux672fux8bedux8bf4ux660e}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+术语 & 含义 \\
+\midrule
+\endhead
+搭子 &
+在某个校园场景中临时或阶段性结伴的人，例如一起吃饭、学习、运动或完成课程项目 \\
+广场 & 展示已审核通过搭子需求的列表页 \\
+低压力联系 & 不强制一开始交换手机号或微信，先通过站内会话沟通 \\
+信用摘要 & 基于评价和有效会话生成的可信度展示，也可面向用户称为靠谱分 \\
+身份认证 & 学生提交学号、学院、专业、年级和认证材料，由管理员审核 \\
+OBS & 华为云对象存储，用于保存认证材料等文件 \\
+SMTP & 邮件发送服务，用于发送校园邮箱验证码 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux9700ux6c42ux4e0eux8bbeux8ba1ux76eeux6807}{%
+\subsection{2.
+需求与设计目标}\label{ux9700ux6c42ux4e0eux8bbeux8ba1ux76eeux6807}}
+
+\hypertarget{ux6838ux5fc3ux7528ux6237ux89d2ux8272}{%
+\subsubsection{2.1
+核心用户角色}\label{ux6838ux5fc3ux7528ux6237ux89d2ux8272}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+角色 & 主要职责 \\
+\midrule
+\endhead
+学生用户 &
+注册登录、提交身份认证、发布搭子需求、浏览广场、发起联系、交换联系方式、提交评价 \\
+管理员 & 审核身份认证、审核帖子、查看认证材料、批准或驳回申请 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux529fux80fdux6027ux9700ux6c42ux6982ux89c8}{%
+\subsubsection{2.2
+功能性需求概览}\label{ux529fux80fdux6027ux9700ux6c42ux6982ux89c8}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  账号与认证：校园邮箱验证码、注册、登录、JWT
+  登录态、身份资料提交与审核。
+\item
+  帖子与广场：草稿、更新、提交审核、撤回、下架、管理员审核、广场列表与详情。
+\item
+  联系会话：从帖子发起联系、消息列表、发送短文本、未读计数、标记已读、关闭会话。
+\item
+  联系方式解锁：保存联系方式卡片、查询解锁状态、双方确认、解锁后查看对方卡片。
+\item
+  评价信用：有效会话后评价、一次修改限制、查询我发出和收到的评价、查询信用摘要。
+\item
+  管理后台：身份认证队列、认证材料下载、认证审核、帖子审核队列、帖子详情、帖子审核裁定。
+\end{enumerate}
+
+\hypertarget{ux975eux529fux80fdux6027ux9700ux6c42}{%
+\subsubsection{2.3
+非功能性需求}\label{ux975eux529fux80fdux6027ux9700ux6c42}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  安全性：核心接口使用 JWT；管理员接口要求 ADMIN
+  角色；广场、发帖、联系、评价要求身份认证通过。
+\item
+  可维护性：后端采用 Spring Boot 分模块组织；数据库结构由 Flyway
+  迁移管理；客户端通过 API service 封装后端合同。
+\item
+  可部署性：后端支持 deploy profile，服务器由 systemd 托管，Nginx
+  对外暴露 HTTP API。
+\item
+  可演示性：Windows 桌面端已打包为内测 zip，后端公网 health 和关键 smoke
+  已形成验证记录。
+\item
+  密钥隔离：数据库密码、JWT secret、OBS AK/SK、SMTP
+  授权码只放服务器或项目外私有环境变量，不写入仓库、文档和客户端。
+\end{enumerate}
+
+\hypertarget{ux7cfbux7edfux603bux4f53ux67b6ux6784}{%
+\subsection{3.
+系统总体架构}\label{ux7cfbux7edfux603bux4f53ux67b6ux6784}}
+
+\hypertarget{ux6574ux4f53ux67b6ux6784ux8bf4ux660e}{%
+\subsubsection{3.1
+整体架构说明}\label{ux6574ux4f53ux67b6ux6784ux8bf4ux660e}}
+
+系统采用客户端到后端 API 的集中式架构。Qt 桌面端和未来移动端只访问 HTTP
+API，不直连数据库、不持有 OBS
+或数据库密钥。后端负责鉴权、业务规则、数据持久化、文件上传和邮件发送。
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+层次 & 技术与职责 \\
+\midrule
+\endhead
+客户端层 & Qt Widgets 桌面端；未来移动端可复用同一 REST API \\
+API 层 & Spring Boot Controller，统一接收 JSON 或 multipart 请求 \\
+业务层 & Auth、Post、Contact、Review、Storage 等 Service \\
+数据层 & PostgreSQL/H2 配合 JPA Repository；Flyway 管理迁移 \\
+文件层 & OBS 对象存储保存认证材料；测试环境可使用内存实现 \\
+外部服务 & SMTP 发送校园邮箱验证码；Nginx 提供公网入口 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux90e8ux7f72ux5173ux7cfb}{%
+\subsubsection{3.2 部署关系}\label{ux90e8ux7f72ux5173ux7cfb}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+组件 & 当前实现 \\
+\midrule
+\endhead
+Qt 桌面端 & Windows 内测包，默认连接
+\texttt{http://114.116.203.78/api} \\
+后端服务 & Ubuntu 24.04.4 ECS，systemd 服务
+\texttt{campus-buddy-backend} \\
+反向代理 & Nginx，将公网 HTTP 请求转发到本机后端 \\
+数据库 & PostgreSQL 17.9，服务器本地 \texttt{127.0.0.1:5432} \\
+对象存储 & 华为云 OBS 私有桶 \\
+邮件服务 & SMTP 配置在服务器私有环境变量中 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux4e3bux6d41ux7a0bux6982ux89c8}{%
+\subsubsection{3.3 主流程概览}\label{ux4e3bux6d41ux7a0bux6982ux89c8}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  学生输入校园邮箱并请求验证码。
+\item
+  学生校验验证码后完成注册和登录，获得 Bearer token。
+\item
+  学生提交身份认证材料，管理员审核通过后成为 VERIFIED。
+\item
+  已认证学生创建帖子草稿，补齐字段后提交审核。
+\item
+  管理员审核通过帖子，帖子进入广场。
+\item
+  其他已认证学生浏览广场并发起联系。
+\item
+  双方通过会话沟通，保存联系方式卡片并双向确认解锁。
+\item
+  双方达到有效会话条件后提交评价，系统更新信用摘要。
+\end{enumerate}
+
+\hypertarget{ux529fux80fdux6a21ux5757ux8bbeux8ba1}{%
+\subsection{4.
+功能模块设计}\label{ux529fux80fdux6a21ux5757ux8bbeux8ba1}}
+
+\hypertarget{ux6ce8ux518cux767bux5f55ux4e0eux6821ux56edux90aeux7bb1ux9a8cux8bc1ux7801}{%
+\subsubsection{4.1
+注册登录与校园邮箱验证码}\label{ux6ce8ux518cux767bux5f55ux4e0eux6821ux56edux90aeux7bb1ux9a8cux8bc1ux7801}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 校园邮箱验证码发送、验证码校验、注册、登录、JWT 颁发 \\
+关键接口 &
+\texttt{/auth/campus-email/verification-codes}、\texttt{/auth/campus-email/verifications}、\texttt{/auth/register}、\texttt{/auth/login} \\
+主要数据 & user\_account、verification code、verification
+ticket、refresh token \\
+关键规则 & 当前服务器只允许 \texttt{bjtu.edu.cn} 邮箱；注册需要已验证
+ticket；登录返回 accessToken 和 refreshToken 字段 \\
+异常控制 &
+邮箱域名非法、验证码错误或过期、发送过于频繁、账号已注册、密码错误 \\
+\bottomrule
+\end{longtable}
+
+登录成功后客户端保存 accessToken，并在后续请求中通过
+\texttt{Authorization:\ Bearer\ \textless{}accessToken\textgreater{}}
+传递。当前实现中登录响应包含 refreshToken 字段，但尚未提供刷新 token
+接口，因此客户端遇到 401 时应引导重新登录。
+
+\hypertarget{ux6821ux56edux8eabux4efdux8ba4ux8bc1ux4e0eux7ba1ux7406ux5458ux5ba1ux6838}{%
+\subsubsection{4.2
+校园身份认证与管理员审核}\label{ux6821ux56edux8eabux4efdux8ba4ux8bc1ux4e0eux7ba1ux7406ux5458ux5ba1ux6838}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 学生上传认证材料、提交实名/学号资料；管理员审核通过或驳回 \\
+关键接口 &
+\texttt{/auth/identity-verifications/materials}、\texttt{/auth/identity-verifications}、\texttt{/auth/identity-verifications/me}、\texttt{/admin/identity-verifications} \\
+主要数据 &
+identity\_material\_attachment、identity\_verification\_submission、user\_account.authentication\_status \\
+状态流转 & UNVERIFIED -\textgreater{} PENDING\_REVIEW -\textgreater{}
+VERIFIED 或 REJECTED \\
+关键规则 & PENDING\_REVIEW 不允许重复提交；VERIFIED
+不允许重复认证；认证材料归属必须属于当前用户 \\
+\bottomrule
+\end{longtable}
+
+认证材料通过 multipart 上传。后端保存文件元数据和对象存储
+key，管理员审核时可下载材料。正式文档和代码仓只记录配置项名称，不记录任何真实
+OBS 密钥。
+
+\hypertarget{ux642dux5b50ux5e16ux5b50ux53d1ux5e03ux8349ux7a3fux5ba1ux6838ux4e0eux5e7fux573a}{%
+\subsubsection{4.3
+搭子帖子发布、草稿、审核与广场}\label{ux642dux5b50ux5e16ux5b50ux53d1ux5e03ux8349ux7a3fux5ba1ux6838ux4e0eux5e7fux573a}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 学生管理自己的帖子；管理员审核；已发布帖子进入广场 \\
+关键接口 &
+\texttt{/me/partner-posts}、\texttt{/me/partner-posts/\{postId\}/submit-review}、\texttt{/admin/partner-posts/review-queue}、\texttt{/partner-posts} \\
+主要数据 & partner\_post、scenePayload、allowedActions \\
+状态流转 & DRAFT -\textgreater{} PENDING\_REVIEW -\textgreater{}
+PUBLISHED 或 REJECTED；PUBLISHED 可下架 \\
+关键规则 & 提交审核时按场景校验字段；contactPreference 不能包含 11
+位手机号；只有 VERIFIED 用户可发帖和看广场 \\
+\bottomrule
+\end{longtable}
+
+五类场景使用统一帖子主表和 JSON 场景载荷。场景字段示例为：学习搭子要求
+\texttt{studyGoal}，饭搭子要求 \texttt{canteen}，运动搭子要求
+\texttt{sportType}，课程组队要求 \texttt{courseName}，创新项目要求
+\texttt{projectDirection}。
+
+\hypertarget{ux4f4eux538bux529bux7ad9ux5185ux8054ux7cfbux4e0eux4f1aux8bdd}{%
+\subsubsection{4.4
+低压力站内联系与会话}\label{ux4f4eux538bux529bux7ad9ux5185ux8054ux7cfbux4e0eux4f1aux8bdd}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 &
+从广场帖子发起联系，创建或复用会话，发送消息，查询未读数，关闭会话 \\
+关键接口 &
+\texttt{/partner-posts/\{postId\}/contact-requests}、\texttt{/me/conversations}、\texttt{/me/conversations/\{conversationId\}/messages} \\
+主要数据 &
+conversation、conversation\_message、last\_read\_message\_id \\
+状态流转 & ACTIVE 可发送消息；CLOSED 禁止继续发送；重新发起联系可恢复
+ACTIVE \\
+关键规则 & 不能联系自己的帖子；帖子必须
+PUBLISHED；首条消息后必须等待对方回复才能继续发送 \\
+\bottomrule
+\end{longtable}
+
+首条消息限制由后端返回 \texttt{CONTACT\_REPLY\_REQUIRED}
+强制执行。客户端收到该错误后禁用发送入口并提示等待对方回复，避免单方连续轰炸式消息。
+
+\hypertarget{ux8054ux7cfbux65b9ux5f0fux5361ux7247ux4e0eux53ccux65b9ux786eux8ba4ux89e3ux9501}{%
+\subsubsection{4.5
+联系方式卡片与双方确认解锁}\label{ux8054ux7cfbux65b9ux5f0fux5361ux7247ux4e0eux53ccux65b9ux786eux8ba4ux89e3ux9501}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 保存个人联系方式；查询会话解锁状态；双方确认后查看对方卡片 \\
+关键接口 &
+\texttt{/me/contact-card}、\texttt{/me/conversations/\{conversationId\}/contact-unlock}、\texttt{/peer-contact-card} \\
+主要数据 &
+contact\_card、contact\_unlock\_confirm、contact\_unlock\_record \\
+状态流转 & LOCKED -\textgreater{} WAITING\_FOR\_PEER -\textgreater{}
+UNLOCKED \\
+关键规则 & 双方都保存卡片并确认后才解锁；未解锁前不能查看对方联系方式 \\
+\bottomrule
+\end{longtable}
+
+该设计将联系方式交换从帖子正文中剥离出来，降低公开泄露手机号、微信号等私人信息的风险。
+
+\hypertarget{ux8bc4ux4ef7ux4e0eux4fe1ux7528ux6458ux8981}{%
+\subsubsection{4.6
+评价与信用摘要}\label{ux8bc4ux4ef7ux4e0eux4fe1ux7528ux6458ux8981}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 对有效会话中的另一方提交评价，查询评价列表和信用摘要 \\
+关键接口 &
+\texttt{/me/reviews}、\texttt{/me/reviews/given}、\texttt{/me/reviews/received}、\texttt{/me/credit-summary}、\texttt{/users/\{userId\}/credit-summary} \\
+主要数据 & review、rating、reviewTags、credit summary 统计结果 \\
+关键规则 & 双方各至少 2 条 USER\_TEXT
+消息才可评价；同一关系只评价一次；24 小时内只可修改一次 \\
+分值规则 & 普通会话 rating 为 1 到 5；联系方式已解锁后允许 6 星评价 \\
+\bottomrule
+\end{longtable}
+
+信用摘要在广场列表和帖子详情中展示给其他学生，帮助其判断沟通对象的可信度。摘要包含平均评分、有效会话数、评分样本数和高频标签。
+
+\hypertarget{ux7ba1ux7406ux5458ux5ba1ux6838ux540eux53f0}{%
+\subsubsection{4.7
+管理员审核后台}\label{ux7ba1ux7406ux5458ux5ba1ux6838ux540eux53f0}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 2\tabcolsep) * \real{0.50}}@{}}
+\toprule
+设计项 & 内容 \\
+\midrule
+\endhead
+模块职责 & 统一承接身份认证审核和帖子审核 \\
+关键接口 &
+\texttt{/admin/identity-verifications}、\texttt{/admin/identity-verifications/\{submissionId\}/reviews}、\texttt{/admin/partner-posts/review-queue}、\texttt{/admin/partner-posts/\{postId\}/review} \\
+权限要求 & 登录且 accountRole 为 ADMIN \\
+关键规则 & 管理员通过认证会同步用户
+authenticationStatus；帖子通过后进入广场，驳回后返回修改 \\
+\bottomrule
+\end{longtable}
+
+当前管理员能力聚焦课程演示和核心闭环，没有实现完整用户封禁、投诉申诉处理和后台统计看板。
+
+\hypertarget{ux684cux9762ux7aef-ui-ux7ec4ux7ec7}{%
+\subsubsection{4.8 桌面端 UI
+组织}\label{ux684cux9762ux7aef-ui-ux7ec4ux7ec7}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+页面 & 职责 \\
+\midrule
+\endhead
+登录/注册页 & 邮箱验证码、注册、登录 \\
+首页 & 根据角色展示学生功能或管理员功能 \\
+认证资料页 & 上传认证材料并提交身份资料 \\
+我的发布页 & 查看自己的帖子状态，提交审核、撤回、下架 \\
+帖子编辑页 & 创建/更新草稿，显示字段级错误和忙碌态 \\
+广场页 & 浏览已发布帖子、查看详情、发起联系 \\
+会话与联系方式页 &
+查看会话、发送消息、标记已读、关闭会话、保存卡片、确认交换 \\
+评价信用页 & 提交评价、查看自己信用摘要和评价列表 \\
+管理员审核页 & 审核身份认证和帖子 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux5173ux952eux4e1aux52a1ux6d41ux7a0bux8bbeux8ba1}{%
+\subsection{5.
+关键业务流程设计}\label{ux5173ux952eux4e1aux52a1ux6d41ux7a0bux8bbeux8ba1}}
+
+\hypertarget{ux65b0ux7528ux6237ux6ce8ux518cux9a8cux8bc1ux7801ux4e0eux767bux5f55}{%
+\subsubsection{5.1
+新用户注册、验证码与登录}\label{ux65b0ux7528ux6237ux6ce8ux518cux9a8cux8bc1ux7801ux4e0eux767bux5f55}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  用户输入 \texttt{bjtu.edu.cn} 校园邮箱。
+\item
+  客户端调用发送验证码接口，按钮进入倒计时状态。
+\item
+  用户输入验证码，客户端调用校验接口并获得 verificationTicket。
+\item
+  用户填写密码和显示名，调用注册接口。
+\item
+  用户调用登录接口获得 accessToken。
+\item
+  客户端根据返回的 authenticationStatus 判断是否进入身份认证页。
+\end{enumerate}
+
+\hypertarget{ux8eabux4efdux8ba4ux8bc1ux5ba1ux6838}{%
+\subsubsection{5.2
+身份认证审核}\label{ux8eabux4efdux8ba4ux8bc1ux5ba1ux6838}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  学生上传认证材料，获得 attachmentId。
+\item
+  学生填写真实姓名、学号、学院、专业、年级并提交认证。
+\item
+  认证状态变为 PENDING\_REVIEW。
+\item
+  管理员在审核页查看队列和材料摘要。
+\item
+  管理员通过后，用户 authenticationStatus 变为 VERIFIED。
+\item
+  管理员驳回后，用户可查看原因并重新提交。
+\end{enumerate}
+
+\hypertarget{ux53d1ux5e16ux5ba1ux6838ux548cux5e7fux573aux53d1ux5e03}{%
+\subsubsection{5.3
+发帖、审核和广场发布}\label{ux53d1ux5e16ux5ba1ux6838ux548cux5e7fux573aux53d1ux5e03}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  VERIFIED 学生创建帖子草稿。
+\item
+  学生选择场景并填写公共字段与场景字段。
+\item
+  学生提交审核，后端执行必填、长度、枚举、时间和联系方式泄露校验。
+\item
+  管理员审核帖子。
+\item
+  审核通过后帖子状态变为 PUBLISHED，并出现在广场。
+\item
+  审核驳回后帖子状态变为 REJECTED，学生可编辑后再次提交。
+\end{enumerate}
+
+\hypertarget{ux6d4fux89c8ux5e7fux573aux5e76ux53d1ux8d77ux8054ux7cfb}{%
+\subsubsection{5.4
+浏览广场并发起联系}\label{ux6d4fux89c8ux5e7fux573aux5e76ux53d1ux8d77ux8054ux7cfb}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  VERIFIED 学生访问广场列表。
+\item
+  用户按场景或关键词筛选帖子。
+\item
+  用户进入帖子详情，查看发布者认证状态和信用摘要。
+\item
+  用户输入首条短消息并发起联系。
+\item
+  后端创建或复用双方围绕该帖子的会话。
+\item
+  当前用户等待对方回复；对方回复前继续发送会返回
+  \texttt{CONTACT\_REPLY\_REQUIRED}。
+\end{enumerate}
+
+\hypertarget{ux8054ux7cfbux65b9ux5f0fux89e3ux9501}{%
+\subsubsection{5.5
+联系方式解锁}\label{ux8054ux7cfbux65b9ux5f0fux89e3ux9501}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  双方在站内会话中确认有进一步沟通意愿。
+\item
+  双方分别保存自己的联系方式卡片。
+\item
+  任一方点击确认交换后，状态进入 WAITING\_FOR\_PEER。
+\item
+  另一方也确认后，状态变为 UNLOCKED。
+\item
+  双方可以查看对方联系方式卡片。
+\end{enumerate}
+
+\hypertarget{ux6709ux6548ux4f1aux8bddux4e0eux8bc4ux4ef7}{%
+\subsubsection{5.6
+有效会话与评价}\label{ux6709ux6548ux4f1aux8bddux4e0eux8bc4ux4ef7}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  双方在同一会话中各自至少发送 2 条 USER\_TEXT。
+\item
+  用户从会话进入评价页，使用会话中的对方 ID 作为 revieweeId。
+\item
+  用户选择评分和固定标签并提交评价。
+\item
+  后端校验评价资格、重复评价和评分范围。
+\item
+  评价写入后，信用摘要统计随之更新。
+\item
+  用户可查询自己发出和收到的评价。
+\end{enumerate}
+
+\hypertarget{ux6570ux636eux5e93ux8bbeux8ba1}{%
+\subsection{6. 数据库设计}\label{ux6570ux636eux5e93ux8bbeux8ba1}}
+
+当前数据库由 Flyway V1 到 V11
+管理。以下只列正式设计需要理解的主要表和关系，不机械复制全部字段。
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}@{}}
+\toprule
+表 & 作用 & 主键 & 关键字段与关系 \\
+\midrule
+\endhead
+user\_account & 用户账号与身份状态 & user\_id &
+campus\_email、password\_hash、display\_name、authentication\_status、account\_role \\
+campus\_email\_verification\_code & 邮箱验证码 & id &
+campus\_email、code\_hash、purpose、expires\_at、consumed\_at \\
+campus\_email\_verification\_ticket & 验证通过后的注册凭证 & id &
+campus\_email、ticket、expires\_at、used\_at \\
+refresh\_token & 登录刷新 token 记录 & id &
+user\_id、token\_hash、expires\_at；当前无刷新接口 \\
+identity\_material\_attachment & 认证材料附件 & attachment\_id &
+owner\_user\_id、object\_key、content\_type、size\_bytes、sha256 \\
+identity\_verification\_submission & 身份认证申请 & submission\_id &
+user\_id、real\_name、student\_number、college、major、grade、review\_status、material\_attachment\_id \\
+partner\_post & 搭子帖子 & post\_id &
+publisher\_id、scene\_type、status、title、description、time\_mode、location\_text、scene\_payload、reject\_reason \\
+conversation & 会话 & conversation\_id &
+initiator\_id、receiver\_id、related\_post\_id、status、updated\_at \\
+conversation\_message & 会话消息 & message\_id &
+conversation\_id、sender\_id、message\_type、content、created\_at \\
+conversation\_read\_state & 已读状态 & id &
+conversation\_id、user\_id、last\_read\_message\_id \\
+contact\_card & 个人联系方式卡片 & id &
+user\_id、wechat\_id、phone\_number、qq\_number \\
+contact\_unlock\_confirm & 单方确认记录 & id &
+conversation\_id、user\_id、confirmed\_at \\
+contact\_unlock\_record & 双方解锁事实 & id &
+conversation\_id、unlocked\_at \\
+review & 评价 & review\_id &
+conversation\_id、reviewer\_id、reviewee\_id、rating、review\_tags、status、modified\_once \\
+\bottomrule
+\end{longtable}
+
+关系上，user\_account
+是身份、帖子、会话、联系方式和评价的根实体；partner\_post
+由发布者创建；conversation 绑定双方用户和可选 related\_post；review 绑定
+conversation 并要求 reviewer/reviewee 是会话参与者。
+
+\hypertarget{ux63a5ux53e3ux8bbeux8ba1}{%
+\subsection{7. 接口设计}\label{ux63a5ux53e3ux8bbeux8ba1}}
+
+\hypertarget{ux901aux7528ux89c4ux5219}{%
+\subsubsection{7.1 通用规则}\label{ux901aux7528ux89c4ux5219}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+项目 & 设计 \\
+\midrule
+\endhead
+当前 API 基地址 & \texttt{http://114.116.203.78/api/} \\
+鉴权方式 &
+\texttt{Authorization:\ Bearer\ \textless{}accessToken\textgreater{}} \\
+请求体 & JSON；文件上传使用 multipart/form-data \\
+分页 & \texttt{page} 从 0 开始，返回
+items、page、size、totalElements、totalPages \\
+错误体 & code、message、details、traceId \\
+\bottomrule
+\end{longtable}
+
+常见业务错误包括
+\texttt{VALIDATION\_FAILED}、\texttt{UNAUTHORIZED}、\texttt{FORBIDDEN}、\texttt{AUTHENTICATION\_STATUS\_REQUIRED}、\texttt{CONTACT\_REPLY\_REQUIRED}、\texttt{RESOURCE\_NOT\_FOUND}、\texttt{REVIEW\_ALREADY\_EXISTS}
+等。
+
+\hypertarget{ux8d26ux53f7ux8ba4ux8bc1ux63a5ux53e3}{%
+\subsubsection{7.2
+账号认证接口}\label{ux8d26ux53f7ux8ba4ux8bc1ux63a5ux53e3}}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule
+方法 & 路径 & 鉴权 & 说明 \\
+\midrule
+\endhead
+POST & \texttt{/auth/campus-email/verification-codes} & 否 &
+发送校园邮箱验证码 \\
+POST & \texttt{/auth/campus-email/verifications} & 否 & 校验验证码并返回
+verificationTicket \\
+POST & \texttt{/auth/register} & 否 & 使用 ticket 注册账号 \\
+POST & \texttt{/auth/login} & 否 & 登录并返回 token 与用户摘要 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux8eabux4efdux8ba4ux8bc1ux63a5ux53e3}{%
+\subsubsection{7.3
+身份认证接口}\label{ux8eabux4efdux8ba4ux8bc1ux63a5ux53e3}}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule
+方法 & 路径 & 鉴权 & 说明 \\
+\midrule
+\endhead
+POST & \texttt{/auth/identity-verifications/materials} & 是 &
+上传认证材料 \\
+DELETE &
+\texttt{/auth/identity-verifications/materials/\{attachmentId\}} & 是 &
+删除未引用材料 \\
+POST & \texttt{/auth/identity-verifications} & 是 & 提交身份认证 \\
+GET & \texttt{/auth/identity-verifications/me} & 是 &
+查询我的认证状态 \\
+GET & \texttt{/admin/identity-verifications} & ADMIN &
+查询认证审核队列 \\
+GET & \texttt{/admin/identity-verifications/\{submissionId\}/material} &
+ADMIN & 下载认证材料 \\
+POST & \texttt{/admin/identity-verifications/\{submissionId\}/reviews} &
+ADMIN & 审核认证 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux5e16ux5b50ux63a5ux53e3}{%
+\subsubsection{7.4 帖子接口}\label{ux5e16ux5b50ux63a5ux53e3}}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule
+方法 & 路径 & 鉴权 & 说明 \\
+\midrule
+\endhead
+POST & \texttt{/me/partner-posts} & VERIFIED & 新建草稿 \\
+PUT & \texttt{/me/partner-posts/\{postId\}} & VERIFIED &
+更新草稿或可编辑帖子 \\
+GET & \texttt{/me/partner-posts} & VERIFIED & 查询我的帖子列表 \\
+GET & \texttt{/me/partner-posts/\{postId\}} & VERIFIED &
+查询我的帖子详情 \\
+POST & \texttt{/me/partner-posts/\{postId\}/submit-review} & VERIFIED &
+提交审核 \\
+POST & \texttt{/me/partner-posts/\{postId\}/withdraw-review} & VERIFIED
+& 撤回审核 \\
+POST & \texttt{/me/partner-posts/\{postId\}/unpublish} & VERIFIED &
+下架已发布帖子 \\
+GET & \texttt{/partner-posts} & VERIFIED & 广场列表 \\
+GET & \texttt{/partner-posts/\{postId\}} & VERIFIED & 广场详情 \\
+GET & \texttt{/admin/partner-posts/review-queue} & ADMIN &
+帖子审核队列 \\
+POST & \texttt{/admin/partner-posts/\{postId\}/review} & ADMIN &
+审核帖子 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux4f1aux8bddux4e0eux8054ux7cfbux65b9ux5f0fux63a5ux53e3}{%
+\subsubsection{7.5
+会话与联系方式接口}\label{ux4f1aux8bddux4e0eux8054ux7cfbux65b9ux5f0fux63a5ux53e3}}
+
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}
+  >{\raggedright\arraybackslash}p{(\columnwidth - 6\tabcolsep) * \real{0.25}}@{}}
+\toprule
+方法 & 路径 & 鉴权 & 说明 \\
+\midrule
+\endhead
+POST & \texttt{/partner-posts/\{postId\}/contact-requests} & VERIFIED &
+从帖子发起联系 \\
+GET & \texttt{/me/conversations} & VERIFIED & 查询我的会话 \\
+GET & \texttt{/me/conversations/\{conversationId\}/messages} & VERIFIED
+& 查询消息 \\
+POST & \texttt{/me/conversations/\{conversationId\}/messages} & VERIFIED
+& 发送消息 \\
+POST & \texttt{/me/conversations/\{conversationId\}/read} & VERIFIED &
+标记已读 \\
+POST & \texttt{/me/conversations/\{conversationId\}/close} & VERIFIED &
+关闭会话 \\
+GET & \texttt{/me/contact-card} & 是 & 查询我的联系方式卡片 \\
+PUT & \texttt{/me/contact-card} & 是 & 保存我的联系方式卡片 \\
+GET & \texttt{/me/conversations/\{conversationId\}/contact-unlock} &
+VERIFIED & 查询解锁状态 \\
+POST &
+\texttt{/me/conversations/\{conversationId\}/contact-unlock/confirm} &
+VERIFIED & 确认解锁 \\
+GET & \texttt{/me/conversations/\{conversationId\}/peer-contact-card} &
+VERIFIED & 查看对方卡片 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux8bc4ux4ef7ux4e0eux4fe1ux7528ux63a5ux53e3}{%
+\subsubsection{7.6
+评价与信用接口}\label{ux8bc4ux4ef7ux4e0eux4fe1ux7528ux63a5ux53e3}}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule
+方法 & 路径 & 鉴权 & 说明 \\
+\midrule
+\endhead
+POST & \texttt{/me/reviews} & VERIFIED & 创建评价 \\
+PUT & \texttt{/me/reviews/\{reviewId\}} & VERIFIED & 修改评价一次 \\
+GET & \texttt{/me/reviews/given} & 是 & 查询我发出的评价 \\
+GET & \texttt{/me/reviews/received} & 是 & 查询我收到的评价 \\
+GET & \texttt{/me/credit-summary} & 是 & 查询我的信用摘要 \\
+GET & \texttt{/users/\{userId\}/credit-summary} & 是 &
+查询其他用户信用摘要 \\
+\bottomrule
+\end{longtable}
+
+\hypertarget{ux6743ux9650ux4e0eux5b89ux5168ux8bbeux8ba1}{%
+\subsection{8.
+权限与安全设计}\label{ux6743ux9650ux4e0eux5b89ux5168ux8bbeux8ba1}}
+
+\hypertarget{ux767bux5f55ux6001ux4e0eux89d2ux8272}{%
+\subsubsection{8.1
+登录态与角色}\label{ux767bux5f55ux6001ux4e0eux89d2ux8272}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  用户登录后获得 JWT accessToken。
+\item
+  客户端在后续请求中带 Bearer Token。
+\item
+  后端从 token 中识别用户和 accountRole。
+\item
+  STUDENT 只能访问学生业务接口。
+\item
+  ADMIN 才能访问 \texttt{/admin/**} 接口。
+\end{enumerate}
+
+\hypertarget{ux8eabux4efdux8ba4ux8bc1ux72b6ux6001ux95e8ux7981}{%
+\subsubsection{8.2
+身份认证状态门禁}\label{ux8eabux4efdux8ba4ux8bc1ux72b6ux6001ux95e8ux7981}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  未登录用户只能访问健康检查、验证码、注册和登录。
+\item
+  已登录但未 VERIFIED 的用户不能访问广场、发帖、联系和评价等核心业务。
+\item
+  未认证用户访问广场列表或详情时返回
+  \texttt{AUTHENTICATION\_STATUS\_REQUIRED}。
+\item
+  管理员审核通过身份认证后，学生才可进入主业务闭环。
+\end{enumerate}
+
+\hypertarget{ux5bc6ux94a5ux4e0eux914dux7f6eux8fb9ux754c}{%
+\subsubsection{8.3
+密钥与配置边界}\label{ux5bc6ux94a5ux4e0eux914dux7f6eux8fb9ux754c}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  数据库密码、JWT secret、OBS AK/SK、SMTP 授权码只存放在服务器私有
+  \texttt{/etc/campus-buddy/backend.env} 或项目外私有 env。
+\item
+  systemd 启动脚本通过环境变量加载配置，不把 secret 放入 Java 命令行。
+\item
+  仓库、Markdown 文档、Qt 客户端和内测 zip 不包含真实密钥。
+\item
+  客户端只持有公开 API base URL，不直连数据库、不直接访问 OBS。
+\end{enumerate}
+
+\hypertarget{ux5f53ux524dux5b89ux5168ux9650ux5236}{%
+\subsubsection{8.4
+当前安全限制}\label{ux5f53ux524dux5b89ux5168ux9650ux5236}}
+
+当前公网 API 仍为
+HTTP，适合课程演示和内测，不适合承载真实生产数据。正式生产应接入域名、HTTPS、证书自动续期、密钥轮换、日志脱敏、备份恢复和更细权限审计。
+
+\hypertarget{ux524dux7aefux8bbeux8ba1}{%
+\subsection{9. 前端设计}\label{ux524dux7aefux8bbeux8ba1}}
+
+\hypertarget{qt-ux684cux9762ux7aefux7ed3ux6784}{%
+\subsubsection{9.1 Qt
+桌面端结构}\label{qt-ux684cux9762ux7aefux7ed3ux6784}}
+
+Qt 桌面端采用页面组件和 API service
+分层。页面负责交互状态、表单校验提示和用户反馈；API service
+负责构造请求、解析响应、处理业务错误；token store 负责保存当前登录态。
+
+\hypertarget{ux4e3bux8981ux4f53ux9a8cux8bbeux8ba1}{%
+\subsubsection{9.2
+主要体验设计}\label{ux4e3bux8981ux4f53ux9a8cux8bbeux8ba1}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  登录注册页按``发送验证码、校验验证码、注册、登录''的自然顺序组织。
+\item
+  首页根据 accountRole
+  动态展示学生功能或管理员功能，避免普通用户看到后台入口。
+\item
+  发帖页在提交审核失败时展示字段级错误，不清空用户已填内容。
+\item
+  广场页展示发布者认证状态和信用摘要，帮助用户判断是否联系。
+\item
+  会话页展示未读数、关闭状态、等待对方回复状态和联系方式解锁状态。
+\item
+  评价页提示 conversationId 和 revieweeId 的来源，减少人工填写错误。
+\item
+  关键按钮在请求中进入忙碌态，避免重复提交。
+\item
+  空列表、加载中、错误信息使用统一辅助样式展示。
+\end{enumerate}
+
+\hypertarget{ux90e8ux7f72ux4e0eux8fd0ux884cux8bbeux8ba1}{%
+\subsection{10.
+部署与运行设计}\label{ux90e8ux7f72ux4e0eux8fd0ux884cux8bbeux8ba1}}
+
+\hypertarget{ux672cux5730ux5f00ux53d1ux73afux5883}{%
+\subsubsection{10.1
+本地开发环境}\label{ux672cux5730ux5f00ux53d1ux73afux5883}}
+
+后端使用 Maven/Spring Boot；数据库可在本地使用 H2 或测试 profile。Qt
+使用本机 Qt 6.10.3 MinGW、CMake 和 Ninja
+构建。开发环境用于快速测试，最终部署验证以 Ubuntu 服务器和公网 API
+为准。
+
+\hypertarget{ux670dux52a1ux5668ux90e8ux7f72}{%
+\subsubsection{10.2 服务器部署}\label{ux670dux52a1ux5668ux90e8ux7f72}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+项目 & 设计 \\
+\midrule
+\endhead
+操作系统 & Ubuntu 24.04.4 LTS \\
+运行目录 & \texttt{/srv/campus-buddy} \\
+服务名 & \texttt{campus-buddy-backend} \\
+配置文件 & \texttt{/etc/campus-buddy/backend.env} \\
+公网入口 & \texttt{http://114.116.203.78/api} \\
+健康检查 & \texttt{GET\ /api/health} 返回 \texttt{\{"status":"UP"\}} \\
+\bottomrule
+\end{longtable}
+
+后端 jar 由 systemd 管理，服务 active 且 enabled。Nginx 负责把公网 HTTP
+请求转发到后端。PostgreSQL
+仅绑定本机地址，避免客户端或公网直接访问数据库。
+
+\hypertarget{ux5bf9ux8c61ux5b58ux50a8ux4e0eux90aeux4ef6}{%
+\subsubsection{10.3
+对象存储与邮件}\label{ux5bf9ux8c61ux5b58ux50a8ux4e0eux90aeux4ef6}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  OBS 用于保存认证材料等文件，后端通过服务器私有 AK/SK 访问。
+\item
+  OBS smoke 覆盖 PUT、GET、SHA-256 校验、DELETE 和删除后 404。
+\item
+  SMTP 用于发送校园邮箱验证码，服务器只记录配置变量名和存在性。
+\item
+  真实验证码、SMTP 授权码和邮件账号不得写入提交材料。
+\end{enumerate}
+
+\hypertarget{windows-ux5185ux6d4bux5305}{%
+\subsubsection{10.4 Windows 内测包}\label{windows-ux5185ux6d4bux5305}}
+
+桌面端内测 zip 位于 \texttt{deliverables/internal\_beta/}，解压后运行
+\texttt{campus\_buddy\_desktop.exe}。内测包默认 API
+地址为公网后端，也支持通过环境变量或启动参数覆盖 API base URL。
+
+\hypertarget{ux6d4bux8bd5ux4e0eux9a8cux6536ux8bbeux8ba1}{%
+\subsection{11.
+测试与验收设计}\label{ux6d4bux8bd5ux4e0eux9a8cux6536ux8bbeux8ba1}}
+
+\hypertarget{ux81eaux52a8ux5316ux6d4bux8bd5}{%
+\subsubsection{11.1 自动化测试}\label{ux81eaux52a8ux5316ux6d4bux8bd5}}
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+类型 & 覆盖内容 \\
+\midrule
+\endhead
+后端单元/集成测试 &
+注册登录、身份认证、帖子、广场、会话、联系方式、评价、管理员审核等 \\
+Qt 自动化测试 & API client
+合同、页面行为、按钮状态、字段级错误、角色隔离 \\
+数据库迁移验证 & Flyway V1 到 V11 在服务器环境可执行 \\
+\bottomrule
+\end{longtable}
+
+当前项目记录中，后端测试、Qt ctest、desktop smoke 和 server smoke
+多次通过；正式文档只保留验证类型和关键结论，不把历史轮次流水账放入正文。
+
+\hypertarget{smoke-ux4e0eux4ebaux5de5ux9a8cux6536}{%
+\subsubsection{11.2 Smoke
+与人工验收}\label{smoke-ux4e0eux4ebaux5de5ux9a8cux6536}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  后端 health：公网 \texttt{/api/health} 返回 UP。
+\item
+  服务器
+  smoke：覆盖登录、认证、广场、联系、会话、联系方式解锁、评价和管理员审核。
+\item
+  桌面端 smoke：内测包在剥离本机 Qt/CMake/MinGW PATH 后仍能启动。
+\item
+  邮箱 smoke：真实 SMTP
+  发信、收信、验证码校验、注册和登录已形成验证记录。
+\item
+  打包验证：zip 内容包含 exe、Qt DLL、MinGW
+  runtime、platforms/qwindows.dll 和必要 TLS 后端。
+\end{enumerate}
+
+\hypertarget{ux5173ux952eux8d1fux5411ux6d4bux8bd5}{%
+\subsubsection{11.3
+关键负向测试}\label{ux5173ux952eux8d1fux5411ux6d4bux8bd5}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  未认证用户访问广场返回 \texttt{AUTHENTICATION\_STATUS\_REQUIRED}。
+\item
+  帖子提交审核缺字段返回 \texttt{VALIDATION\_FAILED} 和字段级 details。
+\item
+  发起联系后对方未回复时继续发送返回 \texttt{CONTACT\_REPLY\_REQUIRED}。
+\item
+  CLOSED 会话禁止继续发送消息。
+\item
+  非管理员访问管理员接口返回权限错误。
+\item
+  重复评价返回冲突错误。
+\item
+  未解锁联系方式时不能查看对方联系方式卡片。
+\end{enumerate}
+
+\hypertarget{ux5f53ux524dux9650ux5236ux4e0eux540eux7eedux6539ux8fdb}{%
+\subsection{12.
+当前限制与后续改进}\label{ux5f53ux524dux9650ux5236ux4e0eux540eux7eedux6539ux8fdb}}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  当前公网仍为 HTTP，正式生产应接入 HTTPS、域名和证书自动续期。
+\item
+  投诉申诉、通知治理、用户封禁、信用人工干预等完整治理模块尚未实现。
+\item
+  移动端目前只有 API 支持和接入文档，正式 Android/iOS 客户端需单独开发。
+\item
+  登录响应中存在 refreshToken 字段，但当前后端尚未提供刷新 token 接口。
+\item
+  当前会话不是 WebSocket 实时聊天，主要依赖查询和刷新。
+\item
+  内测包适合课程演示，不等同完整商业生产系统。
+\item
+  服务器备份、监控告警、日志审计、密钥轮换和高并发压测仍需补齐。
+\end{enumerate}
+
+\hypertarget{ux603bux7ed3}{%
+\subsection{13. 总结}\label{ux603bux7ed3}}
+
+校园搭子平台当前实现已经形成从校园邮箱注册、身份认证、发帖、管理员审核、广场展示、低压力联系、联系方式解锁、互评信用到服务器部署和桌面端打包的最小闭环。设计重点放在校内身份可信、联系方式保护、先审后发、评价可追溯和密钥隔离上。当前版本足以支撑课程答辩和内测演示；若进入真实生产，需要继续补齐
+HTTPS、治理、通知、移动端、刷新 token、监控备份和安全审计等生产化能力。
+
+\end{document}

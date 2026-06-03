@@ -62,6 +62,7 @@
 
 当前可直接交付外部协作者的任务文档：
 
+- `docs/30_submission_detailed_design_v1.md`：课程作业正式提交版详细设计文档正文，面向老师、助教和小组成员，覆盖架构、模块、流程、数据库、接口、权限、部署、测试与限制；对应 LaTeX 源位于 `deliverables/submission/submission_detailed_design_20260530.tex`。
 - `docs/mobile_api_reference_20260527.md`：移动端 UI 接入后端 API 文档，覆盖 base URL、鉴权、错误体、注册认证、发帖广场、对话联系、评价信用和管理员接口。
 
 ## 当前线程默认阅读清单

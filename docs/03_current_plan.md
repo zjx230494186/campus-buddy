@@ -15,6 +15,13 @@
 - 当前目标：CodeArts 继续承担老师要求的代码实现主体；Codex 负责复核 CodeArts 的 Git 变更、测试、validation、敏感信息风险，并把多轮技术结果整理为可交接的稳定项目文档。
 - 当前推进策略：在 Codex 严格质量控制下，允许 CodeArts 的实现批次适度放大，以尽可能提升推进速度；但不得放宽测试、构建、server smoke、敏感信息检查、Git 边界和 validation 留档门禁。
 
+## 2026-05-30 作业正式提交版详细设计文档
+
+- 新增 `docs/30_submission_detailed_design_v1.md`，作为面向课程老师、助教和小组成员的正式详细设计正文。
+- 新增 `deliverables/submission/submission_detailed_design_20260530.tex`，作为同内容 LaTeX 交付源；文档列表使用编号结构，避免子行前置黑点。
+- 已在 Conda 环境 `campus_latex` 中找到 `tectonic 0.16.9` 与 `pandoc 3.9.0.2`，并用 Tectonic 生成 `deliverables/submission/submission_detailed_design_20260530.pdf`；当前仍有长 API 路径和长表名导致的 `Overfull hbox` 排版警告，需人工版式验收或进一步调表格。
+- 本轮只整理文档与交付源，不修改后端、Qt、Flyway、deploy、服务器配置或密钥。
+
 ## 2026-05-21 当前部署状态
 
 - P0 联系最小依赖、P1-1 评价与信用摘要、评价列表 API 已完成后端实现。

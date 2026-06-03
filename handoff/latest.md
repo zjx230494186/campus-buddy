@@ -1,5 +1,68 @@
 # Latest Handoff
 
+## 2026-05-30 作业正式提交版详细设计文档与 LaTeX 源
+
+### 本轮完成
+
+1. 新增正式详细设计正文：
+   1. `docs/30_submission_detailed_design_v1.md`
+   2. 面向课程老师、助教和小组成员，不写成工作记忆或执行流水账。
+   3. 覆盖引言、需求目标、总体架构、功能模块、关键流程、数据库、接口、权限安全、前端、部署、测试、限制和总结。
+2. 新增 LaTeX / PDF 交付源：
+   1. `deliverables/submission/submission_detailed_design_20260530.tex`
+   2. 使用 `ctexart`，便于后续用 XeLaTeX 生成规范 PDF。
+   3. 正文列表使用编号结构，已检查未生成 `itemize` 黑点列表。
+   4. 已用 Conda 环境 `campus_latex` 中的 Tectonic 生成 `deliverables/submission/submission_detailed_design_20260530.pdf`。
+3. 更新项目索引和当前计划：
+   1. `docs/00_project_map.md`
+   2. `docs/03_current_plan.md`
+4. 新增验证记录：
+   1. `docs/validation/20260530_submission_detailed_design_latex_record.md`
+
+### 依据材料
+
+1. `AGENTS.md`
+2. `docs/00_project_map.md`
+3. `docs/01_project_brief.md`
+4. `docs/03_current_plan.md`
+5. `docs/04_product_design_v1.md`
+6. `docs/07_course_requirement_alignment_v1.md`
+7. `docs/25_server_deploy_and_obs_runbook_v1.md`
+8. `docs/27_course_demo_and_delivery_checklist_v1.md`
+9. `docs/mobile_api_reference_20260527.md`
+10. `handoff/latest.md`
+11. 必要的后端 Controller、Service、Repository 和 Flyway 迁移清单。
+
+### 验证结果
+
+1. Markdown 正文未发现以 `- ` 开头的黑点列表。
+2. LaTeX 源未发现 `\begin{itemize}`。
+3. 当前本机 PATH 未发现 `xelatex/pdflatex/lualatex`，但 Conda 环境 `campus_latex` 中存在 `tectonic 0.16.9` 和 `pandoc 3.9.0.2`。
+4. 使用 `tectonic.exe` 已生成 16 页 PDF。
+5. Tectonic 日志仍有多处 `Overfull hbox`，主要来自长 API 路径、长表名和宽表格；当前没有 `pdftoppm/pdfinfo`，尚未完成 PNG 渲染版式检查。
+
+### 边界
+
+1. 未修改后端。
+2. 未修改 Qt。
+3. 未修改 Flyway。
+4. 未修改 deploy 脚本。
+5. 未重新打包内测 zip。
+6. 未写入真实密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+
+### 下一步建议
+
+1. 建议新开线程：`详细设计 PDF 编译与版式验收`
+2. 启动 prompt：
+
+```text
+请读取 D:\big_homework\AGENTS.md、D:\big_homework\docs\30_submission_detailed_design_v1.md、D:\big_homework\deliverables\submission\submission_detailed_design_20260530.tex、D:\big_homework\docs\validation\20260530_submission_detailed_design_latex_record.md。
+
+当前任务是对已生成的正式详细设计 PDF 做版式验收与必要排版修正。PDF 路径为 D:\big_homework\deliverables\submission\submission_detailed_design_20260530.pdf，LaTeX 源为 D:\big_homework\deliverables\submission\submission_detailed_design_20260530.tex。当前可用的 LaTeX 环境是 Conda 环境 campus_latex 中的 Tectonic：C:\Users\zjx230494186\anaconda3\envs\campus_latex\Library\bin\tectonic.exe。要求：PDF 使用 LaTeX 生成；中文可正常显示；子行使用编号，不使用黑点列表；检查页眉页脚、目录、表格、分页和过宽文本。重点处理 Tectonic 日志中的 Overfull hbox，尤其是长 API 路径、长表名和宽表格。
+
+本轮不要修改后端、Qt、Flyway、deploy、服务器配置或密钥。不要写入真实密码、验证码、token、SMTP 授权码、数据库密码、OBS AK/SK 或服务器私钥。
+```
+
 ## 2026-05-27 移动端接口文档补齐
 
 ### 本轮完成
