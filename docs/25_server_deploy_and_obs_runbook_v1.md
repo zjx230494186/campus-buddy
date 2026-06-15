@@ -137,6 +137,23 @@ curl -s -i http://114.116.203.78/api/health
 
 如果 localhost 成功但公网失败，优先检查 Nginx 配置、Nginx 服务状态、防火墙和安全组。不要先修改后端业务代码。
 
+### 4.1 身份材料上传大小限制
+
+身份认证材料业务上限为 10MB。公网链路需要同时满足：
+
+- Nginx `server` 配置：`client_max_body_size 12m;`
+- deploy profile：`spring.servlet.multipart.max-file-size=10MB`
+- deploy profile：`spring.servlet.multipart.max-request-size=12MB`
+
+请求上限高于文件上限是为了容纳 multipart boundary 和请求头。若公网返回 413，依次检查：
+
+```bash
+tail -n 50 /var/log/nginx/error.log
+journalctl -u campus-buddy-backend --since '10 minutes ago' --no-pager
+```
+
+Nginx 日志出现 `client intended to send too large body` 表示请求尚未到达后端；后端日志出现 `MaxUploadSizeExceededException` 表示 Nginx 已放行，但 Spring multipart 仍在拒绝。
+
 ## 5. OBS Smoke Test
 
 仓库脚本：
@@ -351,4 +368,3 @@ AI / CodeArts 可以执行：
 - `docs/validation/20260521_round24_systemd_service_deploy_record.md`
 
 当前结论：截至 Round 24，后端 deploy profile 已在 Ubuntu 24 服务器上以 systemd 服务运行，开机自启，健康检查通过，真实 OBS PUT/GET/DELETE smoke 通过，进程命令行不暴露 DB/JWT/OBS secret，全量回归 146/146 通过。
-

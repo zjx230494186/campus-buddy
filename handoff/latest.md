@@ -1,5 +1,33 @@
 # Latest Handoff
 
+## 2026-06-16 服务器上传限制修复与移动端连通性排查
+
+### 本轮完成
+
+- 定位身份材料约 2.4MB 上传失败的两层根因：
+  - Nginx 默认 body 上限返回 413。
+  - Nginx 放行后，Spring multipart 默认上限继续返回 413。
+- Nginx 增加 `client_max_body_size 12m`。
+- deploy profile 增加 10MB 文件上限和 12MB 请求上限。
+- 新增 `DeployMultipartConfigurationTest`。
+- 重新构建并部署后端 jar。
+- 2.56MB 公网上传返回 200，测试附件删除返回 204。
+- 确认移动端 `okhttp/4.12.0` 请求实际已到达服务器；空白账号访问广场返回预期 403，移动端卡退需检查 Logcat 和错误响应处理。
+
+### 备份
+
+- `/etc/nginx/sites-available/campus-buddy.backup.20260616_001709`
+- `/srv/campus-buddy/campus-buddy-backend-0.0.1-SNAPSHOT.jar.backup.20260616_002017`
+
+### 验证记录
+
+- `docs/validation/20260616_server_upload_limit_and_mobile_connectivity_investigation.md`
+
+### 未验证
+
+- 本机 Docker 不可用，依赖 Testcontainers 的上传端点集成测试未运行。
+- 没有移动端源码或 Android Logcat，无法定位移动端具体崩溃代码行。
+
 ## 2026-05-30 作业正式提交版详细设计文档与 LaTeX 源
 
 ### 本轮完成
