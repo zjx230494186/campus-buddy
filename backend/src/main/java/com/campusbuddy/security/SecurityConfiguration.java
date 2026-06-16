@@ -43,6 +43,7 @@ public class SecurityConfiguration {
                         .requestMatchers("/api/me/partner-posts/**").authenticated()
                         .requestMatchers("/api/me/conversations/**").authenticated()
                         .requestMatchers("/api/me/conversation").authenticated()
+                        .requestMatchers("/api/me/group-chats/**").authenticated()
                         .requestMatchers("/api/me/contact-card").authenticated()
                         .requestMatchers("/api/me/credit-summary").authenticated()
                         .requestMatchers("/api/users/*/credit-summary").authenticated()
