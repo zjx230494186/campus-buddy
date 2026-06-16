@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/me")
 public class GroupChatController {
 
     private final GroupChatService groupChatService;
@@ -19,7 +19,7 @@ public class GroupChatController {
     }
 
     @PostMapping(
-            value = "/me/group-chats",
+            value = "/group-chats",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -32,7 +32,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping(value = "/me/group-chats", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/group-chats", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<GroupChatService.GroupChatListResponse> listGroupChats(
             Authentication authentication,
             @RequestParam(defaultValue = "0") int page,
@@ -43,7 +43,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping(value = "/me/group-chats/{groupChatId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/group-chats/{groupChatId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<GroupChatService.GroupChatDetailResponse> getGroupChatDetail(
             Authentication authentication,
             @PathVariable Long groupChatId
@@ -54,7 +54,7 @@ public class GroupChatController {
     }
 
     @PutMapping(
-            value = "/me/group-chats/{groupChatId}",
+            value = "/group-chats/{groupChatId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -68,7 +68,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping(value = "/me/group-chats/{groupChatId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/group-chats/{groupChatId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<GroupChatService.CloseGroupChatResponse> closeGroupChat(
             Authentication authentication,
             @PathVariable Long groupChatId
@@ -79,7 +79,7 @@ public class GroupChatController {
     }
 
     @PostMapping(
-            value = "/me/group-chats/{groupChatId}/messages",
+            value = "/group-chats/{groupChatId}/messages",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -93,7 +93,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping(value = "/me/group-chats/{groupChatId}/messages", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/group-chats/{groupChatId}/messages", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<GroupChatService.GroupMessageListResponse> getMessages(
             Authentication authentication,
             @PathVariable Long groupChatId,
@@ -106,7 +106,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/me/group-chats/{groupChatId}/read", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/group-chats/{groupChatId}/read", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> markGroupChatRead(
             Authentication authentication,
             @PathVariable Long groupChatId
@@ -117,7 +117,7 @@ public class GroupChatController {
     }
 
     @PostMapping(
-            value = "/me/group-chats/{groupChatId}/members",
+            value = "/group-chats/{groupChatId}/members",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
@@ -131,7 +131,7 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    @DeleteMapping(value = "/me/group-chats/{groupChatId}/members/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = "/group-chats/{groupChatId}/members/{userId}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<GroupChatService.RemoveMemberResponse> removeMember(
             Authentication authentication,
             @PathVariable Long groupChatId,
