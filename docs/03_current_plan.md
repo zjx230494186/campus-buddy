@@ -143,6 +143,7 @@
 - Qt 发布编辑页校验失败后按钮恢复问题已修复：桌面端兼容后端当前草稿动作 `EDIT`，提交审核返回字段校验失败后会恢复“更新草稿 / 提交审核”按钮；Qt `ctest` 11/11、桌面端 smoke、包内 exe 剥离 PATH smoke 通过；内测 zip 已重新生成并备份旧包，validation 见 `docs/validation/20260527_qt_post_editor_validation_recovery_fix_record.md`。
 - 初始邀约后等待对方回复的消息限制已补齐并上线：后端 `requestContact` 和 `sendMessage` 在当前用户已发 `USER_TEXT` 且对方尚未回复 `USER_TEXT` 时返回 403 `CONTACT_REPLY_REQUIRED`；Qt 会话页显示评价用会话 ID/被评价者 ID，并在等待对方回复时禁用发送；评价页补充信息来源提示；后端轻量测试 5/5、Qt `ctest` 11/11、服务器 health UP，validation 见 `docs/validation/20260527_contact_reply_gate_and_review_hint_fix_record.md`。
 - 移动端接口文档已补齐：新增 `docs/mobile_api_reference_20260527.md`，按移动端接入视角整理服务器 base URL、HTTP 明文放行、H2 边界、鉴权、错误体、注册登录、身份认证、帖子、广场、会话、联系方式解锁、评价信用和管理员接口。
+- 服务器身份材料上传 1MB 限制已修复：Nginx 放宽至 12m，Spring deploy profile 配置 10MB 文件/12MB 请求；2.56MB 公网上传返回 200、测试附件清理返回 204。移动端 `okhttp` 请求已到达服务器，卡退需结合 Logcat 排查客户端对 401/403 的处理；验证见 `docs/validation/20260616_server_upload_limit_and_mobile_connectivity_investigation.md`。
 - 下一步优先级：如需演示 Qt 桌面端注册页，使用一个尚未注册过的新 `bjtu.edu.cn` 邮箱重新走 GUI 注册链路；然后进入答辩现场演示或按需做 Round 53 生产化收口。
 
 ## Git 提交历史
