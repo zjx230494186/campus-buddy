@@ -44,6 +44,12 @@ public class Conversation {
     @Column(name = "participant2_last_read_message_id")
     private Long participant2LastReadMessageId;
 
+    @Column(name = "closer_id")
+    private UUID closerId;
+
+    @Column(name = "closed_at")
+    private Instant closedAt;
+
     protected Conversation() {
     }
 
@@ -75,6 +81,13 @@ public class Conversation {
     public Long getParticipant2LastReadMessageId() { return participant2LastReadMessageId; }
     public void setParticipant1LastReadMessageId(Long id) { this.participant1LastReadMessageId = id; }
     public void setParticipant2LastReadMessageId(Long id) { this.participant2LastReadMessageId = id; }
+
+    public UUID getCloserId() { return closerId; }
+    public Instant getClosedAt() { return closedAt; }
+    public void setCloserId(UUID closerId) { this.closerId = closerId; }
+    public void setClosedAt(Instant closedAt) { this.closedAt = closedAt; }
+
+    public boolean isClosedByPublisher() { return closerId != null; }
 
     public Long getLastReadMessageId(UUID userId) {
         if (participant1Id.equals(userId)) return participant1LastReadMessageId;

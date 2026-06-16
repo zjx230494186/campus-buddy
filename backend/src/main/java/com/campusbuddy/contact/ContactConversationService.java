@@ -150,13 +150,61 @@ public class ContactConversationService {
                     "You are not a participant of this conversation", null);
         }
 
+        UUID relatedPostUuid = conversation.getRelatedPostUuid();
+        if (relatedPostUuid == null) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "NO_RELATED_POST",
+                    "This conversation has no related post", null);
+        }
+
+        PartnerPost post = partnerPostRepository.findById(relatedPostUuid)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "POST_NOT_FOUND",
+                        "Related post not found", null));
+
+        if (!post.getPublisherId().equals(currentUserId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "NOT_POST_PUBLISHER",
+                    "Only the post publisher can close this conversation", null);
+        }
+
         if (!"CLOSED".equals(conversation.getStatus())) {
             conversation.setStatus("CLOSED");
+            conversation.setCloserId(currentUserId);
+            conversation.setClosedAt(Instant.now());
             conversation.setUpdatedAt(Instant.now());
             conversationRepository.save(conversation);
         }
 
-        return new CloseConversationResponse(conversation.getId(), conversation.getStatus());
+        String otherParticipantId = conversation.getOtherParticipant(currentUserId) != null 
+                ? conversation.getOtherParticipant(currentUserId).toString() 
+                : null;
+
+        return new CloseConversationResponse(conversation.getId(), conversation.getStatus(), 
+                conversation.getClosedAt().toString(), otherParticipantId);
+    }
+
+    @Transactional(readOnly = true)
+    public CanCloseResponse canCloseConversation(UUID currentUserId, Long conversationId) {
+        Conversation conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "CONVERSATION_NOT_FOUND",
+                        "Conversation not found", null));
+
+        if (!conversation.isParticipant(currentUserId)) {
+            return new CanCloseResponse(false, "NOT_PARTICIPANT");
+        }
+
+        if ("CLOSED".equals(conversation.getStatus())) {
+            return new CanCloseResponse(false, "ALREADY_CLOSED");
+        }
+
+        UUID relatedPostUuid = conversation.getRelatedPostUuid();
+        if (relatedPostUuid == null) {
+            return new CanCloseResponse(false, "NO_RELATED_POST");
+        }
+
+        return partnerPostRepository.findById(relatedPostUuid)
+                .map(post -> post.getPublisherId().equals(currentUserId)
+                        ? new CanCloseResponse(true, "OK")
+                        : new CanCloseResponse(false, "NOT_POST_PUBLISHER"))
+                .orElse(new CanCloseResponse(false, "POST_NOT_FOUND"));
     }
 
     @Transactional
@@ -299,7 +347,9 @@ public class ContactConversationService {
 
     public record SendMessageResponse(Long messageId) {}
 
-    public record CloseConversationResponse(Long conversationId, String status) {}
+    public record CloseConversationResponse(Long conversationId, String status, String closedAt, String otherParticipantId) {}
+
+    public record CanCloseResponse(boolean canClose, String reason) {}
 
     public record ConversationListItem(
             Long conversationId, String status,
