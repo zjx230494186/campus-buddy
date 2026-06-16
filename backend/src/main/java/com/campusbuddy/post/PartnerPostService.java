@@ -2,6 +2,7 @@ package com.campusbuddy.post;
 
 import com.campusbuddy.auth.UserAccountRepository;
 import com.campusbuddy.common.ApiException;
+import com.campusbuddy.moderation.PostModerationService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -26,10 +27,15 @@ public class PartnerPostService {
 
     private final PartnerPostRepository postRepository;
     private final UserAccountRepository userAccountRepository;
+    private final PostModerationService postModerationService;
 
-    PartnerPostService(PartnerPostRepository postRepository, UserAccountRepository userAccountRepository) {
+    PartnerPostService(
+            PartnerPostRepository postRepository,
+            UserAccountRepository userAccountRepository,
+            PostModerationService postModerationService) {
         this.postRepository = postRepository;
         this.userAccountRepository = userAccountRepository;
+        this.postModerationService = postModerationService;
     }
 
     @Transactional
@@ -102,7 +108,9 @@ public class PartnerPostService {
         post.setStatus("PENDING_REVIEW");
         post.setUpdatedAt(Instant.now());
         postRepository.save(post);
-        return toResponse(post);
+        postModerationService.moderateAfterSubmit(post.getId());
+        PartnerPost latest = postRepository.findById(post.getId()).orElse(post);
+        return toResponse(latest);
     }
 
     @Transactional

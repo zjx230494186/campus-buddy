@@ -1,6 +1,7 @@
 package com.campusbuddy.config;
 
 import com.campusbuddy.TestcontainersConfiguration;
+import com.campusbuddy.moderation.PostModerationProperties;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,6 +17,9 @@ class ConfigurationPropertiesTest {
 
     @Autowired
     private CampusBuddyProperties campusBuddyProperties;
+
+    @Autowired
+    private PostModerationProperties postModerationProperties;
 
     @Test
     void campusEmailAllowedDomainsAreLoadedFromConfiguration() {
@@ -61,5 +65,17 @@ class ConfigurationPropertiesTest {
     void objectStorageCorsEnabledIsFalse() {
         boolean corsEnabled = campusBuddyProperties.getObjectStorage().isCorsEnabled();
         assertFalse(corsEnabled, "Object storage CORS must default to false");
+    }
+
+    @Test
+    void postModerationDefaultsToDisabledNoopProvider() {
+        assertFalse(postModerationProperties.isEnabled(), "AI post moderation must be opt-in");
+        assertEquals("noop", postModerationProperties.getProvider());
+        assertEquals("https://api.openai.com/v1/chat/completions", postModerationProperties.getBaseUrl());
+        assertEquals("gpt-4o-mini", postModerationProperties.getModel());
+        assertEquals(8000, postModerationProperties.getTimeoutMillis());
+        assertEquals(0.92, postModerationProperties.getAutoApproveThreshold());
+        assertEquals(0.85, postModerationProperties.getAutoRejectThreshold());
+        assertEquals(2000, postModerationProperties.getMaxInputChars());
     }
 }

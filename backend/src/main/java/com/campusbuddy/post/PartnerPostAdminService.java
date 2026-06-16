@@ -70,6 +70,72 @@ public class PartnerPostAdminService {
 
     @Transactional
     public AdminPostDetailResponse reviewPost(UUID adminId, UUID postId, ReviewDecisionRequest request) {
+        validateReviewRequest(request);
+        Instant now = Instant.now();
+        if ("APPROVE".equals(request.decision())) {
+            return approvePendingPost(adminId, postId, now);
+        }
+        return rejectPendingPost(adminId, postId, request.reason(), now);
+    }
+
+    @Transactional
+    public AdminPostDetailResponse approvePendingPost(UUID reviewerId, UUID postId, Instant now) {
+        PartnerPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "POST_NOT_FOUND",
+                        "Post not found", "postId does not exist"));
+
+        if (!"PENDING_REVIEW".equals(post.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT, "POST_STATUS_CONFLICT",
+                    "Only PENDING_REVIEW posts can be reviewed", "current status: " + post.getStatus());
+        }
+
+        long publishedCount = postRepository.countByPublisherIdAndStatus(post.getPublisherId(), "PUBLISHED");
+        if (publishedCount >= MAX_PUBLISHED_PER_USER) {
+            throw new ApiException(HttpStatus.CONFLICT, "PUBLISHED_POST_LIMIT_EXCEEDED",
+                    "Publisher already has " + MAX_PUBLISHED_PER_USER + " published posts",
+                    "current published count: " + publishedCount);
+        }
+
+        post.setStatus("PUBLISHED");
+        post.setReviewedBy(reviewerId);
+        post.setReviewedAt(now);
+        post.setPublishedAt(now);
+        post.setRejectReason(null);
+        post.setUpdatedAt(now);
+
+        postRepository.save(post);
+        return getPostDetail(postId);
+    }
+
+    @Transactional
+    public AdminPostDetailResponse rejectPendingPost(UUID reviewerId, UUID postId, String reason, Instant now) {
+        if (reason == null || reason.isBlank() || reason.length() > 200) {
+            Map<String, String> errors = new LinkedHashMap<>();
+            errors.put("reason", reason == null || reason.isBlank() ? "is required for REJECT" : "must not exceed 200 characters");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", errors);
+        }
+
+        PartnerPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "POST_NOT_FOUND",
+                        "Post not found", "postId does not exist"));
+
+        if (!"PENDING_REVIEW".equals(post.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT, "POST_STATUS_CONFLICT",
+                    "Only PENDING_REVIEW posts can be reviewed", "current status: " + post.getStatus());
+        }
+
+        post.setStatus("REJECTED");
+        post.setReviewedBy(reviewerId);
+        post.setReviewedAt(now);
+        post.setRejectReason(reason);
+        post.setPublishedAt(null);
+        post.setUpdatedAt(now);
+
+        postRepository.save(post);
+        return getPostDetail(postId);
+    }
+
+    private void validateReviewRequest(ReviewDecisionRequest request) {
         Map<String, String> errors = new LinkedHashMap<>();
 
         if (request.decision() == null || (!"APPROVE".equals(request.decision()) && !"REJECT".equals(request.decision()))) {
@@ -87,43 +153,6 @@ public class PartnerPostAdminService {
         if (!errors.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED", "Validation failed", errors);
         }
-
-        PartnerPost post = postRepository.findById(postId)
-                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "POST_NOT_FOUND",
-                        "Post not found", "postId does not exist"));
-
-        if (!"PENDING_REVIEW".equals(post.getStatus())) {
-            throw new ApiException(HttpStatus.CONFLICT, "POST_STATUS_CONFLICT",
-                    "Only PENDING_REVIEW posts can be reviewed", "current status: " + post.getStatus());
-        }
-
-        Instant now = Instant.now();
-
-        if ("APPROVE".equals(request.decision())) {
-            long publishedCount = postRepository.countByPublisherIdAndStatus(post.getPublisherId(), "PUBLISHED");
-            if (publishedCount >= MAX_PUBLISHED_PER_USER) {
-                throw new ApiException(HttpStatus.CONFLICT, "PUBLISHED_POST_LIMIT_EXCEEDED",
-                        "Publisher already has " + MAX_PUBLISHED_PER_USER + " published posts",
-                        "current published count: " + publishedCount);
-            }
-
-            post.setStatus("PUBLISHED");
-            post.setReviewedBy(adminId);
-            post.setReviewedAt(now);
-            post.setPublishedAt(now);
-            post.setRejectReason(null);
-            post.setUpdatedAt(now);
-        } else {
-            post.setStatus("REJECTED");
-            post.setReviewedBy(adminId);
-            post.setReviewedAt(now);
-            post.setRejectReason(request.reason());
-            post.setPublishedAt(null);
-            post.setUpdatedAt(now);
-        }
-
-        postRepository.save(post);
-        return getPostDetail(postId);
     }
 
     private ReviewQueueItem toQueueItem(PartnerPost post) {

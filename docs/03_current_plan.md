@@ -1,6 +1,73 @@
-# 03 Current Plan
+﻿# 03 Current Plan
 
-本文只维护当前阶段最重要事项，不承载全部历史。
+## 2026-06-16 AI 帖子自动预审规划
+
+- 新增 `docs/31_ai_post_moderation_design_v1.md`，确定帖子审核从纯人工扩展为“AI 自动预审 + 人工兜底”的最小闭环方案。
+- V1 只处理 `PartnerPost` 文本字段，不处理身份认证材料、聊天内容、评价内容、附件图片或 PDF 内容。
+- 状态流转保持现有 `DRAFT / PENDING_REVIEW / PUBLISHED / REJECTED`，不新增帖子主状态；V1 不修改数据库、不新增 Flyway、不新增审计表。
+- 推荐策略：高置信 `APPROVE` 自动发布，高置信 `REJECT` 自动驳回并写入 `rejectReason`，低置信、异常、解析失败或不确定保持 `PENDING_REVIEW` 进入管理员队列。
+- 配置默认 `POST_MODERATION_ENABLED=false`、`provider=noop`，真实 API key 只能放服务器私有环境变量，不得写入仓库、文档、客户端或日志。
+- 后续实现必须按测试先行分批推进：Batch 1 配置与 noop 替身，Batch 2 预审编排与自动动作，Batch 3 真实大模型 HTTP 客户端，Batch 4 再评估是否需要 V2 审计表和管理员展示 AI 建议。
+
+## 2026-06-11 Android 移动端接口对齐
+
+- 已检查 `D:\Github\mobile-client` 当前 Retrofit API、模型、仓库和主要页面，与后端公网接口设计对齐。
+- 已在移动端补齐会话关闭、联系方式卡片、联系方式解锁确认、查看对方联系方式等接口调用。
+- 已增强响应体解析的空值兼容，降低 `timeText`、`tags`、会话参与者、消息内容、评价摘要字段缺失导致的崩溃风险。
+- 已移除 App 中后端不支持的 `TRAVEL` 场景入口。
+- 已让会话列表、聊天页、身份认证页、我的评价页展示更多后端响应字段；其中“我的评价”已从模拟数据改为真实接口列表。
+- 已运行 `D:\Github\mobile-client` 下 `.\gradlew.bat :app:assembleDebug`，结果 `BUILD SUCCESSFUL`；仅保留既有 deprecated warning。
+- 本轮未调用云端真实接口，未写入真实账号、密码、验证码或 token。
+
+## 2026-06-11 Android 登录门禁与联系方式交换修复
+
+- 修复移动端启动后误用本地残留 token 进入主界面的问题：App 现在固定从登录页启动，并在启动时清理旧 token。
+- 为受保护路由增加未登录拦截，未登录访问主功能会回到登录页。
+- 修复会话页联系方式交换半接入问题：
+  - 后端返回字段为 `currentUserConfirmed/currentUserHasContactCard/peerHasContactCard`，App 端已按真实字段解析。
+  - 联系方式输入框已改为可编辑，可保存微信、手机、QQ。
+  - 确认交换按钮现在按“先保存我的卡片，再确认；双方确认且双方有卡片后解锁”的后端规则启用。
+  - 增加 `CONTACT_CARD_REQUIRED`、`CONTACT_NOT_UNLOCKED` 等错误码的中文提示。
+- 已运行 `D:\Github\mobile-client` 下 `.\gradlew.bat :app:assembleDebug`，结果 `BUILD SUCCESSFUL`。
+
+## 2026-06-11 Android CLOSED 会话交换联系方式错误修复
+
+- 分析用户反馈的错误 `Cannot confirm unlock on a non-ACTIVE conversation`，确认该错误来自后端 `ContactUnlockService.confirmUnlock`，原因是当前会话状态不是 `ACTIVE`，通常是已关闭 `CLOSED`。
+- 修复移动端会话状态传递：会话列表进入聊天页时把后端返回的 `status` 一并传入聊天页。
+- 聊天页现在用真实会话状态初始化，不再默认所有会话都是 `ACTIVE`。
+- 非 `ACTIVE` 会话会禁用“确认交换”，并显示中文说明：当前会话已关闭，不能交换联系方式，可从原帖子重新发起联系后再交换。
+- 增加 `CONVERSATION_CLOSED` 的中文错误提示。
+- 已运行 `D:\Github\mobile-client` 下 `.\gradlew.bat :app:assembleDebug`，结果 `BUILD SUCCESSFUL`。
+
+## 2026-06-11 云端接口完整测试用例
+
+- 新增 `docs/api_full_test_cases_20260611.md`，整理当前全部后端接口的功能测试、负向测试和状态依赖说明。
+- 新增 `scripts/server_api_full_smoke.ps1`，通过环境变量读取云端 base URL、学生账号和管理员账号，自动覆盖主链路接口 smoke。
+- 脚本不写入真实账号密码或 token；运行输出只记录状态码、错误码和必要业务 ID。
+- 已做 PowerShell 静态语法检查：`syntax=ok`。本轮未实际调用云端接口。
+
+## 2026-06-11 本地 PostgreSQL 初始化脚本
+
+- 已阅读 `backend/src/main/resources/db/migration/V1__...` 到 `V11__...` 的 Flyway 迁移。
+- 新增 `deploy/local-postgres/00_create_database.sql` 和 `deploy/local-postgres/01_schema.sql`，用于本地 PostgreSQL 空库初始化。
+- 脚本只包含结构与占位密码，不包含云端连接串、真实账号密码或生产数据。
+- 本轮未修改后端业务代码，未执行真实数据库导入。
+
+## 2026-06-11 后端接口测试索引
+
+- 新增 `docs/backend_api_test_index_20260611.md`，用于接口测试前快速核对后端所有可用 Controller 端点。
+- 本轮只做源码阅读和文档整理，不修改后端业务代码、不运行公网 smoke、不记录任何真实密钥或 token。
+- 下一步如需继续推进，优先基于该索引生成 Postman/Apifox 集合或 PowerShell smoke 脚本。
+
+
+## 2026-06-16 AI 帖子自动审核云端部署验证
+
+- 已将包含 AI 自动审核的后端 jar 部署到云端服务器，服务名仍为 `campus-buddy-backend`。
+- 服务器用户为 `campus_hcj`，后端部署目录为 `/srv/campus-buddy`，私有环境变量文件为 `/etc/campus-buddy/backend.env`。
+- 已在服务器私有环境变量中配置 Qwen OpenAI-compatible 审核所需变量：`POST_MODERATION_ENABLED`、`POST_MODERATION_PROVIDER`、`POST_MODERATION_API_KEY`、`POST_MODERATION_MODEL`、`POST_MODERATION_BASE_URL`；文档不记录真实 key。
+- 公网 `GET http://114.116.203.78/api/health` 返回 `UP`，服务器本机 `systemctl` 显示 `campus-buddy-backend` 为 `active`。
+- 使用测试学生账号提交安全学习帖，提交审核后返回 `PUBLISHED`；管理员审核队列不包含该帖子，说明 AI 自动通过已在云端生效。
+- 详细记录见 `docs/validation/20260616_ai_post_moderation_server_deploy_record.md`。本文只维护当前阶段最重要事项，不承载全部历史。
 
 ## 文档编码规则
 
@@ -249,3 +316,4 @@
 - 后续每个实现批次除本地测试外，应尽量增加服务器 smoke test 或部署验证记录，避免 Win11 与 Ubuntu 24 环境差异在最后集中暴露。
 - 涉及后端、数据库迁移、对象存储、部署配置或公网访问的批次，完成门禁调整为“本地测试通过 + Ubuntu 24 服务器 smoke test 通过”；只在 Win11 本地通过不视为完整闭环。
 - 服务器 smoke test 至少记录部署/重启结果、健康检查、关键接口最小调用、数据库迁移或连通性、对象存储连通性和私有配置就绪情况。
+
