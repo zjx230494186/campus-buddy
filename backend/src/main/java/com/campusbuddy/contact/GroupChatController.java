@@ -127,7 +127,7 @@ public class GroupChatController {
             @RequestBody AddMembersRequest request
     ) {
         UUID userId = UUID.fromString(authentication.getName());
-        GroupChatService.AddMembersResponse response = groupChatService.addMembers(userId, groupChatId, request.toUuidList());
+        GroupChatService.AddMembersResponse response = groupChatService.addMembers(userId, groupChatId, request.userIds());
         return ResponseEntity.ok(response);
     }
 
@@ -142,25 +142,10 @@ public class GroupChatController {
         return ResponseEntity.ok(response);
     }
 
-    public record CreateGroupChatRequest(String name, String description, String relatedPostUuid,
-                                         Integer maxMembers, List<String> initialMemberIds) {
+    public record CreateGroupChatRequest(String name, String description, UUID relatedPostUuid,
+                                         Integer maxMembers, List<UUID> initialMemberIds) {
         public GroupChatService.CreateGroupChatRequest toServiceRequest() {
-            UUID relatedPostUuidValue = null;
-            if (relatedPostUuid != null && !relatedPostUuid.isBlank()) {
-                try {
-                    relatedPostUuidValue = UUID.fromString(relatedPostUuid);
-                } catch (IllegalArgumentException e) {
-                    // Invalid UUID format, treat as null
-                }
-            }
-            List<UUID> initialMemberUuids = null;
-            if (initialMemberIds != null && !initialMemberIds.isEmpty()) {
-                initialMemberUuids = initialMemberIds.stream()
-                    .filter(id -> id != null && !id.isBlank())
-                    .map(UUID::fromString)
-                    .toList();
-            }
-            return new GroupChatService.CreateGroupChatRequest(name, description, relatedPostUuidValue, maxMembers, initialMemberUuids);
+            return new GroupChatService.CreateGroupChatRequest(name, description, relatedPostUuid, maxMembers, initialMemberIds);
         }
     }
 
@@ -172,13 +157,5 @@ public class GroupChatController {
 
     public record SendMessageRequest(String message) {}
 
-    public record AddMembersRequest(List<String> userIds) {
-        public List<UUID> toUuidList() {
-            if (userIds == null || userIds.isEmpty()) return List.of();
-            return userIds.stream()
-                .filter(id -> id != null && !id.isBlank())
-                .map(UUID::fromString)
-                .toList();
-        }
-    }
+    public record AddMembersRequest(List<UUID> userIds) {}
 }
