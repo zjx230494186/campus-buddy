@@ -1,5 +1,15 @@
 ﻿# 03 Current Plan
 
+## 2026-06-17 后端群聊热修复已上线
+
+- 后端主分支提交 `95709e9 liuyi 修复多人群聊功能` 已部署到华为云服务器 `114.116.203.78`。
+- 上线前已备份生产 jar 和 PostgreSQL dump，备份目录：`/srv/campus-buddy/backups/deploy_20260617_175551`。
+- Flyway 已从 V11 迁移到 V14，`group_chat`、`group_chat_member`、`group_chat_message` 三张表已创建，群聊相关外键孤儿数据检查均为 0。
+- 上线后最小冒烟通过：公网 health、system info、未登录 401、短时 JWT 鉴权、`/api/me/credit-summary`、`/api/me/group-chats?page=0&size=5`。
+- 旧服务器脚本 `/srv/campus-buddy/api_smoke_test.sh` 的登录步骤仍失败，疑似脚本内旧测试账号不可用；后续建议更新 smoke 账号来源或改成可控临时账号流程。
+- 验证记录：`docs/validation/20260617_backend_group_chat_hotfix_smoke.md`。
+
+
 ## 2026-06-16 AI 帖子自动预审规划
 
 - 新增 `docs/31_ai_post_moderation_design_v1.md`，确定帖子审核从纯人工扩展为“AI 自动预审 + 人工兜底”的最小闭环方案。

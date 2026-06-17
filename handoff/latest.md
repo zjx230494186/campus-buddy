@@ -1,5 +1,29 @@
 ﻿# Latest Handoff
 
+## 2026-06-17 后端群聊热修复上线交接
+
+### 本轮完成
+
+- 已将后端主分支提交 `95709e9 liuyi 修复多人群聊功能` 部署到华为云服务器。
+- 上线前完成本地构建、定向测试、服务器临时库迁移干跑、最新 jar 临时库启动冒烟。
+- 正式上线前备份：
+  - `/srv/campus-buddy/backups/deploy_20260617_175551`
+- 正式服务已重启，`campus-buddy-backend` 为 active。
+- Flyway 已成功应用 V12、V13、V14，生产库当前版本为 V14。
+- 公网与鉴权冒烟通过：
+  - `GET /api/health` 返回 UP。
+  - `GET /api/system/info` 返回服务信息。
+  - 未登录访问安全接口和群聊列表返回 401。
+  - 短时 JWT 访问 `/api/probe/secure`、`/api/me/credit-summary`、`/api/me/group-chats?page=0&size=5` 均返回 200。
+- 验证记录见：`docs/validation/20260617_backend_group_chat_hotfix_smoke.md`。
+
+### 下一步建议
+
+- 让移动端和 Qt 端继续按 `http://114.116.203.78/api/` 联调。
+- 后续如果要验证群聊完整写入链路，建议使用专门测试账号创建临时群聊并记录清理策略，不要直接用真实同学数据试错。
+- 更新服务器旧 smoke 脚本 `/srv/campus-buddy/api_smoke_test.sh` 的测试账号来源；当前旧脚本登录步骤不可用，但不影响本轮通过短时 JWT 完成的上线冒烟结论。
+
+
 ## 2026-06-16 AI 帖子自动预审规划
 
 ### 当前线程完成了什么
