@@ -21,6 +21,8 @@ public class GroupChatService {
     private static final int MAX_MESSAGE_LENGTH = 500;
     private static final int MAX_PAGE_SIZE = 50;
     private static final int DEFAULT_MAX_MEMBERS = 20;
+    private static final int MIN_MAX_MEMBERS = 2;
+    private static final int MAX_MAX_MEMBERS = 100;
 
     private final GroupChatRepository groupChatRepository;
     private final GroupChatMemberRepository groupChatMemberRepository;
@@ -44,6 +46,9 @@ public class GroupChatService {
     public CreateGroupChatResponse createGroupChat(UUID currentUserId, CreateGroupChatRequest request) {
         validateUser(currentUserId);
 
+        int maxMembers = request.maxMembers() != null ? request.maxMembers() : DEFAULT_MAX_MEMBERS;
+        validateMaxMembers(maxMembers);
+
         GroupChat groupChat = new GroupChat(
                 request.name(),
                 request.description(),
@@ -51,7 +56,7 @@ public class GroupChatService {
                 request.relatedPostUuid(),
                 Instant.now()
         );
-        groupChat.setMaxMembers(request.maxMembers() != null ? request.maxMembers() : DEFAULT_MAX_MEMBERS);
+        groupChat.setMaxMembers(maxMembers);
         GroupChat savedChat = groupChatRepository.save(groupChat);
 
         GroupChatMember creatorMember = new GroupChatMember(savedChat.getId(), currentUserId, "ADMIN", Instant.now());
@@ -213,9 +218,21 @@ public class GroupChatService {
 
         List<String> added = new ArrayList<>();
         List<String> alreadyMember = new ArrayList<>();
+        List<String> invalidUsers = new ArrayList<>();
 
         for (UUID userId : userIds) {
             if (userId.equals(currentUserId)) continue;
+
+            UserAccount targetUser = userAccountRepository.findById(userId).orElse(null);
+            if (targetUser == null) {
+                invalidUsers.add(userId.toString());
+                continue;
+            }
+
+            if (!"VERIFIED".equals(targetUser.getAuthenticationStatus())) {
+                invalidUsers.add(userId.toString());
+                continue;
+            }
 
             Optional<GroupChatMember> existing = groupChatMemberRepository.findByGroupChatIdAndUserId(groupChatId, userId);
             if (existing.isPresent()) {
@@ -238,7 +255,7 @@ public class GroupChatService {
         groupChat.setUpdatedAt(Instant.now());
         groupChatRepository.save(groupChat);
 
-        return new AddMembersResponse(added, alreadyMember);
+        return new AddMembersResponse(added, alreadyMember, invalidUsers);
     }
 
     @Transactional
@@ -285,7 +302,15 @@ public class GroupChatService {
         if (request.description() != null) {
             groupChat.setDescription(request.description().trim());
         }
-        if (request.maxMembers() != null && request.maxMembers() > 0) {
+        if (request.maxMembers() != null) {
+            validateMaxMembers(request.maxMembers());
+
+            long currentMemberCount = groupChatMemberRepository.countByGroupChatIdAndStatus(groupChatId, "JOINED");
+            if (request.maxMembers() < currentMemberCount) {
+                throw new ApiException(HttpStatus.FORBIDDEN, "MAX_MEMBERS_TOO_SMALL",
+                        "Cannot set max members lower than current member count", null);
+            }
+
             groupChat.setMaxMembers(request.maxMembers());
         }
 
@@ -345,6 +370,14 @@ public class GroupChatService {
         if (message.trim().length() > MAX_MESSAGE_LENGTH) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "VALIDATION_FAILED",
                     "Message too long", Map.of("field", "message"));
+        }
+    }
+
+    private void validateMaxMembers(int maxMembers) {
+        if (maxMembers < MIN_MAX_MEMBERS || maxMembers > MAX_MAX_MEMBERS) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_MAX_MEMBERS",
+                    String.format("maxMembers must be between %d and %d", MIN_MAX_MEMBERS, MAX_MAX_MEMBERS),
+                    Map.of("min", MIN_MAX_MEMBERS, "max", MAX_MAX_MEMBERS, "actual", maxMembers));
         }
     }
 
@@ -497,7 +530,7 @@ public class GroupChatService {
             int totalPages
     ) {}
 
-    public record AddMembersResponse(List<String> addedUserIds, List<String> alreadyMemberUserIds) {}
+    public record AddMembersResponse(List<String> addedUserIds, List<String> alreadyMemberUserIds, List<String> invalidUserIds) {}
 
     public record RemoveMemberResponse(String userId, boolean success) {}
 }
