@@ -78,7 +78,7 @@
 |------|------|------|
 | conversationId | Long | 会话ID |
 | status | string | 会话状态（CLOSED） |
-| closedAt | string | 关闭时间（ISO 8601格式） |
+| closedAt | string | 关闭时间（ISO 8601格式），历史数据可能为null |
 | otherParticipantId | string | 对方参与者UUID（用于创建评价） |
 
 #### 错误响应

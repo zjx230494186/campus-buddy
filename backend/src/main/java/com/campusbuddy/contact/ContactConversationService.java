@@ -173,12 +173,16 @@ public class ContactConversationService {
             conversationRepository.save(conversation);
         }
 
-        String otherParticipantId = conversation.getOtherParticipant(currentUserId) != null 
-                ? conversation.getOtherParticipant(currentUserId).toString() 
+        String otherParticipantId = conversation.getOtherParticipant(currentUserId) != null
+                ? conversation.getOtherParticipant(currentUserId).toString()
                 : null;
 
-        return new CloseConversationResponse(conversation.getId(), conversation.getStatus(), 
-                conversation.getClosedAt().toString(), otherParticipantId);
+        String closedAtStr = conversation.getClosedAt() != null
+                ? conversation.getClosedAt().toString()
+                : null;
+
+        return new CloseConversationResponse(conversation.getId(), conversation.getStatus(),
+                closedAtStr, otherParticipantId);
     }
 
     @Transactional(readOnly = true)

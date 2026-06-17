@@ -1,4 +1,4 @@
-ALTER TABLE conversation ADD COLUMN closer_id UUID REFERENCES user_account(id);
+ALTER TABLE conversation ADD COLUMN closer_id UUID REFERENCES user_account(user_id);
 
 ALTER TABLE conversation ADD COLUMN closed_at TIMESTAMP WITH TIME ZONE;
 
